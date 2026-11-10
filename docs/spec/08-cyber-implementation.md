@@ -1,34 +1,28 @@
-# Cyber 구현 제약과 위험
+# Cyber 런타임 사실과 제약
 
-Cyber는 임베딩 가능한 스크립트 언어다. 이 문서의 내용은 구현 전에 반드시 검증해야 하는 가정이며, 검증 전까지는 사실로 취급하지 않는다.
+출처: soomtong/cyber docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_direction), 2026-11 기준 0.4.4. 구현 시작 전에 최신 상태를 다시 확인한다.
 
-## 검증할 항목
+## 확인된 사실
 
-- 언어 버전 안정성과 유지보수 상태. 문법/표준 라이브러리 변경이 잦으면 버전을 고정한다
-- tars-linux에서의 Cyber 런타임 설치 방법과 아키텍처 지원 (x86_64, aarch64)
-- 필요한 기능이 표준 라이브러리 또는 FFI로 가능한지
-  - 프로세스 생성, stdin/stdout/stderr 파이프, 시그널 전송, 프로세스 그룹
-  - 비동기 I/O 또는 동시성 (병렬 도구 실행, 스트리밍 수신)
-  - HTTPS 클라이언트 (TLS). 없으면 FFI로 libcurl, 또는 외부 curl 프로세스 사용
-  - JSON 파싱/직렬화
-  - JSON Schema 검증 (직접 구현 필요 가능성이 높음)
-  - 파일 시스템 조작, 디렉터리 순회, glob
-  - 터미널 raw 모드, 크기 조회 (TUI)
-- 에러 처리 모델이 "모든 실패는 결과로" 원칙과 맞는지
-- 단일 실행 파일로 배포 가능한지
+- fork 용도: Python, Perl, Shell 대용 스크립트 CLI와 tars 에이전트 루프의 실행 언어 후보. 기본 백엔드는 바이트코드 VM이고 JIT, LLVM 백엔드는 제거했다.
+- 언어 0.4: 정적 타입 + 값 소유권(move, &T 빌림, ^T ARC). 에러는 !T 와 error.Name 값. 보간은 %{}. 파이버는 없고 #[generator]와 spawn Thread + Future가 있다.
+- 임베딩: libcyber 정적 라이브러리 2.1 MB (ReleaseFast, FFI 끔). cl_vm_init 0.2 ms, 첫 eval 2.8 ms, 같은 VM 두 번째 eval 0.01 ms. VM당 RSS 증가 약 2 MB, 첫 VM만 약 7 MB.
+- 상태 유지: persist_main 으로 함수, 타입, use, main 지역 변수가 eval 사이에 이어진다. panic이면 지역 변수는 버려진다. 빌림 타입 지역은 이월되지 않는다.
+- 제어: cl_vm_interrupt(다른 스레드에서 호출 가능), cl_vm_set_fuel, cl_vm_validate(실행 없이 컴파일만), cl_vm_set_printer, cl_vm_initx(할당자).
+- 호스트 함수: #[bind] 선언 + cl_mod_add_func. 값 매개변수는 호스트가 소유하고 해제해야 한다.
+- 라이브러리 기본 로더는 core, meta, math, cy, c, io, test 일곱 모듈만 제공한다. os, libc, cli는 CLI 전용이다.
+- 없는 것: JSON, 정규식, 날짜 라이브러리. 호스트 함수 중간에 멈췄다 재개하는 수단. 메모리 상한 내장 기능. musl 정적 타깃에서 self dlopen(기본 ffi 꺼짐).
+- tars에 이미 배포된 것은 CLI 번들(cyber-linux-x64.tar.gz). 실행 파일 옆에 src/ 가 있어야 한다. libcyber는 별도로 빌드해야 한다.
 
 ## 위험과 대응
 
-- 위험: 표준 라이브러리 부족. 대응: 얇은 FFI 계층 또는 외부 도구(curl, rg)에 위임, 인터페이스를 모듈로 격리
-- 위험: 언어 변경으로 빌드 깨짐. 대응: 버전 고정, 스모크 테스트
-- 위험: 성능(대용량 출력 처리). 대응: 절단을 도구 쪽에서 먼저 수행
-- 위험: 디버깅 도구 부족. 대응: 세션 로그와 trace 로깅을 초기부터 구현
+- 스크립트 중 컴파일러 abort 가능성: 실행 프로세스 분리 평가
+- 비-main await 등 Zig @panic("TODO") 경로: 해당 기능을 막는다 (spawn 금지 초기)
+- 호스트 함수 안 블록은 못 끊음: 함수별 시간 제한
+- 모델이 Cyber를 틀림: 부분집합 교육, validate 후 오류 되돌림, 측정으로 확인 (P0 평가)
+- 언어/런타임 변경: fork라 변경 권한이 있지만 같은 변경을 두 번 유지하지 않도록 런타임은 soomtong/cyber 한 곳에 둔다. agentd는 tars-linux 쪽 또는 이 저장소.
 
-## 외부 의존 정책
+## 외부 의존
 
-- 외부 바이너리 의존(curl, rg, fd, git)은 시작 시 존재 여부를 점검하고 없으면 명확한 오류를 낸다
-- 의존이 늘어나는 항목은 decisions에 기록한다
-
-## 대안 (실패 시)
-
-- Cyber 한계가 치명적이면 핵심 부분만 다른 언어로 두고 Cyber는 스크립팅/도구 계층에 쓰는 혼합안을 검토한다. 결정은 P0 스파이크 결과 후 ADR로 남긴다
+- tars는 도구를 sha256 고정 미리 빌드 바이너리로 들인다. agentd와 libcyber도 이 방식(릴리스 산출물 + 해시)에 맞춘다.
+- 프로토타입이 쓰는 외부 바이너리(curl, rg, fd, git)는 시작 시 존재 여부를 점검한다.
