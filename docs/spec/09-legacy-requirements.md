@@ -1,5 +1,7 @@
 # 초기 요구사항(legacy) 대조
 
+이 문서는 이력이다. 현재 설계의 정본은 00~08 문서와 docs/decisions이고, 아래 "그대로 채택" 가운데 2026-11-10 재검토에서 바뀐 항목은 맨 아래 "재검토에서 바꾼 것" 절에 있다.
+
 초기 요구사항 지시서(tars-linux 내장 에이전트 시스템)를 현재 명세와 대조한 결과다. 지시서는 Cyber 0.3과 Zig 0.12~0.13 세대를 가정해 쓰였다. soomtong/cyber의 검토 문서(project_tars_agent_runtime_review.md, 2026-11-01)가 이미 차이를 확인했고, 여기서는 이 저장소의 결정으로 정리한다.
 
 ## 그대로 채택
@@ -36,17 +38,39 @@
 - 메모리 목표(유휴 5 MB 이하): VM당 약 2 MB로 충족, 첫 VM만 약 7 MB.
 - 호스트 방식 B(순수 Cyber CLI)는 제품 후보에서 내리고, 루프와 프롬프트 형태를 빨리 보는 일회성 스파이크로만 쓴다.
 
-## 능력 이름 체계 (04 문서에 반영)
+## 재검토에서 바꾼 것 (2026-11-10)
 
-지시서의 점 표기를 채택한다: fs.list, fs.read, fs.stat, fs.write, fs.glob, proc.exec, net.http, tars.window.list, tars.window.focus, tars.terminal.send, tars.terminal.read, tars.notify, ui.ask, mcp.call. 04 문서의 이전 이름(read, search, edit, shell 등)은 이 이름의 별칭 또는 하위 함수로 정리한다.
+지시서에서 채택했던 항목 가운데 재검토에서 바꾸거나 미룬 것이다.
 
-## 열린 질문
+| 지시서 | 지금 | 근거 |
+|---|---|---|
+| agentd 데몬 (session manager, runtime pool, mcp client, mcp server) | v1은 세션당 프로세스 하나. 데몬은 후속 | ADR 0004 |
+| 능력 이름 fs.*, proc.exec, net.http, tars.*, ui.ask, mcp.call | fs.*, proc.exec와 proc.sh, net.fetch, ui.ask, ui.todo, memo.*, json.*, time.*. tars.*와 mcp.*는 후속 | 04 문서, ADR 0007 |
+| 허용되지 않은 능력은 주입되지 않는다 | 프로파일에는 그대로 적용. 세션 중 모드는 게이트로 판정 | ADR 0007 |
+| 승인 UI는 tars 패널 안 | 패널 하나에서 도는 줄 단위 REPL의 인라인 프롬프트. 패널 API가 필요 없다 | 06 문서 |
+| tars.* 능력은 모의 구현으로 시작 | 모의는 만들지 않는다. 제어 채널 설계 뒤로 미룬다 | ADR 0009 |
+| MCP 양방향 | 후속 (M6). 능력 표가 JSON Schema를 내므로 구조는 준비돼 있다 | ADR 0006 |
+| 감사 로그와 세션 히스토리 | JSONL 파일 하나로 합친다 | ADR 0008 |
+| 에이전트용 언어 문서를 런타임 CLI가 생성 (new, spec --for-agents) | 원본은 이 저장소의 prompt/cyber-subset.md. 4,000 토큰, 예제 10개, 예제 테스트는 유지 | ADR 0009 |
+| 설정은 tars.conf | 에이전트 설정은 settings.json 세 층. tars.conf에는 필요가 생길 때만 키를 둔다 | ADR 0007 |
+| 산출 문서 design.md, fork-plan.md, deps.md | deps.md만 둔다 | ADR 0009 |
+| JSON, 정규식, 날짜를 새로 쓴다 | 그대로 채택. cyber 표준 모듈로 만든다. 시계 읽기만 능력 | ADR 0010 |
 
-- 에이전트 프로파일 런타임의 제품명, 라이브러리명 (이름 변경 요구 vs 단일 fork 유지)
-- Zig 전용 API 표면을 만들지, C ABI를 Zig 모듈로 감싸 쓸지
-- fork 쪽 non-main await 경로의 @panic(TODO)를 에이전트 프로파일에서 어떻게 막을지
-- JSON, 정규식, 날짜를 Cyber 순수 라이브러리로 쓸지 호스트 능력으로 둘지
-- agentd를 이 저장소에 둘지 tars-linux 저장소에 둘지 (지시서는 agentd/ 와 런타임 포크의 두 레포)
-- 승인 대기의 OS 스레드 점유가 수십 세션 규모에서 문제인지 (측정 필요)
-- tars 터미널의 패널 API 존재 여부 (지시서도 모의 구현으로 시작하라고 함)
-- 컴파일러 abort 경로 때문에 스크립트 실행을 별도 프로세스로 분리할지
+지시서 이후 cyber fork에서 바뀐 사실: 비-main 스레드의 await는 2026-11-08에 고쳐져 프로세스를 죽이지 않는다. 메모리 상한(cl_vm_set_memory_limit)과 스택 상한(cl_vm_set_stack_limit)이 생겼다. 08 문서가 최신이다.
+
+## 닫은 질문
+
+이전 판의 열린 질문 여덟 개를 모두 닫았다.
+
+| 질문 | 답 | 근거 |
+|---|---|---|
+| 런타임의 제품명, 라이브러리명 | 제품은 tars-agent, 런타임은 cyber 그대로. 두 번째 fork 없음 | ADR 0005 |
+| Zig 전용 API 표면 대 C ABI 래핑 | C ABI를 파일 하나로 감싼다 | ADR 0005 |
+| non-main await의 @panic(TODO) | fork에서 고쳐졌다. spawn은 다른 이유로 v1에서 막는다 | 08 문서, ADR 0009 |
+| JSON, 정규식, 날짜의 위치 | cyber 표준 모듈. 세계에 닿는 것만 능력 | ADR 0010 |
+| agentd의 저장소 | 이 저장소 | ADR 0005 |
+| 승인 대기의 스레드 점유 | 세션당 프로세스 하나라 문제가 아니다 | ADR 0004 |
+| tars 패널 API 존재 여부 | 없다. v1은 필요로 하지 않는다 | 00, 06 문서 |
+| 실행 프로세스 분리 | 하지 않는다. 죽는 비율을 재서 다시 본다 | ADR 0009 |
+
+남은 불확실성은 질문이 아니라 측정할 것이다: 모델의 Cyber 정확도 (M0 평가), cyber를 Zig 의존으로 링크하는 방법 (M0 스파이크 1), Zig std의 TLS (M0 스파이크 2), tars 커널의 Landlock (M5).
