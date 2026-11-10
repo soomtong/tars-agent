@@ -1,4 +1,22 @@
-# 내장 호스트 함수
+# 내장 호스트 함수 (능력)
+
+능력 이름은 초기 요구사항의 점 표기를 따른다 (09 문서). 등급은 read, write, exec, net, ui. 등급은 정책 게이트의 1차 분류 기준이다.
+
+| 능력 | 등급 | 비고 |
+|---|---|---|
+| fs.list, fs.stat, fs.glob | read | |
+| fs.read | read | 줄 번호, 상한 |
+| fs.write | write | edit 포함(아래), 정책으로 경로 범위 제한 |
+| proc.exec | exec | 인자 배열, 환경 변수 제한, 타임아웃, 출력 상한 |
+| net.http | net | GET/POST, 허용 도메인 |
+| tars.window.list, tars.window.focus | read, ui | 모의 구현으로 시작 |
+| tars.terminal.send | exec | |
+| tars.terminal.read | read | |
+| tars.notify | ui | |
+| ui.ask | ui | 승인과 별개의 질문 채널 |
+| mcp.call, mcp.서버.도구 | 서버 설정 지정, 없으면 exec | |
+
+아래 절의 함수 이름(read, search, edit, shell 등)은 초기 초안이며 위 능력 이름으로 정리한다. 이름이 존재하지 않는 능력은 주입되지 않는다 (05).
 
 호스트 함수 계약은 호스트 구현 방식 A, B에서 같게 유지한다. 아래는 초안이며 시그니처는 프로토타입에서 확정한다. 사양 주석은 영어로 쓴다 (모델이 읽는 사양, 짧은 문장).
 

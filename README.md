@@ -15,6 +15,7 @@ Cyber 언어로 만드는 tars-linux용 AI 에이전트 하네스. 에이전트�
 - docs/spec/06-mcp-and-context.md: MCP 통합과 컨텍스트 비용 관리
 - docs/spec/07-observability.md: 세션 로그와 추적
 - docs/spec/08-cyber-implementation.md: Cyber 런타임 사실과 제약
+- docs/spec/09-legacy-requirements.md: 초기 요구사항 지시서와의 대조, 열린 질문
 - docs/TODO.md: 단계별 작업 목록
 - docs/decisions/: 결정 기록
 - MEMORY.md: 결정 요약 색인
