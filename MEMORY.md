@@ -12,5 +12,5 @@
 - [0008 세션 기록, 재개, 컴팩션](docs/decisions/0008-session-and-history.md) — 덧붙이기만, VM은 복원하지 않음
 - [0009 v1에서 뺀 것](docs/decisions/0009-v1-scope-cuts.md) — 뺀 항목과 되살리는 조건
 - [0010 없는 것은 Cyber에 만든다](docs/decisions/0010-build-what-cyber-lacks.md) — 순수 계산은 cyber 표준 모듈, 세계에 닿는 것만 능력
-- [커밋 위임](docs/decisions/feedback-commit-delegation.md) — 의미 있는 변경은 묻지 않고 커밋, push는 지시가 있을 때
+- [커밋과 push 위임](docs/decisions/feedback-commit-delegation.md) — 의미 있는 변경은 묻지 않고 커밋하고 push
 - [초기 요구사항 대조](docs/spec/09-legacy-requirements.md) — 이력, 재검토에서 바꾼 것과 닫은 질문

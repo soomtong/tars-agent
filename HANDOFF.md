@@ -11,7 +11,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 현재 브랜치
 
-`main` — 이번 세션의 문서 변경은 커밋했다. push는 하지 않았다 (지시 없음). 커밋은 Claude에게 위임돼 있다: 의미 있는 변경이 생기면 묻지 않고 커밋한다 (docs/decisions/feedback-commit-delegation.md).
+`main` = origin/main. 이번 세션의 문서 변경은 커밋하고 push했다. 커밋과 push는 Claude에게 위임돼 있다: 의미 있는 변경이 생기면 묻지 않고 커밋하고 push한다 (docs/decisions/feedback-commit-delegation.md).
 
 ## 완료된 작업
 
