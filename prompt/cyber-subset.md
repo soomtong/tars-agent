@@ -1,0 +1,272 @@
+# Cyber 작성 안내 (Python을 아는 에이전트용)
+
+Cyber는 Python과 아주 비슷한 문법 구조를 가진다. 들여쓰기로 블록을 만들고, 줄바꿈으로 문장을 끝내고, `for`, `while`, `if`, `fn`, `use`, `print`를 거의 같은 감각으로 쓴다. 하지만 정적 타입이고 값 소유권이 있고 예외가 없다. 이런 부분들이 다르니까 코드를 구성할 때 본 문서를 참고한다. 모르는 문법은 Python 문법으로 추측하지 말고 아래 표를 먼저 본다.
+
+기준 버전은 Cyber 0.4.5-DEV다. 학습 데이터에 있는 옛 Cyber 문법(0.3의 `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`)은 모두 틀렸다.
+
+Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 특정 시점의 빌드에 맞춘 것이므로 최신 빌드와 어긋날 수 있다. 문서를 사용하거나 고치기 전에 아래를 확인한다.
+
+- `cyber version`으로 실제 빌드를 확인하고 위의 기준 버전과 비교한다.
+- 이 문서의 예제 10개를 최신 빌드로 다시 실행한다. 하나라도 실패하면 문서가 낡은 것이다.
+- "없는 것" 목록과 "Python과 다른 것" 표를 최신 빌드에서 하나씩 시험한다. 기능이 새로 생겼으면 문서에서 지우거나 고친다 (예: json, regex, time 모듈, `xs.map`).
+- 문서와 빌드가 다르면 빌드가 맞다. 문서를 고치고 기준 버전을 갱신한다.
+
+이 문서에 없는 기능을 쓰고 싶으면 있다고 가정하지 말고 작은 조각으로 실행해 확인한다.
+
+## 쓰는 법의 원칙
+
+- 타입이 보이는 단순한 코드를 쓴다. int, float, bool, str, []T, Map, ?T, !T, 필드가 단순한 type으로 충분하다.
+- 힙 참조 `^T`, 빌림 `&T`, `move`, trait, 템플릿, 제너레이터, `spawn`은 꼭 필요할 때만 쓴다.
+- 확신이 없는 메서드를 부르지 말고 먼저 작은 조각으로 실행해 본다. 컴파일 오류는 실행 전에 나오고 줄 번호가 있다. 오류 문구대로 고친다.
+
+## Python과 같은 것
+
+- 들여쓰기 블록, 콜론, `pass`, `break`, `continue`, `return`
+- `and`, `or`, `not`, `==`, `!=`, `<`, `+=`, `-=`, `*=`, `/=`
+- 함수 호출 `f(x)`, 메서드 호출 `s.upper()`, 인덱스 `xs[0]`, 슬라이스 `s[1..3]`의 개념
+- 문자열은 작은따옴표와 큰따옴표가 같고, 불변이며 UTF-8이다
+- 리스트처럼 쓰는 `[]T`는 대입하면 같은 버퍼를 공유한다 (Python list와 같은 별칭 동작)
+
+## Python과 다른 것
+
+문법 차이:
+
+| Python | Cyber |
+|---|---|
+| `# 주석` | `-- 주석` |
+| `x = 1` (선언과 대입 같음) | `x := 1` 선언, `x = 2` 재대입. 같은 블록에서 `:=`를 다시 쓰면 오류 |
+| `def f(a, b):` | `fn f(a, b int) -> int:` 매개변수와 반환 타입이 필수. 같은 타입은 `a, b int`로 묶는다 |
+| `elif c:` | `else c:` (`else if` 아님) |
+| `for x in xs:` | `for xs \|x\|:` 또는 `for xs \|i, x\|:` |
+| `for i in range(n):` | `for 0..n \|i\|:` (끝 제외), `0..=n` (끝 포함), `n..>0` (내림) |
+| `f"{x}"` | `'%{x}'` 보간. 식도 들어간다 `'%{a + b}'` |
+| `x if c else y` | `if (c) x else y` 조건에 괄호 필수 |
+| `a // b` | `a / b` 정수끼리 나누면 0 쪽으로 버린다. `//`는 오류. 거듭제곱 `**`은 같다 |
+| `import math` | `use math`. 파일은 `use g 'geo.cy'` |
+| `class P:` | `type P:` 아래에 `name str` 처럼 `필드 타입`. 메서드는 `fn (&P) m():` 안에서 `self` |
+| `print(a, b)` | `print(x)` 인자는 정확히 하나. 합치려면 보간 |
+| `len(xs)` | `xs.len()` 메서드. `xs.len`은 오류 |
+| `xs.append(1)` | `xs += 1` 또는 `xs = xs.append(1)`. 크기를 바꾸는 메서드는 새 값을 돌려주므로 받아야 한다 |
+| `xs.sort(key=...)` | `xs.sort(\|a, b\| a < b)` |
+| `x in xs` | `xs.contains(x)`, Map은 `m.contains(k)` |
+| `[1, 2, 3]` | `[]int{1, 2, 3}` 요소 타입이 필수 |
+| `{"a": 1}` | `Map[str, int]{}` 만들고 `m['a'] = 1`. 리터럴 없음 |
+| `(1, 2)` 튜플 | `type Pt(x, y float)` 이름 있는 튜플, 또는 struct |
+| `None` | `none`. `?T` 타입 안에서만 |
+| `assert` | `use test` 후 `test.eq(기대, 실제)` |
+| `if __name__ ...` | 최상위 문장이 곧 프로그램. 또는 `fn main()` (둘을 섞으면 오류) |
+
+의미 차이:
+
+- 정적 타입이다. 타입 오류는 한 줄도 실행되기 전에 CompileError로 나온다. 변수 타입은 바꿀 수 없다.
+- truthy가 없다. `if x:`의 x는 반드시 bool이다. `if xs.len() > 0:`처럼 쓴다. 비트 연산은 `&&`, `||`, `~`이고 논리는 `and`, `or`, `not`이다.
+- 정수와 실수가 분리된다. `int + float`는 오류이고 왼쪽 피연산자 타입에 오른쪽이 맞춰진다. `float(i) + f`처럼 명시한다. 정수 값 실수는 `5.0`이 아니라 `5`로 출력된다.
+- 함수는 바깥 지역 변수를 읽지 못한다. 전역은 `global g int = 0`으로 선언한다.
+- 값을 돌려주는 호출을 문장으로 쓰면 오류다. 버리려면 `_ = f()`.
+- 값 반환 함수는 모든 경로가 return해야 한다. 안 그러면 `Missing return statement.`
+- 기본값 매개변수와 키워드 인자가 없다. 오버로딩을 쓴다.
+- 최상위에서 `return`을 못 쓴다.
+- 단일 문자 문자열 `'s'`는 정수 자리에서 코드포인트(115)로 바뀐다. 문자열 변수 타입이 의심스러우면 `var n int = ...`로 확인한다.
+- 문자열 인덱스와 `len()`은 바이트 기준이다. 문자 수는 `s.count()`.
+- 문자열 `<`, `>`는 없다. `a.less(b)`를 쓴다. `==`는 된다.
+- 문자열 `trim`은 자를 문자를 받는다 `s.trim(' ')`. `strip`은 없다.
+- Map 순회는 삽입 순서가 아니라 해시 순서다. 순서가 필요하면 키를 모아 정렬한다.
+- `xs[-1]` 음수 인덱스는 panic이다. 마지막은 `xs[xs.len() - 1]` 또는 `xs.last()`.
+- `xs[5]`가 범위 밖이면 panic, `m[k]`가 없는 키여도 panic이다. `m.get(k)`는 `?V`를 돌려준다.
+- 정수 오버플로는 랩어라운드한다. 0으로 나누면 panic.
+
+## 없는 것
+
+list comprehension, `lambda` 키워드 (람다는 `\|a, b\| a + b` 형태로 타입이 정해진 자리에서만), 제너레이터 표현식, 데코레이터, `with`, `try/except`, `raise`, 상속, `*args`, `**kwargs`, `xs.map`, `xs.filter`, `abs`, `max`, `min` 같은 내장 함수, f-string, 삼항 `?:`, 세미콜론, `i++`.
+
+json, regex, time 모듈은 지금 Cyber 표준에 없고 만드는 중이다 (docs/decisions/0010). 모듈이 들어오면 이 문서를 갱신한다. 그 전에는 str 메서드로 해결하거나 능력 함수를 쓴다.
+
+## 에러와 Option (예외 대신)
+
+- 값이 없을 수 있으면 `?T`. 풀 때는 `if x |v|:`, `x ?else 기본값`, `x.?` (없으면 panic).
+- 실패할 수 있으면 `!T`. 실패는 `return error.Name`. 부르는 쪽에서 `f()!` (실패를 호출자에게 넘김, 함수 반환 타입이 `!U`여야 함), `f() !else 기본값`, `f() !else |e|:` 블록 (블록은 `return`이나 `panic`으로 끝나야 함).
+- 여러 호출을 묶어 처리하려면 `try:` 블록 아래 `!`를 쓰고 `else |e|:`로 받는다.
+- `panic('msg')`는 잡을 수 없다. 프로그램 오류에만 쓰고 정상적인 실패는 `!T`로 돌려준다.
+- `int('abc')`는 오류 없이 0이다. 검증이 필요하면 `int.parse(s) !else ...`를 쓴다.
+
+## 값, 참조, 빌림
+
+- struct 대입은 복사다. Python 객체처럼 공유되지 않는다. `q := p; q.age = 9`는 p를 바꾸지 않는다.
+- 공유가 필요하면 `^`로 힙에 올린다. `p := ^P{name='a', age=3}`, 읽고 쓰기는 `p.age`, 값 전체는 `p.*`.
+- 함수가 인자를 수정하게 하려면 `fn inc(p &int)` 로 선언하고 `inc(&a)`로 부른다.
+- `Array[T]`는 복사가 금지된다. 넘기거나 옮길 때 `move a`. 이동 뒤 원본을 쓰면 오류다. 일반 목록은 `[]T`를 쓴다.
+- 클로저가 캡처하는 변수는 `^T`나 `&T`여야 한다. 단순한 코드에서는 클로저 대신 일반 함수를 쓴다.
+
+## 예제
+
+1. 선언, 보간, 제어 흐름
+
+```cy
+total := 0
+for 1..=10 |i|:
+    if i % 2 == 0:
+        total += i
+    else i == 7:
+        total += 100
+print('total=%{total}')
+```
+
+2. 함수와 타입 변환
+
+```cy
+fn mean(xs []int) -> float:
+    sum := 0
+    for xs |x|:
+        sum += x
+    return float(sum) / float(xs.len())
+
+print(mean([]int{1, 2, 3, 4}))
+```
+
+3. 목록 만들기와 정렬 (append는 값을 받는다)
+
+```cy
+names := []str{'bob', 'alice'}
+names += 'carol'
+names = names.append('dave')
+names.sort(|a, b| a.less(b))
+print(names.join(','))
+```
+
+4. Map과 정렬된 순회 (해시 순서에 기대지 않는다)
+
+```cy
+counts := Map[str, int]{}
+for 'the cat and the hat'.split(' ') |w|:
+    counts[w] = (counts.get(w) ?else 0) + 1
+
+keys := []str{}
+for counts |e|:
+    keys += e.key
+keys.sort(|a, b| a.less(b))
+for keys |k|:
+    print('%{k}: %{counts[k]}')
+```
+
+5. struct, 메서드, 복사 의미
+
+```cy
+type Account:
+    name str
+    balance int = 0
+
+fn (&&Account) deposit(n int):
+    self.balance += n
+
+fn (&Account) summary() -> str:
+    return '%{self.name}: %{self.balance}'
+
+a := Account{name='kim'}
+a.deposit(50)
+b := a
+b.deposit(1)
+print(a.summary())
+print(b.summary())
+```
+
+6. Option
+
+```cy
+fn first_even(xs []int) -> ?int:
+    for xs |x|:
+        if x % 2 == 0:
+            return x
+    return none
+
+if first_even([]int{1, 4, 5}) |v|:
+    print('found %{v}')
+print(first_even([]int{1, 3}) ?else -1)
+```
+
+7. 에러 반환과 처리
+
+```cy
+fn safe_div(a, b int) -> !int:
+    if b == 0:
+        return error.DivByZero
+    return a / b
+
+fn describe(a, b int) -> str:
+    q := safe_div(a, b) !else |e|:
+        return 'failed: %{e}'
+    return 'ok: %{q}'
+
+print(safe_div(9, 3) !else -1)
+print(describe(9, 3))
+print(describe(1, 0))
+```
+
+8. 에러 전파와 try 블록
+
+```cy
+fn parse_sum(a, b str) -> !int:
+    x := int.parse(a)!
+    y := int.parse(b)!
+    return x + y
+
+try:
+    n := parse_sum('4', '5')!
+    print(n)
+    m := parse_sum('4', 'x')!
+    print(m)
+else |e|:
+    print('bad input: %{e}')
+```
+
+9. enum과 switch (모든 case를 다루면 else 불필요)
+
+```cy
+type Level enum:
+    case low
+    case high
+
+fn label(l Level) -> str:
+    switch l:
+        case .low: return 'L'
+        case .high: return 'H'
+
+print(label(Level.high))
+```
+
+10. 참조 공유와 빌림
+
+```cy
+fn bump(n &int):
+    n.* += 1
+
+x := 1
+bump(&x)
+
+shared := ^x
+alias := shared
+alias.* = 10
+print('%{x} %{shared.*}')
+```
+
+## 자주 나는 오류와 고치는 법
+
+| 오류 첫 줄 | 원인 | 고침 |
+|---|---|---|
+| `Expected end of line or file. Got ...` | `let`, `function`, `class`, `print "x"`, 세미콜론 | Cyber 문법으로 다시 쓴다 |
+| `Expected `(`.` | `else if` | `else 조건:` |
+| `Expected :.` | `for i in xs:` | `for xs \|i\|:` |
+| `Unknown token: slash` | `//` 주석 | `--` |
+| `Expected right operand.` | `i++`, `10 // 3` | `i += 1`, `/` |
+| `Expected type `bool`, got `int`.` | truthy 조건 | 비교식으로 쓴다 |
+| `Expected `int`, found `float`.` | int와 float 혼합 | `float(i)` 로 맞춘다 |
+| `Variable `x` is already declared in the block.` | `:=` 반복 | `x = ...` |
+| `Undeclared variable `x`.` | 함수 안에서 바깥 지역 변수 | 매개변수나 `global` |
+| `Field `len` does not exist` | `xs.len` | `xs.len()` |
+| `Can not find the symbol ... for `?int`.` | Option을 풀지 않음 | `?else`, `if x \|v\|` |
+| `Expected assignment to a variable ...` | 값을 버리는 호출 | `_ = f()` 나 변수에 받는다 |
+| `Can not find the symbol `&&` for `bool`.` | 논리 AND | `and` |
+| `Cannot copy ..., type implements `NoCopy`.` | Array 복사 | `[]T` 쓰거나 `move` |
+| `Return statement is not allowed in the main block.` | 최상위 return | `fn main():` 로 감싼다 |
+| `Missing return statement.` | 일부 경로가 return 없음 | 마지막에 return 추가 |
+
+템플릿 안에서 난 오류는 사용자 코드가 아니라 `core.cy`의 줄을 가리킬 수 있다. 호출한 식을 직접 확인한다.
