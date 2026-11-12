@@ -18,6 +18,8 @@
 
 코드를 쓰기 전에 세 가지를 증명하고 한 가지를 판정한다. 산출물은 버려도 되는 스파이크와 남기는 평가 도구(eval/)다.
 
+스파이크는 페어로 만들고 버린다 (ADR 0012). 증명과 함께 학습이 목적이다: 에이전트 루프가 실제로 어떻게 도는지 사용자가 따라가며 확인한다. 스파이크의 순서는 페어 첫 단계에서 사용자가 정한다.
+
 - [ ] 스파이크 1, 호스트 경계: build.zig.zon으로 cyber를 받아 Zig에서 링크. 능력 2개(fs.read, proc.exec), 호스트 로더(c 거부), deny_raw_ptrs, 연료(fuel), 벽시계(wall-clock) interrupt, 스택과 메모리 상한, persist_main 반복 eval, validate, 능력 안에서 블록 후 반환
 - [ ] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인할 것" 여섯 항목)
 - [ ] 스파이크 2, 제공자: Zig std.http로 api.anthropic.com에 스트리밍 요청, SSE 해석, run 도구 한 번 왕복. TLS와 CA 묶음이 macOS와 tars 게스트에서 되는지. 안 되면 대안(curl 프로세스)을 정한다
@@ -116,7 +118,7 @@
 - [ ] MCP 클라이언트 (stdio)
 - [ ] 서브에이전트
 - [ ] 스킬, 훅, 사용자 슬래시 명령, /init
-- [ ] agentd와 tars 터미널 제어 채널, tars.* 능력 (tars-linux 설계가 먼저)
+- [ ] agentd와 tars 터미널 제어 채널, tars.* 능력: 자기 조작(명령 실행, 콘솔 입력). tars-linux 쪽 설계와 개선도 이 프로젝트의 일이다 (ADR 0013). 앞당길 자리는 능력 표 설계 때 정한다
 - [ ] MCP 서버 방향, MCP HTTP 전송
 - [ ] 다른 제공자 어댑터
 - [ ] cyber CLI의 spec --for-agents로 안내 문서 생성

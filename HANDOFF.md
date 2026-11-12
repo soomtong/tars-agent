@@ -28,7 +28,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 남은 작업
 
-정본은 docs/TODO.md다. 구현 착수는 사용자가 시작하라고 할 때다.
+정본은 docs/TODO.md다. 2026-11-12에 사용자가 페어 코딩으로 M0를 시작하기로 했다 (ADR 0012, CLAUDE.md). 범위에 tars 자기 조작과 tars-linux 개선이 더해졌다 (ADR 0013).
 
 - [ ] M0 스파이크 1: cyber 0.4.8을 build.zig.zon 의존으로 링크, 능력 2개, 호스트 로더, deny_raw_ptrs, 상한 넷, validate, persist_main, CL_AWAIT 승인 흐름(태그로 요청 찾기). 확인 목록 `docs/spec/08-cyber-implementation.md:43`
 - [ ] M0 스파이크 2: Zig std.http로 Anthropic Messages API 스트리밍. 스파이크 3: x86_64-linux-gnu 교차 빌드와 tars 게스트(QEMU) 실행
@@ -54,7 +54,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 ## 다음 에이전트에게
 
 1. 사용자 규칙(~/.claude/CLAUDE.md): 응답은 한국어, 문서와 주석에 ** 강조 금지, 커밋은 접두사 없이 첫 글자 대문자 80자 이내, 검색은 rg와 fd. 문서 코드 펜스는 ~~~. 결정은 docs/decisions에 파일로 남기고 MEMORY.md에 한 줄. 사용자가 용어 옆에 원어를 괄호로 붙이는 표기(연료(fuel), 벽시계(wall-clock))를 쓰기 시작했다.
-2. 설계 선택지를 계속 묻지 않고 추천안으로 정해 진행한다. 이전 확정을 바꾸면 눈에 띄게 보고한다. 근거가 약해진 주장은 스스로 바로잡아 알린다.
-3. cyber 쪽 작업은 요청서를 써서 사용자가 cyber 저장소에 전달하는 흐름이다. 보고가 오면 원문을 docs/requests에 두고, draft를 직접 빌드하고 테스트해(`zig build test`, 약 4분) 요청과 대조한 뒤 08, ADR, TODO에 반영한다. cyber 저장소와 tars-linux는 읽기만 한다.
+2. 초기 구간(M0와 아키텍처 뼈대)은 페어 코딩이다 (CLAUDE.md, ADR 0012). 단계마다 결정, 편집, 기능을 나눠 공유하고, 구조에 관한 결정은 사용자가 정한다. 사소한 선택만 추천안으로 간다. 이전 확정을 바꾸면 눈에 띄게 보고한다. 근거가 약해진 주장은 스스로 바로잡아 알린다.
+3. cyber 쪽 작업은 요청서를 써서 사용자가 cyber 저장소에 전달하는 흐름이다. 보고가 오면 원문을 docs/requests에 두고, draft를 직접 빌드하고 테스트해(`zig build test`, 약 4분) 요청과 대조한 뒤 08, ADR, TODO에 반영한다. cyber 저장소와 tars-linux는 사용자 지시 없이 직접 편집하지 않는다. tars-linux에 필요한 것도 같은 요청서 흐름을 기본으로 한다 (ADR 0013).
 4. cyber 릴리스가 나오면: 태그와 GitHub 릴리스 확인, 검토 커밋 이후 diff 확인, 릴리스 바이너리를 scratchpad에 받아 안내 예제 20개 재실행, deps.md 고정 버전과 08, 안내 기준 버전 갱신.
 5. 구현을 시작하라는 지시가 오면 docs/TODO.md의 M0부터. 먼저 cyber.h, host_await.c, cyber의 docs/decisions/project_embedding_agent_loop.md를 읽는다. Anthropic API 세부는 구현할 때 최신 문서로 다시 확인한다.
