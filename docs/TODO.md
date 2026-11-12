@@ -22,12 +22,12 @@
 
 - [ ] 스파이크 1, 호스트 경계: build.zig.zon으로 cyber를 받아 Zig에서 링크. 능력 2개(fs.read, proc.exec), 호스트 로더(c 거부), deny_raw_ptrs, 연료(fuel), 벽시계(wall-clock) interrupt, 스택과 메모리 상한, persist_main 반복 eval, validate, 능력 안에서 블록 후 반환
 - [ ] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인할 것" 여섯 항목)
-- [ ] 스파이크 2, 제공자: Zig std.http로 api.anthropic.com에 스트리밍 요청, SSE 해석, run 도구 한 번 왕복. TLS와 CA 묶음이 macOS와 tars 게스트에서 되는지. 안 되면 대안(curl 프로세스)을 정한다
+- [ ] 스파이크 2, 제공자: 전송 형식 둘(Anthropic Messages, OpenAI Chat Completions)을 DeepSeek으로 확인 (ADR 0014). Zig std.http로 스트리밍 요청, SSE 해석, run 도구 한 번 왕복. TLS와 CA 묶음이 macOS와 tars 게스트에서 되는지. 안 되면 대안(curl 프로세스)을 정한다
 - [ ] cyber C1 (json 모듈)이 끝난 뒤 평가를 돌린다. 스파이크 셋은 C1과 나란히 한다
 - [ ] 스파이크 3, 교차 빌드: x86_64-linux-gnu 산출물이 tars 게스트(QEMU)에서 실행되는지
 - [ ] Cyber 부분집합 안내 초안 (prompt/cyber-subset.md, 4,000 토큰 이하, 예제 10개)
 - [ ] eval/: 과제 20개와 채점기. 과제는 실제 쓰임에서 고른다 (파일 찾아 고치기, 여러 파일 집계, 명령 실행 후 출력 가공, 오류 처리, JSON 꺼내기 등). 과제마다 3회 실행
-- [ ] 평가 실행: CodeAct 대 direct(같은 능력을 JSON 도구로), 모델 셋(claude-opus-5-5, claude-sonnet-5-5, claude-haiku-5-5). 기록: 첫 시도 validate 통과율, 과제 성공률, 스텝 수, 토큰, 실패 유형
+- [ ] 평가 실행: CodeAct 대 direct(같은 능력을 JSON 도구로), 모델은 DeepSeek과 OpenRouter의 Qwen 계열 (ADR 0014, 목록은 평가 설계 때 정한다). 기록: 첫 시도 validate 통과율, 과제 성공률, 스텝 수, 토큰, 실패 유형
 - [ ] 판정 (ADR 0006): 기본 모델에서 첫 시도 validate 통과 70% 이상이고 과제 성공률이 direct보다 5%p 넘게 낮지 않으면 CodeAct를 기본으로 간다. 못 미치면 안내를 고쳐 한 번 더 재고, 그래도 못 미치면 direct를 기본으로 하고 CodeAct는 선택 모드로 둔다
 
 게이트: 평가 표와 판정을 docs/decisions에 기록하고 사용자에게 보고한다.
