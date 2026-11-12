@@ -19,15 +19,16 @@
 - 기본 로더는 core, meta, math, cy, c, io, test 일곱 모듈을 안다. os, libc, cli는 CLI 전용이다. cl_vm_set_loader로 호스트 로더를 끼우면 이 표를 줄일 수 있다.
 - builtin 모듈(core, meta, cy, c, math, io, test)의 intrinsic(@memcpy, @bitCast, @retain 등)과 #[unsafe], #[consteval], #[reserve] 속성은 스크립트에서 쓸 수 없다 (0.4.7). 런타임 내부를 드러내는 길이 컴파일 단계에서 닫혔다. 호스트 모듈과 os, libc, cli는 스크립트와 같은 규칙을 받는다. @로 시작하는 함수 이름은 정해진 hook만 선언할 수 있다.
 - fiber (0.4.7): 자기 스택을 가진 stackful 코루틴이고 같은 스레드의 힙을 공유한다. 전환은 VM 명령이라 C 스택이 끼지 않는다. 호스트 함수를 건너 suspend하면 panic(Cannot suspend across a host call.)이고, 루트 맥락의 suspend는 no-op이며, 임베딩용 CL_YIELD와 CL_AWAIT는 없다. Future.await()는 fiber 안에서도 양보하지 않고 spin한다. 그래서 능력 함수 안에서 스크립트를 멈췄다 재개하는 수단은 0.4.7에는 없다. 아래 CL_AWAIT가 그 수단이다.
-- CL_AWAIT (cyber master 8de18b05~de98510f, 0.4.8 예정, 2026-11-12 검토. cyber의 보고는 docs/requests/cyber-cl-await-report.md): main 스레드의 Future.await()가 미완료 호스트 Future를 만나면 eval이 CL_AWAIT로 돌아온다. 스택, 지역 변수, persist_main 상태, 남은 연료, 현재 fiber가 그대로 남는다. 호출 깊이, generator 본문, fiber 안 모두 된다. API:
-  - cl_future_new(t, future_t): 호스트 함수가 돌려줄 미완료 Future[T]. future_t는 cl_find_type(vm, "Future[!void]")로 얻는다. 호스트 함수 선언이 그 타입을 이름 지은 뒤에만 찾히고 cl_vm_reset 뒤에는 무효라 호출마다 찾는다. 반환 슬롯에 (CLValue)(uintptr_t)f로 쓴다.
+- CL_AWAIT (cyber master 8de18b05~3adb833b와 커밋 전의 태그 API, 0.4.8 예정, 2026-11-12 검토. cyber의 보고는 docs/requests/cyber-cl-await-report.md): main 스레드의 Future.await()가 미완료 호스트 Future를 만나면 eval이 CL_AWAIT로 돌아온다. 스택, 지역 변수, persist_main 상태, 남은 연료, 현재 fiber가 그대로 남는다. 호출 깊이, generator 본문, fiber 안 모두 된다. API:
+  - cl_future_new(t, future_t, tag): 호스트 함수가 돌려줄 미완료 Future[T]. tag는 호스트의 요청 번호이고 cl_future_tag(f)로 다시 읽는다. 호스트가 만들지 않은 Future(spawn, 스크립트의 FutureResolver)의 태그는 0이라 요청 번호는 1부터 쓴다. future_t는 cl_find_type(vm, "Future[!void]")로 얻는다. 호스트 함수 선언이 그 타입을 이름 지은 뒤에만 찾히고 cl_vm_reset 뒤에는 무효라 호출마다 찾는다. 반환 슬롯에 (CLValue)(uintptr_t)f로 쓴다.
   - cl_future_complete(vm, f, &value): 값으로 완료. Future[!U]면 U를 넘기고 void면 NULL. 값은 복사되고 Future가 소유한다. cl_future_complete_error(vm, f, cl_error(vm, "Denied")): 오류 값으로 완료.
   - cl_vm_pending_future(vm): 기다리는 Future(빌린 포인터). cl_vm_pending_futures(vm, out, cap): 기다리는 Future 목록과 개수. 보통의 await는 1개, 스크립트의 Future.wait_any(futures [&]Future[T]) -> int로 멈췄으면 목록 전체다. 호스트는 아무것이나, 여러 개를 완료시키고 resume한다. cl_vm_resume(vm, &res): 이어 실행, 결과는 cl_vm_evalx와 같은 규칙. 완료하지 않고 resume하면 다시 CL_AWAIT.
   - cl_vm_abandon(vm): 멈춘 eval을 버린다. 결과는 interrupt와 같다(지역 변수는 사라지고 선언은 남는다). cl_vm_reset, cl_vm_deinit도 먼저 버린다.
   - 멈춘 동안의 cl_vm_eval*, cl_vm_validate, cl_vm_compile*은 CL_ERROR_SUSPENDED.
   - 규칙: 모든 호출과 완료는 eval을 돌리는 스레드에서 한다. 연료는 다시 채워지지 않는다(한 eval 전체를 센다). 멈춘 동안 들어온 interrupt 요청은 resume이 지운다(034fae2c). 그래서 승인 대기 중에 벽시계(wall-clock) 타이머가 울려도 스크립트를 끊지 않는다. 타이머는 resume 직전에 다시 시작하고, 멈춘 eval을 끊는 길은 cl_vm_abandon 하나다. cl_vm_interrupt 말고는 다른 스레드에서 부를 수 있는 함수가 없다. spawn 스레드 안의 await와 호스트 함수가 부른 스크립트 안의 await는 panic이다. 보통의 await는 Future 하나를, Future.wait_any는 목록 전체를 기다린다(위 cl_vm_pending_futures).
-  - 스크립트가 직접 만든 미완료 Future(FutureResolver)도 CL_AWAIT가 된다. pending future가 우리 능력이 만든 것이 아니면 abandon한다.
-  - 취소 알림은 없다. 스크립트가 버린 미완료 Future는 참조가 없어지면 해제되고 그 주소는 새 Future에 다시 쓰일 수 있다. 그래서 tars-agent는 능력이 만든 Future를 cl_thread_retain으로 잡아 두고 완료하거나 eval이 끝날 때 놓는다. 요청 표의 포인터 대조가 주소 재사용에 속지 않는다.
+  - 스크립트가 직접 만든 미완료 Future(FutureResolver)도 CL_AWAIT가 된다. pending future의 태그가 0이면(우리 능력이 만든 것이 아니면) abandon한다.
+  - 요청은 태그로 찾고 포인터로 찾지 않는다. 스크립트가 await하지 않고 버린 미완료 Future는 바로 해제되고 그 주소가 다음 cl_future_new에 다시 쓰인다(cyber 재현: 버린 Future 8개가 같은 주소). 완료시킬 Future는 cl_vm_pending_future(s)가 주므로 호스트는 포인터를 보관하지 않는다. tars-agent v1은 eval이 지금 기다리는 Future만 완료시키므로 retain이 필요 없다. 기다리지 않는 Future를 미리 완료시키려면 retain하고, 완료 뒤나 CL_SUCCESS 뒤에 놓고, panic, interrupt, abandon, reset 뒤에는 놓지 않고 잊는다(그 eval의 힙이 통째로 해제됐다).
+  - 취소 알림은 없다. 스크립트가 버린 요청은 호스트가 모른 채 남는다. 태그로 찾는 호스트는 eval이 끝날 때 요청 표를 비운다.
   - 피연산자는 왼쪽에서 오른쪽으로 평가된다(18dde37c, F-98 수정). a.await() + b.await()에서 두 번째 요청은 첫 await 뒤에 나간다.
   - 래퍼 함수는 호스트 로더가 돌려주는 모듈 소스에 #[bind] 선언과 함께 둔다 (cyber examples/libcyber/host_await.c).
 - spawn 스레드의 await는 main과 같이 블록한다 (2026-11-08 수정). 예전의 @panic(TODO) 경로는 없다. 연료는 스레드마다 따로 센다.
@@ -62,7 +63,7 @@
 | C3 | Attributes(#[bind]) 문서 | 능력 바인딩 생성기를 쓰는 데 참고할 문서가 없다 | 0.4.5에서 됐다. docs/docs.md의 Attributes 절(속성 표)과 #[bind] hooks 절 |
 | 수시 | 프로세스를 죽이는 경로 수정 | 세션의 crash/ 디렉터리가 재현 사례를 준다 | cyber의 발견 이슈 기록 절차를 따른다 |
 | 조건부 | 문자열, Array, Map 보강 | 평가의 실패 유형에서 "있을 줄 알고 부른 메서드"가 반복되면 | 모델의 기대에 맞추는 쪽이 안내로 가르치는 것보다 싸다 |
-| C3 | 루트 맥락 중단과 재개: CL_AWAIT, cl_vm_resume, 버리기 API, 호스트 Future C API (코루틴 로드맵 단계 1) | 승인 대기가 VM 호출 스택 안에서 UI를 돌리고, 막힌 승인을 interrupt로 끊지 못한다 (ADR 0011) | 2026-11-12 요청, 같은 날 master 8de18b05~de98510f에 구현(wait_any 포함). 검토 통과, 0.4.8 릴리스 대기. 요청 원문 docs/requests/cyber-cl-await.md |
+| C3 | 루트 맥락 중단과 재개: CL_AWAIT, cl_vm_resume, 버리기 API, 호스트 Future C API (코루틴 로드맵 단계 1) | 승인 대기가 VM 호출 스택 안에서 UI를 돌리고, 막힌 승인을 interrupt로 끊지 못한다 (ADR 0011) | 2026-11-12 요청, 같은 날 master 8de18b05~3adb833b와 태그 API(커밋 전)로 구현(wait_any 포함). 검토 통과, 0.4.8 릴리스 대기. 요청 원문 docs/requests/cyber-cl-await.md |
 | 조건부 | fiber 안 Future.await의 양보 (로드맵 단계 3) | agentd에서 한 스레드에 여러 세션을 돌릴 때 | |
 | 조건부 | spec --for-agents | 다른 프로젝트가 같은 안내 문서를 쓸 때 | |
 

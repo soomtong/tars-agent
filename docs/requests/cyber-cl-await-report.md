@@ -3,7 +3,7 @@
 soomtong/cyber에서 2026-11-12에 받은 보고 원문이다. 요청은 docs/requests/cyber-cl-await.md, 반영은 docs/spec/08-cyber-implementation.md와 ADR 0011.
 
 요청서 `cyber-cl-await-request.md`에 대한 답이다. 2026-11-12 구현, soomtong/cyber의 master 로컬 커밋 `8de18b05`부터
-`de98510f`까지(push 전). 릴리스는 0.4.8 예정이고 tars-agent의 피드백을 확인한 뒤에 낸다. 그때까지는 master를 빌드해서 쓴다.
+`3adb833b`까지. 릴리스는 0.4.8 예정이고 tars-agent의 피드백을 확인한 뒤에 낸다. 그때까지는 master를 빌드해서 쓴다.
 
 원본 기록은 cyber 저장소의 `docs/decisions/project_coroutines.md` "단계 1 구현 (2026-11-12)" 절, 계약은 `src/include/cyber.h`의
 "Suspended evals and host futures" 절, 동작하는 호스트는 `examples/libcyber/host_await.c`다.
@@ -13,7 +13,8 @@ soomtong/cyber에서 2026-11-12에 받은 보고 원문이다. 요청은 docs/re
 ~~~c
 typedef struct CLFuture CLFuture;   // FutureValue[T] 힙 객체. Future[T]가 가리키는 공유 상태
 
-CLFuture*    cl_future_new(CLThread* t, CLType* future_t);
+CLFuture*    cl_future_new(CLThread* t, CLType* future_t, uint64_t tag);
+uint64_t     cl_future_tag(CLFuture* future);
 bool         cl_future_complete(CLVM* vm, CLFuture* future, const void* value);
 bool         cl_future_complete_error(CLVM* vm, CLFuture* future, int64_t err);
 CLFuture*    cl_vm_pending_future(CLVM* vm);
@@ -26,7 +27,7 @@ CL_ERROR_SUSPENDED
 ~~~
 
 요청서의 예시 이름을 그대로 썼고 `cl_future_new` · `cl_future_complete_error` · `cl_vm_pending_futures` · `CL_ERROR_SUSPENDED`를
-더했다. 스크립트 쪽에는 `Future.wait_any`가 새로 생겼다(아래 "여러 Future를 동시에 기다리기").
+더했다. `cl_future_new`의 `tag` 인자와 `cl_future_tag`는 tars-agent 피드백 뒤에 넣었다. 스크립트 쪽에는 `Future.wait_any`가 새로 생겼다(아래 "여러 Future를 동시에 기다리기").
 
 ### cl_future_new
 
@@ -39,12 +40,23 @@ CL_ERROR_SUSPENDED
 ~~~c
 CLValue* ret = cl_thread_ret(t, sizeof(CLValue));   // 매개변수를 읽기 전에 먼저
 /* 매개변수 읽기 */
-CLFuture* f = cl_future_new(t, future_t);
+CLFuture* f = cl_future_new(t, future_t, request_id);
 *ret = (CLValue)(uintptr_t)f;
 ~~~
 
-- 소유권: 반환 슬롯이 참조를 소유한다. 호스트가 포인터를 비교 이상으로 쓰려면 `cl_thread_retain(t, (CLValue)(uintptr_t)f)`로
-  잡고 나중에 `cl_thread_release`한다. 잡지 않은 포인터는 스크립트가 Future를 버리면 무효다.
+- 소유권: 반환 슬롯이 참조를 소유한다.
+- `tag`는 호스트의 요청 번호다. `cl_future_tag(f)`로 다시 읽는다. 멈춘 eval이 기다리는 Future가 어느 요청인지는 태그로 찾는다.
+  포인터로 찾지 않는다: 스크립트가 await하지 않고 버린 미완료 Future는 바로 해제되고 그 주소가 다음 `cl_future_new`에 다시
+  쓰인다(재현: `for 0..8 |i|: _ = host.ask(i)`에서 Future 8개가 전부 같은 주소였다).
+- 호스트가 만들지 않은 Future(`spawn`의 것, 스크립트의 `FutureResolver`)의 태그는 0이다. 요청 번호로 0을 쓰지 않는다.
+- 호스트는 포인터를 보관하지 않아도 된다. 완료시킬 Future는 `cl_vm_pending_future(s)`가 주고, 그것들은 멈춘 eval이 쥐고 있어
+  살아 있다. `host_await.c`는 포인터를 하나도 보관하지 않는다.
+- 포인터를 보관해야 하는 경우는 하나다: eval이 지금 기다리지 않는 Future를 완료시키려 할 때(예: 요청 셋 중 셋째가 먼저
+  끝났는데 스크립트는 첫째를 await 중). 그때만 아래 규칙을 따른다.
+  - 만들 때 `cl_thread_retain(t, (CLValue)(uintptr_t)f)`로 잡는다.
+  - 놓는 때(`cl_thread_release`): 그 Future를 완료시킨 뒤, 또는 eval이 `CL_SUCCESS`로 끝났을 때.
+  - 놓지 않는 때: eval이 `CL_ERROR_PANIC` · `CL_ERROR_INTERRUPT`로 끝났거나 `cl_vm_abandon` · `cl_vm_reset`을 부른 뒤. 그 eval의
+    힙이 참조 계수와 무관하게 통째로 해제됐으므로 포인터를 잊기만 한다. 놓으면 해제된 메모리를 건드린다.
 - `future_t`가 `Future[T]`가 아니거나 할당이 실패하면 `NULL`.
 
 ### cl_future_complete / cl_future_complete_error
@@ -61,7 +73,7 @@ CLFuture* f = cl_future_new(t, future_t);
 
 - 멈춘 eval이 기다리는 Future. 멈춘 eval이 없으면 `NULL`.
 - 빌린 포인터다. `cl_vm_resume` 또는 `cl_vm_abandon`까지 유효하다.
-- 호스트는 `cl_future_new`가 돌려준 포인터와 비교해 어느 요청인지 찾는다.
+- 호스트는 `cl_future_tag`로 어느 요청인지 찾는다.
 
 ### 여러 Future를 동시에 기다리기: Future.wait_any와 cl_vm_pending_futures
 
@@ -124,7 +136,7 @@ print(futs[i].await())                 -- 끝난 Future의 await는 멈추지 �
 ## 3. tars-agent가 알아야 할 동작
 
 - 스크립트가 만든 미완료 Future(`FutureResolver.new(T)`를 완료 전에 await)도 `CL_AWAIT`가 된다. 호스트 Future와 구조가 같아
-  VM이 구분하지 않는다. 호스트는 `cl_vm_pending_future`가 자기가 만든 Future가 아니면 `cl_vm_abandon`한다.
+  VM이 구분하지 않는다. 호스트는 `cl_vm_pending_future`의 태그가 0이면(자기가 만든 Future가 아니면) `cl_vm_abandon`한다.
 - 켜는 옵션은 없다. 미완료 Future의 await는 항상 `CL_AWAIT`다(이전에는 `panic: Local future will never complete.`).
 - 호스트 함수가 스크립트를 다시 부른 안쪽의 await는 `panic: Cannot await across a host call.`이다. 공개 C API에는 호스트가
   스크립트 함수를 부르는 수단이 없어 tars-agent의 능력 함수에서는 닿지 않는다.
@@ -139,9 +151,8 @@ print(futs[i].await())                 -- 끝난 Future의 await는 멈추지 �
 ## 4. 남은 제약과 알려진 문제
 
 - `wait_any`의 목록은 같은 `T`의 Future만 받는다. 결과 타입이 다른 도구를 한 목록에 넣으려면 공통 타입(`str` 등)으로 맞춘다.
-- 취소는 없다. 스크립트가 끝나지 않은 Future를 버려도 호스트에 알리지 않는다. 그 Future는 참조가 없어지면 해제되므로,
-  호스트가 `cl_vm_pending_future(s)`로 지금 받은 포인터가 아닌 옛 포인터를 완료시키려면 만들 때 `cl_thread_retain`으로 잡아 둔
-  것이어야 한다. 잡지 않은 옛 포인터는 쓰지 않는다.
+- 취소는 없다. 스크립트가 끝나지 않은 Future를 버려도 호스트에 알리지 않는다. 호스트가 잡아 둔 Future는 살아 있으므로
+  완료시켜도 되고(값은 아무도 읽지 않는다) eval이 끝날 때 놓기만 해도 된다. 태그만 쓰는 호스트는 버려진 요청을 그냥 잊는다.
 - fiber 안의 await는 eval 전체를 멈춘다. 다른 fiber에 양보하지 않는다(단계 3).
 - `spawn`한 스레드 안의 호스트 Future await는 panic이다.
 - 임베딩용 `CL_YIELD`(루트 맥락의 `suspend`)와 AOT(C 백엔드) 지원은 없다.
@@ -150,10 +161,11 @@ print(futs[i].await())                 -- 끝난 Future의 await는 멈추지 �
 
 ## 5. 검증
 
-- lib 테스트 `src/lib_test/await.zig` 11개(누수 검사 할당자, `wait_any` 포함). 요청서의 검증 목록 전체를 다룬다: 기본 · 연속 await, 깊은 호출 ·
+- lib 테스트 `src/lib_test/await.zig` 13개(누수 검사 할당자, `wait_any` · retain 규칙 · 태그 포함). 요청서의 검증 목록 전체를 다룬다: 기본 · 연속 await, 깊은 호출 ·
   generator 본문 · fiber, 값 · 오류 완료와 `!else`, 완료된 Future의 빠른 경로, await하지 않은 · 미완료 Future,
   `persist_main` 지역 이월, 버리기 뒤 재사용 · 멈춘 동안의 거부, resume 뒤 연료 · interrupt · 메모리 상한 · panic, spawn 스레드.
-- 예제 `examples/libcyber/host_await.c`: `fs.write`를 승인 · 거부 · 취소하는 호스트. `zig build lib-standalone-test`가 실행한다.
+- 예제 `examples/libcyber/host_await.c`: `fs.write`를 승인 · 거부 · 취소하는 호스트. 태그로 요청을 찾고 포인터를 보관하지 않는다.
+  버린 요청 뒤의 요청을 바르게 찾는 사례가 들어 있다. `zig build lib-standalone-test`가 실행한다.
 - 저장소의 13단계 검증(Debug · ReleaseFast · ReleaseSafe · notrace, lib, standalone C, wasm32-wasi) 전부 rc=0.
 
 ## 6. 커밋과 릴리스
@@ -163,4 +175,5 @@ print(futs[i].await())                 -- 끝난 Future의 await는 멈추지 �
 - `034fae2c` Clear an interrupt request from the time of the suspension on resume
 - `18dde37c` Evaluate operands left to right, panic on an error returned by main
 - `de98510f` Add Future.wait_any and cl_vm_pending_futures
+- `3adb833b` Make a host retain the futures whose pointers it keeps
 - 릴리스 버전: 0.4.8 예정. 아직 태그하지 않았다.

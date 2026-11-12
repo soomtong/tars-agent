@@ -1,6 +1,6 @@
 # 0011 승인 대기는 VM 밖에서 한다 (cyber CL_AWAIT)
 
-상태: 확정 (2026-11-12). 0009의 "능력 안에서 스크립트를 멈추고 재개하기" 행을 바꾼다. cyber 쪽 구현을 요청했다 (docs/requests/cyber-cl-await.md). 2026-11-12 cyber master 8de18b05~de98510f에 구현됐고(0.4.8 예정, 보고 docs/requests/cyber-cl-await-report.md) 검토를 통과했다(전체 테스트 82단계 통과, 요청 13개 항목 충족). 최종 API는 spec/08. cyber 릴리스가 나와 고정 버전을 올리기 전까지는 아래 "도입 전까지"를 따른다.
+상태: 확정 (2026-11-12). 0009의 "능력 안에서 스크립트를 멈추고 재개하기" 행을 바꾼다. cyber 쪽 구현을 요청했다 (docs/requests/cyber-cl-await.md). 2026-11-12 cyber master 8de18b05~3adb833b와 커밋 전의 태그 API로 구현됐고(0.4.8 예정, 보고 docs/requests/cyber-cl-await-report.md) 검토를 통과했다(전체 테스트 82단계 통과, 요청 13개 항목 충족). 최종 API는 spec/08. cyber 릴리스가 나와 고정 버전을 올리기 전까지는 아래 "도입 전까지"를 따른다.
 
 ## 결정
 
@@ -72,4 +72,4 @@ fn write(path str, text str) -> !void:
 - cyber의 보고가 오면 최종 API를 08에 옮기고, 이 문서의 상태 줄에 들어간 cyber 버전을 적는다.
 - 같은 경로는 오래 막히는 다른 능력(proc 대기, net.fetch)에도 쓸 수 있다. v1에서는 승인만 옮기고, 나머지는 취소 플래그 확인으로 둔다.
 - cyber는 Future.wait_any와 cl_vm_pending_futures도 넣었다(de98510f). 능력의 비동기 판(Future를 돌려주는 것)을 모델에게 보이면 스크립트가 여러 능력을 동시에 돌릴 수 있다. v1은 보이지 않는다: 안내는 동기 래퍼만 가르치고, 동시 실행은 0009의 spawn 행이 말한 "호스트 쪽 병렬 능력" 자리에서 평가 결과를 보고 판단한다.
-- 능력이 만든 Future는 retain해 두고 완료하거나 eval이 끝날 때 놓는다. 스크립트가 버린 Future의 주소가 재사용되어 요청 표 대조가 틀리는 일을 막는다.
+- 능력은 Future를 만들 때 요청 번호(1부터)를 태그로 준다. 루프는 cl_future_tag로 요청을 찾고 포인터를 보관하지 않는다. 스크립트가 버린 Future의 주소가 재사용되어 포인터 대조가 틀리는 일이 없다. 태그가 0이면 우리 Future가 아니므로 abandon한다. v1은 eval이 지금 기다리는 Future만 완료시키므로 retain을 쓰지 않는다.
