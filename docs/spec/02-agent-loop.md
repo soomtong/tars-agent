@@ -27,7 +27,7 @@
    - refusal: 실행하지 않는다. 사용자에게 거절 범주를 보이고 턴을 끝낸다.
    - pause_turn: 그대로 이어서 요청한다.
 3. 검증: cl_vm_validate로 세션 VM 위에서 컴파일만 한다. 실패하면 컴파일 오류를 is_error 결과로 돌려주고 실행하지 않는다. 오류는 cl_vm_compile_error로 구조화해 받는다(종류, 메시지, 줄, 열, 표시 길이. 줄과 열은 0부터라 1을 더해 보인다). 모델에게는 요약 문자열(cl_vm_compile_error_summary, 이스케이프 코드 없음)을 주고 세션 기록에는 구조화한 필드를 남긴다. 컴파일러는 첫 오류에서 멈추므로 한 번에 오류 하나다.
-4. 실행: 연료, 벽시계 타이머, 스택 상한, 메모리 상한을 걸고 cl_vm_evalx로 실행한다. CL_AWAIT로 돌아오면 타이머를 멈추고 승인을 받아 Future를 완료한 뒤 cl_vm_resume으로 이어 간다. 거부는 error.Denied로 완료, 취소는 resume하지 않고 cl_vm_abandon으로 버린다. 멈춘 동안에는 cl_vm_interrupt를 부르지 않는다(interrupt 요청이 resume 뒤로 이어진다). 기다리는 Future가 능력이 만든 것이 아니면 버리고 interrupted로 돌려준다 (ADR 0011). persist_main으로 함수, 타입, use 선언, main 지역 변수가 다음 eval로 이어진다.
+4. 실행: 연료, 벽시계 타이머, 스택 상한, 메모리 상한을 걸고 cl_vm_evalx로 실행한다. CL_AWAIT로 돌아오면 타이머를 멈추고 승인을 받아 Future를 완료한 뒤 cl_vm_resume으로 이어 간다. 거부는 error.Denied로 완료, 취소는 resume하지 않고 cl_vm_abandon으로 버린다. 멈춘 동안 들어온 interrupt 요청은 resume이 지우므로 타이머가 울려도 무해하다. 타이머는 resume 직전에 다시 시작한다. 기다리는 Future가 능력이 만든 것이 아니면 버리고 interrupted로 돌려준다 (ADR 0011). persist_main으로 함수, 타입, use 선언, main 지역 변수가 다음 eval로 이어진다.
 5. 결과 조립: printer 콜백으로 모은 출력, 마지막 표현식 값(res, res_t, cl_value_desc), 오류. 상한을 넘으면 03의 넘침 규칙을 따른다.
 6. tool_result를 히스토리에 덧붙이고 1로 돌아간다.
 

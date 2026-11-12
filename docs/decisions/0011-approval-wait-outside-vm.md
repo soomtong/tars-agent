@@ -1,6 +1,6 @@
 # 0011 승인 대기는 VM 밖에서 한다 (cyber CL_AWAIT)
 
-상태: 확정 (2026-11-12). 0009의 "능력 안에서 스크립트를 멈추고 재개하기" 행을 바꾼다. cyber 쪽 구현을 요청했다 (docs/requests/cyber-cl-await.md). 2026-11-12 cyber master 8de18b05에 구현됐고 검토를 통과했다(전체 테스트 82단계 통과, 요청 13개 항목 충족). 최종 API는 spec/08. cyber 릴리스가 나와 고정 버전을 올리기 전까지는 아래 "도입 전까지"를 따른다.
+상태: 확정 (2026-11-12). 0009의 "능력 안에서 스크립트를 멈추고 재개하기" 행을 바꾼다. cyber 쪽 구현을 요청했다 (docs/requests/cyber-cl-await.md). 2026-11-12 cyber master 8de18b05와 034fae2c에 구현됐고(0.4.8 예정, 보고 docs/requests/cyber-cl-await-report.md) 검토를 통과했다(전체 테스트 82단계 통과, 요청 13개 항목 충족). 최종 API는 spec/08. cyber 릴리스가 나와 고정 버전을 올리기 전까지는 아래 "도입 전까지"를 따른다.
 
 ## 결정
 
@@ -62,7 +62,7 @@ fn write(path str, text str) -> !void:
 - Future 완료는 eval을 돌리는 스레드에서만 한다.
 - 완료하지 않고 resume하면 다시 CL_AWAIT다.
 - 스크립트가 만든 미완료 Future도 CL_AWAIT가 된다. 우리 Future가 아니면 abandon한다.
-- interrupt 요청은 resume 뒤로 이어진다. 멈춘 동안에는 cl_vm_interrupt를 부르지 않고, 취소는 abandon으로 한다.
+- 멈춘 동안 들어온 interrupt 요청은 resume이 지운다(034fae2c. 처음 구현은 이어 갔다). 멈춘 eval을 끊는 길은 abandon 하나다.
 
 ## 결과
 
