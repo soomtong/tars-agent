@@ -17,7 +17,7 @@
 - 상한 넷: 연료(fuel, cl_vm_set_fuel), 벽시계(wall-clock, 타이머 스레드가 cl_vm_interrupt), 스택(cl_vm_set_stack_limit, 기본 8 MiB), 메모리(cl_vm_set_memory_limit, 기본 256 MiB). 넘으면 interrupt 또는 panic 결과가 되고 VM은 계속 쓴다.
 - 표준 모듈도 신뢰하지 않는 스크립트가 부른다. 정규식은 역추적 없는 엔진이어야 하고, 모듈의 할당과 루프는 메모리 상한과 연료 아래에 있어야 한다 (ADR 0010).
 - spawn은 v1에서 막는다. 스크립트에 spawn이 있으면 validate 뒤 실행 전에 거부한다 (구현 방법은 M0에서 확인: 로더 또는 소스 검사).
-- fiber(0.4.7)는 막지 않는다. 같은 스레드 안의 코루틴이라 연료, 스택, 메모리 상한이 그대로 걸리고, 능력 호출을 건너 멈출 수 없어(Cannot suspend across a host call.) 승인 흐름을 비켜 가지 못한다.
+- fiber(0.4.7)는 막지 않는다. 같은 스레드 안의 코루틴이라 연료, 스택, 메모리 상한이 그대로 걸리고, 능력 호출을 건너 멈출 수 없어(Cannot suspend across a host call.) 승인 흐름을 비켜 가지 못한다. 0.4.9부터 fiber 안의 await는 그 fiber만 멈추지만, 작업은 승인 뒤 호스트가 하므로 기다리지 않고 버린 요청은 아무 일도 하지 않는다.
 - 컴파일러의 abort 경로는 fork 버그로 다룬다 (01).
 
 ## 2층: 정책 게이트 (ADR 0007)

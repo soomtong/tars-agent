@@ -58,7 +58,7 @@ cyber 0.4.8이 코드를 쓰기 전에 나왔으므로 임시 방식은 쓰지 �
 
 ## cyber가 고른 동작 (요청의 열린 항목)
 
-- fiber 안의 await도 eval을 탈출하고, 재개는 그 fiber 안에서 이어진다.
+- fiber 안의 await도 eval을 탈출하고, 재개는 그 fiber 안에서 이어진다. (0.4.8까지. 0.4.9에서 바뀌었다: 그 fiber만 멈추고 eval은 루트가 기다릴 때 나간다. 루트가 기다리지 않으면 요청은 완료되지 않은 채 남고, 여러 fiber가 기다리면 요청이 여럿 동시에 걸린다. spec/08의 0.4.9 항목)
 - spawn 스레드 안의 호스트 Future await는 panic이다.
 - Future 완료는 eval을 돌리는 스레드에서만 한다.
 - 완료하지 않고 resume하면 다시 CL_AWAIT다.

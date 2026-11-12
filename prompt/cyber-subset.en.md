@@ -76,7 +76,7 @@ Semantics:
 - `xs[5]` out of range panics, and `m[k]` on a missing key panics. `m.get(k)` returns `?V`.
 - Integer overflow wraps around. Division by zero panics.
 - A number can contain the digit separator `_`: `1_000_000`, `0xff_ff`.
-- `fiber` and `suspend` are reserved words. Do not use them as variable or function names.
+- `fiber`, `suspend` and `scope` are reserved words. Do not use them as variable or function names.
 
 ## Missing features
 
