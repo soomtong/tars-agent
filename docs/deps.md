@@ -7,7 +7,7 @@
 | 의존 | 버전 | 라이선스 | 이유 | 조건 |
 |---|---|---|---|---|
 | Zig 표준 라이브러리 | 0.17.1 | MIT | HTTP, TLS, JSON, 프로세스, 파일 | |
-| soomtong/cyber (libcyber) | 0.4.7 이후, 태그와 해시 고정 (0.4.7 → a5ad6c23) | MIT | 스크립트 VM과 표준 모듈(json, regex, time은 만들 것) | 반드시 -Dffi=false. FFI를 켜면 tcc(LGPL)가 링크된다 |
+| soomtong/cyber (libcyber) | 0.4.8 이후, 태그와 해시 고정 (0.4.8 → 2dfc061d, build-815) | MIT | 스크립트 VM과 표준 모듈(json, regex, time은 만들 것) | 반드시 -Dffi=false. FFI를 켜면 tcc(LGPL)가 링크된다 |
 | mimalloc (cyber가 포함) | cyber가 고정 | MIT | VM 할당자 | M0에서 FFI 끈 라이브러리 빌드에 실제로 들어가는지 확인 |
 | glibc (동적, 대상 시스템의 것) | Debian | LGPL | 대상 환경의 바닥 라이브러리 | 동적 링크만. 정적 링크하지 않는다 |
 

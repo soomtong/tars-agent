@@ -2,7 +2,7 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the tables below first.
 
-The reference version is Cyber 0.4.7. Old Cyber syntax in your training data (0.3: `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`) is all wrong. The forms `#[generator] fn f()` and the symbol literal `@name` from 0.4.6 and earlier are also wrong. Write `generator fn f()` and `symbol.name`.
+The reference version is Cyber 0.4.8. Old Cyber syntax in your training data (0.3: `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`) is all wrong. The forms `#[generator] fn f()` and the symbol literal `@name` from 0.4.6 and earlier are also wrong. Write `generator fn f()` and `symbol.name`.
 
 Cyber is still gaining features. This document matches one point-in-time build and can fall behind the latest build. Before you use or edit this document, check the following.
 
@@ -69,9 +69,10 @@ Semantics:
 - A one-character string `'s'` becomes a code point (115) where an integer is expected. If you doubt a variable's type, check it with `var n int = ...`.
 - String indexing and `len()` count bytes. Use `s.count()` for the number of characters.
 - Strings have no `<` or `>`. Use `a.less(b)`. `==` works.
-- String `trim` takes the characters to cut: `s.trim(' ')`. There is no `strip`.
+- String `trim` takes the characters to cut: `s.trim(' ')`. For several, `s.trim({' ', '\n'})`. There is no `strip`.
 - Map iteration follows hash order, not insertion order. If you need an order, collect the keys and sort them.
 - A negative index `xs[-1]` panics. Use `xs[xs.len() - 1]` or `xs.last()` for the last element.
+- A slice can omit its start or end: `s[..3]`, `s[2..]`. Negative bounds are not allowed. Python's `s[:-1]` is `s[..s.len() - 1]` (`s[..-1]` panics).
 - `xs[5]` out of range panics, and `m[k]` on a missing key panics. `m.get(k)` returns `?V`.
 - Integer overflow wraps around. Division by zero panics.
 - A number can contain the digit separator `_`: `1_000_000`, `0xff_ff`.
@@ -89,6 +90,7 @@ The json, regex and time modules are not in the Cyber standard library now and a
 - An operation that may fail returns `!T`. A failure is `return error.Name`. The caller uses `f()!` (pass the failure to the caller; the enclosing function must return `!U`), `f() !else default`, or a `f() !else |e|:` block (the block must end with `return` or `panic`).
 - To handle several calls together, use a `try:` block with `!` inside and receive the failure in `else |e|:`.
 - `panic('msg')` cannot be caught. Use it for program bugs only. Return normal failures as `!T`.
+- An error from `f()!` at the top level, or returned by `fn main() -> !T`, is an uncaught error and ends in a panic. To print a failure and go on, wrap the top-level code in a `try:` block and print it in `else |e|:` (a top-level `!else` block cannot end with `return`).
 - `int('abc')` gives 0 without an error. When you need validation, use `int.parse(s) !else ...`.
 
 ## Values, references, borrows

@@ -1,6 +1,6 @@
 # 보고: 루트 맥락의 중단과 재개 (CL_AWAIT, 코루틴 로드맵 단계 1)
 
-soomtong/cyber에서 2026-11-12에 받은 보고 원문이다. 요청은 docs/requests/cyber-cl-await.md, 반영은 docs/spec/08-cyber-implementation.md와 ADR 0011.
+soomtong/cyber에서 2026-11-12에 받은 보고 원문이다. 아래의 "0.4.8 예정"은 같은 날 0.4.8(2dfc061d)로 릴리스됐다. 요청은 docs/requests/cyber-cl-await.md, 반영은 docs/spec/08-cyber-implementation.md와 ADR 0011.
 
 요청서 `cyber-cl-await-request.md`에 대한 답이다. 2026-11-12 구현, soomtong/cyber의 master 로컬 커밋 `8de18b05`부터
 `94350e31`까지(origin/master에 push됨). 릴리스는 0.4.8 예정이고 tars-agent의 피드백을 확인한 뒤에 낸다. 그때까지는 master를 빌드해서 쓴다.

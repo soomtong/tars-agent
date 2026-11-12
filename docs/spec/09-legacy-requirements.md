@@ -26,9 +26,9 @@
 
 ## 사실이 달라서 바꾼 것
 
-- 파이버와 coyield/coresume: 존재하지 않는다. 2025-11 upstream 재설계에서 삭제됐고 지금은 #[generator](stackless)와 spawn Thread + Future다. 호스트 함수 안에서 멈췄다 재개하는 수단이 없다. 대체: 호스트 함수가 동기적으로 블록(승인 대기 포함)하고 VM당 OS 스레드 하나를 쓴다. 불변식("승인 대기 중에도 다른 세션은 계속 돈다")은 유지된다. 스택형 Fiber 구현은 이 방식의 한계가 실제로 드러난 뒤 판단한다 (TODO P6). 2026-11-12 갱신: cyber 0.4.7에 fiber/suspend(stackful)가 들어왔고 제너레이터는 generator fn으로 선언한다. 다만 호스트 함수를 건너 멈출 수 없어 위 대체는 그대로다. 남은 것은 호스트 쪽 멈춤(CL_AWAIT)이고 cyber에 요청했다 (ADR 0011).
+- 파이버와 coyield/coresume: 존재하지 않는다. 2025-11 upstream 재설계에서 삭제됐고 지금은 #[generator](stackless)와 spawn Thread + Future다. 호스트 함수 안에서 멈췄다 재개하는 수단이 없다. 대체: 호스트 함수가 동기적으로 블록(승인 대기 포함)하고 VM당 OS 스레드 하나를 쓴다. 불변식("승인 대기 중에도 다른 세션은 계속 돈다")은 유지된다. 스택형 Fiber 구현은 이 방식의 한계가 실제로 드러난 뒤 판단한다 (TODO P6). 2026-11-12 갱신: cyber 0.4.7에 fiber/suspend(stackful)가 들어왔고 제너레이터는 generator fn으로 선언한다. 다만 호스트 함수를 건너 멈출 수 없어 위 대체는 그대로다. 호스트 쪽 멈춤은 CL_AWAIT로 cyber 0.4.8에 들어왔다 (ADR 0011).
 - 취소: "파이버를 버린다" 대신 cl_vm_interrupt + 연료(fuel) 상한 + 호스트 함수 자체의 취소 확인. 호스트 함수 안에서 막힌 호출은 함수가 직접 풀어야 한다.
-- 언어 버전: Cyber 0.4.4, 2026-11-12에 0.4.7 기준으로 갱신 (정적 타입 + 소유권, 점진적 타입 아님, 보간은 %{}). 시스템 프롬프트에는 복사 가능한 타입(int, str, []T)만 쓰는 부분집합을 가르친다.
+- 언어 버전: Cyber 0.4.4, 2026-11-12에 0.4.8 기준으로 갱신 (정적 타입 + 소유권, 점진적 타입 아님, 보간은 %{}). 시스템 프롬프트에는 복사 가능한 타입(int, str, []T)만 쓰는 부분집합을 가르친다.
 - Zig 업그레이드: 이미 끝났다 (fork가 0.17 사용). 첫 작업은 업그레이드가 아니라 호스트 경계 증명(방식 A)이다.
 - JIT: 코드까지 제거됐다. FFI는 -Dffi=false 빌드 옵션이 있고 라이브러리는 기본 꺼짐이다. 임의 모듈 로딩은 고정 표 일곱 모듈(core, meta, math, cy, c, io, test)이 막는다.
 - 남은 구멍: c 모듈(raw 포인터)과 use c 없이 쓰는 as[Ptr[int]] 캐스트. 로더에서 c를 거르고 deny_raw_ptrs 를 켠다.
@@ -56,7 +56,7 @@
 | 산출 문서 design.md, fork-plan.md, deps.md | deps.md만 둔다 | ADR 0009 |
 | JSON, 정규식, 날짜를 새로 쓴다 | 그대로 채택. cyber 표준 모듈로 만든다. 시계 읽기만 능력 | ADR 0010 |
 
-지시서 이후 cyber fork에서 바뀐 사실: 비-main 스레드의 await는 2026-11-08에 고쳐져 프로세스를 죽이지 않는다. 메모리 상한(cl_vm_set_memory_limit)과 스택 상한(cl_vm_set_stack_limit)이 생겼다. 0.4.5~0.4.7에서 구조화된 컴파일 오류(cl_vm_compile_error), 포매터(cl_vm_format), fiber, intrinsic의 스크립트 사용 금지가 더해졌다. 08 문서가 최신이다.
+지시서 이후 cyber fork에서 바뀐 사실: 비-main 스레드의 await는 2026-11-08에 고쳐져 프로세스를 죽이지 않는다. 메모리 상한(cl_vm_set_memory_limit)과 스택 상한(cl_vm_set_stack_limit)이 생겼다. 0.4.5~0.4.7에서 구조화된 컴파일 오류(cl_vm_compile_error), 포매터(cl_vm_format), fiber, intrinsic의 스크립트 사용 금지가, 0.4.8에서 CL_AWAIT와 Future.wait_any가 더해졌다. 08 문서가 최신이다.
 
 ## 닫은 질문
 
