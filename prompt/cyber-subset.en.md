@@ -2,7 +2,7 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the tables below first.
 
-The reference version is Cyber 0.4.5-DEV. Old Cyber syntax in your training data (0.3: `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`) is all wrong.
+The reference version is Cyber 0.4.7. Old Cyber syntax in your training data (0.3: `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`) is all wrong. The forms `#[generator] fn f()` and the symbol literal `@name` from 0.4.6 and earlier are also wrong. Write `generator fn f()` and `symbol.name`.
 
 Cyber is still gaining features. This document matches one point-in-time build and can fall behind the latest build. Before you use or edit this document, check the following.
 
@@ -74,6 +74,8 @@ Semantics:
 - A negative index `xs[-1]` panics. Use `xs[xs.len() - 1]` or `xs.last()` for the last element.
 - `xs[5]` out of range panics, and `m[k]` on a missing key panics. `m.get(k)` returns `?V`.
 - Integer overflow wraps around. Division by zero panics.
+- A number can contain the digit separator `_`: `1_000_000`, `0xff_ff`.
+- `fiber` and `suspend` are reserved words. Do not use them as variable or function names.
 
 ## Missing features
 
@@ -268,5 +270,7 @@ print('%{x} %{shared.*}')
 | `Cannot copy ..., type implements `NoCopy`.` | copying an Array | Use `[]T`, or `move` |
 | `Return statement is not allowed in the main block.` | top-level return | Wrap the code in `fn main():` |
 | `Missing return statement.` | some path has no return | Add a return at the end |
+| `Undeclared `@x`. A symbol literal is written `symbol.x`.` | old symbol literal | `symbol.x` |
+| `The `#[generator]` attribute was replaced by `generator fn`.` | old generator declaration | `generator fn f() -> T:` |
 
-An error raised inside a template can point to a line of `core.cy` instead of your code. Check the call expression yourself.
+An error raised inside a template can point to a line of a standard module (the module name and line, such as `core:196:5`) instead of your code. Check the call expression yourself.

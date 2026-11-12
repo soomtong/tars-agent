@@ -2,7 +2,7 @@
 
 Cyber는 Python과 아주 비슷한 문법 구조를 가진다. 들여쓰기로 블록을 만들고, 줄바꿈으로 문장을 끝내고, `for`, `while`, `if`, `fn`, `use`, `print`를 거의 같은 감각으로 쓴다. 하지만 정적 타입이고 값 소유권이 있고 예외가 없다. 이런 부분들이 다르니까 코드를 구성할 때 본 문서를 참고한다. 모르는 문법은 Python 문법으로 추측하지 말고 아래 표를 먼저 본다.
 
-기준 버전은 Cyber 0.4.5-DEV다. 학습 데이터에 있는 옛 Cyber 문법(0.3의 `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`)은 모두 틀렸다.
+기준 버전은 Cyber 0.4.7이다. 학습 데이터에 있는 옛 Cyber 문법(0.3의 `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`)은 모두 틀렸다. 0.4.6까지의 `#[generator] fn f()`와 symbol 리터럴 `@name`도 틀렸다. 지금은 `generator fn f()`와 `symbol.name`이다.
 
 Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 특정 시점의 빌드에 맞춘 것이므로 최신 빌드와 어긋날 수 있다. 문서를 사용하거나 고치기 전에 아래를 확인한다.
 
@@ -74,6 +74,8 @@ Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 특정 �
 - `xs[-1]` 음수 인덱스는 panic이다. 마지막은 `xs[xs.len() - 1]` 또는 `xs.last()`.
 - `xs[5]`가 범위 밖이면 panic, `m[k]`가 없는 키여도 panic이다. `m.get(k)`는 `?V`를 돌려준다.
 - 정수 오버플로는 랩어라운드한다. 0으로 나누면 panic.
+- 숫자에 자릿수 구분자 `_`를 쓸 수 있다: `1_000_000`, `0xff_ff`.
+- `fiber`, `suspend`는 예약어다. 변수나 함수 이름으로 쓰지 않는다.
 
 ## 없는 것
 
@@ -268,5 +270,7 @@ print('%{x} %{shared.*}')
 | `Cannot copy ..., type implements `NoCopy`.` | Array 복사 | `[]T` 쓰거나 `move` |
 | `Return statement is not allowed in the main block.` | 최상위 return | `fn main():` 로 감싼다 |
 | `Missing return statement.` | 일부 경로가 return 없음 | 마지막에 return 추가 |
+| `Undeclared `@x`. A symbol literal is written `symbol.x`.` | 옛 symbol 리터럴 | `symbol.x` |
+| `The `#[generator]` attribute was replaced by `generator fn`.` | 옛 제너레이터 선언 | `generator fn f() -> T:` |
 
-템플릿 안에서 난 오류는 사용자 코드가 아니라 `core.cy`의 줄을 가리킬 수 있다. 호출한 식을 직접 확인한다.
+템플릿 안에서 난 오류는 사용자 코드가 아니라 표준 모듈의 줄(`core:196:5`처럼 모듈 이름과 줄)을 가리킬 수 있다. 호출한 식을 직접 확인한다.

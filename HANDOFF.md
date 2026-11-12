@@ -46,7 +46,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - [ ] M0 스파이크 3: x86_64-linux-gnu 교차 빌드와 tars 게스트(QEMU) 실행
 - [ ] cyber C1: json 표준 모듈과 빌드 내보내기 (cyber 저장소에서, M0 평가보다 먼저)
 - [ ] Cyber 부분집합 안내 초안, eval/ 과제 20개, CodeAct 대 direct 평가, 판정을 docs/decisions에 기록하고 보고
-- [ ] cyber C2: regex(역추적 없는 엔진), time 모듈. C3: 임베딩 옵션, #[bind] 문서
+- [ ] cyber C2: regex(역추적 없는 엔진), time 모듈. C3: 임베딩 옵션 (#[bind] 문서는 cyber 0.4.5에서 됨)
 - [ ] M1~M6
 - [ ] 미확인 사실: tars 커널의 CONFIG_SECURITY_LANDLOCK (M5), 점 표기 모듈 이름과 기본값 매개변수가 #[bind]에서 되는지 (M0)
 
