@@ -38,6 +38,7 @@
 - [ ] C2 regex 모듈 (역추적 없는 엔진). M2보다 먼저
 - [ ] C2 time 모듈. M2보다 먼저
 - [ ] C3 임베딩 옵션 (모듈 허용 표, spawn 차단). M1 중
+- [~] C3 CL_AWAIT: 루트 맥락 중단과 재개, 호스트 Future C API (ADR 0011). 2026-11-12 cyber에 요청. M3 전. 보고가 오면 08 문서와 0011 상태 줄 갱신
 - [x] C3 #[bind] 문서: cyber 0.4.5의 docs/docs.md Attributes 절과 #[bind] hooks 절
 - [ ] 수시: 프로세스를 죽이는 경로 수정
 - [ ] cyber 릴리스를 낼 때마다 tars-agent의 고정 버전을 올리고 예제 테스트와 평가를 다시 돌린다
@@ -74,7 +75,7 @@
 
 - [ ] 줄 편집기 (raw 모드, 여러 줄, 히스토리, 한글)
 - [ ] 스트리밍 표시, 코드 접기와 펼치기, 상태 줄
-- [ ] 승인 프롬프트 (숫자 키, diff 표시, 승인 기억을 settings.local.json에)
+- [ ] 승인 프롬프트 (숫자 키, diff 표시, 승인 기억을 settings.local.json에). CL_AWAIT 경로로 루프 바닥에서 묻는다 (ADR 0011)
 - [ ] 인터럽트 (Esc, Ctrl-C), 취소 플래그를 능력에 연결
 - [ ] 모드 전환 (Shift+Tab, /mode)과 system 메시지
 - [ ] AGENTS.md 읽기, 프로젝트 설정 수락 절차
@@ -118,7 +119,7 @@
 - [ ] MCP 서버 방향, MCP HTTP 전송
 - [ ] 다른 제공자 어댑터
 - [ ] cyber CLI의 spec --for-agents로 안내 문서 생성
-- [ ] 능력 안에서 스크립트 멈춤과 재개(cyber CL_AWAIT): agentd에서 필요가 드러날 때만. 스택형 Fiber는 cyber 0.4.7에 있다
+- [ ] fiber 안 Future.await의 양보(cyber 로드맵 단계 3): agentd에서 한 스레드에 여러 세션을 돌릴 때만
 
 ## 뺀 것
 
