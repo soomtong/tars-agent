@@ -1,6 +1,6 @@
 # Cyber 런타임 사실과 제약
 
-출처: soomtong/cyber의 src/include/cyber.h와 docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt)와 docs/releases/0.4.5~0.4.9. 0.4.9(릴리스 노트 기준, 태그 대기), 확인일 2026-11-12. 구현을 시작하기 전에 다시 확인한다.
+출처: soomtong/cyber의 src/include/cyber.h와 docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt)와 docs/releases/0.4.5~0.4.9. 0.4.9(태그 0.4.9 → 03d24f4e, build-833), 확인일 2026-11-12. cyber가 보낸 안내는 docs/requests/cyber-0.4.9-report.md. 구현을 시작하기 전에 다시 확인한다.
 
 ## 확인된 사실
 
@@ -32,10 +32,13 @@
   - 취소 알림은 없다. 스크립트가 버린 요청은 호스트가 모른 채 남는다. 태그로 찾는 호스트는 eval이 끝날 때 요청 표를 비운다.
   - 피연산자는 왼쪽에서 오른쪽으로 평가된다(18dde37c, F-98 수정). a.await() + b.await()에서 두 번째 요청은 첫 await 뒤에 나간다.
   - 래퍼 함수는 호스트 로더가 돌려주는 모듈 소스에 #[bind] 선언과 함께 둔다 (cyber examples/libcyber/host_await.c).
-- 0.4.9의 변경 (docs/releases/0.4.9.md. 릴리스 노트의 태그 해시와 빌드 번호가 아직 비어 있어 고정 버전은 0.4.8에 둔다):
+- 0.4.9의 변경 (docs/releases/0.4.9.md, 안내 docs/requests/cyber-0.4.9-report.md):
   - fiber 안에서 호스트 Future를 await해도 eval이 CL_AWAIT로 나가지 않는다. 그 fiber만 멈추고 resume은 .suspended를 돌려준다. eval이 나가는 것은 루트 맥락이 기다릴 때다: 루트의 await, Future.wait_any, Fiber.wait_ready(), scope 블록의 합류(Scope.join 포함). fiber를 직접 resume하는 루프가 Fiber.wait_ready()를 부르지 않으면 호스트는 Future를 완료할 기회를 얻지 못하고 스크립트는 연료, 시간 상한까지 돈다.
   - tars-agent에 주는 뜻: 모델이 능력 호출(머리말의 동기 래퍼)을 fiber에 넣으면 승인 요청이 여럿 동시에 걸릴 수 있다. cl_vm_pending_futures가 그 전부를 준다. 하나를 완료하고 resume하면 남은 것으로 다시 CL_AWAIT가 온다. 루트가 기다리지 않고 스크립트가 끝나면 fiber는 취소되고 그 요청은 await되지 않은 채 남으므로, eval이 끝날 때 호스트가 완료하지 않은 요청을 버려야 한다. 작업은 승인 뒤 호스트가 하므로 버려진 요청은 아무 일도 하지 않는다(승인 우회 없음).
   - scope |s|: 블록(구조적 동시성): s.start(func, {args})로 fiber를 시작하고 블록 끝에서 모두 끝나기를 기다린다. 하나가 오류를 내면 나머지를 취소하고 오류가 블록 밖으로 나간다. 블록의 s.start만 빌림 인자(&T, &&T)를 받고 그 밖의 Scope.start와 fiber f(&x)는 컴파일 오류다. scope는 예약어가 됐다(변수 이름 scope는 ParseError: Unknown token, 로컬 빌드로 확인).
+  - resume 뒤에는 목록을 다시 읽는다. 완료한 Future의 fiber가 다음 요청을 내면 새 Future가 들어온다. 중첩된 scope 블록의 Future도 같은 목록에 평평하게 들어오고 어느 것을 먼저 완료해도 된다(82877718에서는 그룹 밖의 요청을 먼저 완료하면 끝없이 돌았다. F-111, 태그에서 수정).
+  - scope 블록의 fiber 하나가 오류(error.Denied 포함)를 돌려주면 나머지 fiber는 취소되고 그들이 기다리던 요청은 더는 await되지 않는다. cyber는 버려진 요청을 알리지 않는다.
+  - 모델이 쓰는 코드의 함정: out.* += fut.await()는 await 전에 out.*를 읽어 여러 fiber가 같은 값에 더하면 덮어쓴다(v := fut.await() 뒤에 out.* += v). suspend만 반복하는 fiber와 Future를 기다리는 fiber가 한 블록에 섞이면 eval이 나가지 않고 연료 상한까지 돈다. @deinit 안에서 suspend, await를 쓰지 않는다.
   - Fiber.cancel(), Fiber.waiting(), Fiber.wait_ready(), Scope(new, start, join, active, abort). 진행 중인 fiber의 소멸은 panic이 아니라 취소다(들어가 있는 호출이 바로 반환하고 값은 해제, @deinit 포함). ^T 참조의 @deinit 안에서 멈춘 fiber는 취소할 수 없고 소멸은 여전히 panic이다.
   - fn main() -> T의 결과(CLEvalResult의 값)는 VM이 소유하고 다음 eval, cl_vm_reset, cl_vm_deinit까지 유효하다. cl_vm_release_result(vm)가 바로 해제한다. cl_thread_rc로 누수를 세는 호스트(평가 도구)는 먼저 이것을 부른다.
   - 그 밖: 스택이 옮겨질 때 배타 빌림 주소가 보정되지 않아 나던 Segmentation fault 수정(fiber 안의 지역 배열 << 로 재현되던 것). r64 → float 변환이 부호 없는 값으로 읽는다. cyber fmt와 cl_vm_format이 리터럴 필드의 = 양쪽을 띄운다(Vec2{x = 1}).

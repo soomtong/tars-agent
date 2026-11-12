@@ -2,7 +2,7 @@
 
 Cyber는 Python과 아주 비슷한 문법 구조를 가진다. 들여쓰기로 블록을 만들고, 줄바꿈으로 문장을 끝내고, `for`, `while`, `if`, `fn`, `use`, `print`를 거의 같은 감각으로 쓴다. 하지만 정적 타입이고 값 소유권이 있고 예외가 없다. 이런 부분들이 다르니까 코드를 구성할 때 본 문서를 참고한다. 모르는 문법은 Python 문법으로 추측하지 말고 아래 표를 먼저 본다.
 
-기준 버전은 Cyber 0.4.8이다. 학습 데이터에 있는 옛 Cyber 문법(0.3의 `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`)은 모두 틀렸다. 0.4.6까지의 `#[generator] fn f()`와 symbol 리터럴 `@name`도 틀렸다. 지금은 `generator fn f()`와 `symbol.name`이다.
+기준 버전은 Cyber 0.4.9이다. 학습 데이터에 있는 옛 Cyber 문법(0.3의 `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`)은 모두 틀렸다. 0.4.6까지의 `#[generator] fn f()`와 symbol 리터럴 `@name`도 틀렸다. 지금은 `generator fn f()`와 `symbol.name`이다.
 
 Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 특정 시점의 빌드에 맞춘 것이므로 최신 빌드와 어긋날 수 있다. 문서를 사용하거나 고치기 전에 아래를 확인한다.
 

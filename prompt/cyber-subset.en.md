@@ -2,7 +2,7 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the tables below first.
 
-The reference version is Cyber 0.4.8. Old Cyber syntax in your training data (0.3: `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`) is all wrong. The forms `#[generator] fn f()` and the symbol literal `@name` from 0.4.6 and earlier are also wrong. Write `generator fn f()` and `symbol.name`.
+The reference version is Cyber 0.4.9. Old Cyber syntax in your training data (0.3: `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`) is all wrong. The forms `#[generator] fn f()` and the symbol literal `@name` from 0.4.6 and earlier are also wrong. Write `generator fn f()` and `symbol.name`.
 
 Cyber is still gaining features. This document matches one point-in-time build and can fall behind the latest build. Before you use or edit this document, check the following.
 
