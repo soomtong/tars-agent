@@ -87,9 +87,9 @@ print(futs[i].await())                 -- 끝난 Future의 await는 멈추지 �
 - 멈춘 `await`에서 이어 실행한다. 결과 코드와 `res`는 `cl_vm_evalx`와 같은 규칙이다. 다음 await에서 다시 `CL_AWAIT`.
 - Future를 완료하지 않고 부르면 다시 `CL_AWAIT`다(같은 Future).
 - 멈춘 동안 들어온 interrupt 요청을 지운다(새 eval의 시작과 같은 규칙). resume을 부른 뒤에 도착한 요청만 eval을 멈춘다.
-  그래서 승인 대기 중에 발동한 벽시계 타이머는 스크립트를 끊지 않는다. 타이머는 resume 직전에 다시 시작한다.
+  그래서 승인 대기 중에 발동한 벽시계(wall-clock) 타이머는 스크립트를 끊지 않는다. 타이머는 resume 직전에 다시 시작한다.
   멈춘 eval을 끊으려면 `cl_vm_abandon`을 부른다.
-- 연료는 다시 채우지 않는다. 한 eval 전체의 검사점 수를 센다.
+- 연료(fuel)는 다시 채우지 않는다. 한 eval 전체의 검사점(checkpoint) 수를 센다.
 - 멈춘 eval이 없으면 `CL_ERROR_UNKNOWN`.
 
 ### cl_vm_abandon

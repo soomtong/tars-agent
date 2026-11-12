@@ -10,7 +10,7 @@ tars-agent(soomtong/tars-agent)는 libcyber를 정적 링크해 모델이 쓴 Cy
 
 지금은 승인을 능력 함수 안에서 동기적으로 블록해 기다린다. 이 방식에는 v1에서 실제로 부딪히는 문제가 둘 있다.
 
-1. 벽시계 상한(타이머 스레드가 cl_vm_interrupt)이 사용자가 승인을 고민하는 시간까지 센다.
+1. 벽시계(wall-clock) 상한(타이머 스레드가 cl_vm_interrupt)이 사용자가 승인을 고민하는 시간까지 센다.
 2. 승인 중 사용자가 취소(Esc)해도 VM을 끊을 수 없다. 호스트 함수 안에서 막힌 호출은 interrupt와 fuel로 끊지 못한다(F-42). 그래서 능력마다 취소 플래그를 직접 확인해야 한다.
 
 0.4.7의 fiber로는 풀리지 않는다. 호스트 함수를 건너 suspend할 수 없고(Cannot suspend across a host call.), 루트 맥락의 suspend는 no-op이며, Future.await()는 spin한다.
@@ -53,7 +53,7 @@ while (r == CL_AWAIT) {
 4. 이미 완료된 Future의 await는 지금과 같은 빠른 경로다. 탈출하지 않는다.
 5. 호스트가 멈춘 eval을 버리는 API가 있다. 결과는 interrupt와 같다: 지역 변수는 버려지고 선언은 남고 VM은 다음 eval에 쓸 수 있다. 누수가 없어야 한다.
 6. 멈춘 동안 VM에 새 eval, validate, compile을 부르면 오류 코드로 거부한다. abort하면 안 된다.
-7. 연료, 스택 상한, 메모리 상한은 resume 뒤에도 그대로 이어진다. 멈춘 동안에는 연료가 줄지 않는다. resume 뒤의 panic, interrupt, OutOfMemory는 평소 eval과 같이 처리된다.
+7. 연료(fuel), 스택 상한, 메모리 상한은 resume 뒤에도 그대로 이어진다. 멈춘 동안에는 연료가 줄지 않는다. resume 뒤의 panic, interrupt, OutOfMemory는 평소 eval과 같이 처리된다.
 8. fiber 안에서 미완료 호스트 Future를 await하는 경우의 동작을 정한다. 단계 3 전이라 지금은 영원히 spin해 교착한다. fiber 전환도 VM 명령이라 eval 탈출이 가능하다면 탈출을 허용하고, 어렵다면 위치가 붙은 panic으로 막는다. 둘 중 무엇을 골랐는지 결정 문서에 적는다.
 9. spawn 스레드 안의 호스트 Future await는 이번 범위가 아니다. 지금 동작을 유지하거나 panic으로 막고, 교착이나 abort가 없어야 한다.
 

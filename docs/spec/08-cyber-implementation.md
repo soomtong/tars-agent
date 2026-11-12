@@ -11,8 +11,8 @@
 - 검증: cl_vm_validate는 세션을 지우지 않고 현재 세션 위에서 컴파일만 한다. 검증한 소스의 선언은 다음 eval로 넘어가지 않는다.
 - 구조화된 컴파일 오류 (0.4.5): cl_vm_compile_error(vm, &err)가 마지막 eval, compile, validate의 오류를 CLCompileError로 준다. kind(토큰, 파싱, 컴파일), msg(위치 없는 메시지), uri, has_loc, line, col(0부터, 바이트), len. 컴파일러는 첫 오류에서 멈추므로 컴파일당 하나다. 문맥(이전 선언, 템플릿 호출 지점)은 요약 문자열(cl_vm_compile_error_summary)에만 있다. 요약에는 기본으로 터미널 이스케이프 코드가 없다(cl_vm_set_error_color로 켠다).
 - 포매터 (0.4.6): cl_vm_format(vm, src, &out)은 cyber fmt와 같은 공백 정리를 한다. 파서만 돌고 VM 상태를 바꾸지 않는다. 결과는 OK, SYNTAX_ERROR(out은 line:col: message), INTERNAL_ERROR, NO_MEMORY.
-- 상한: cl_vm_set_fuel(검사점은 역방향 점프와 호출), cl_vm_interrupt(다른 스레드에서 호출 가능), cl_vm_set_stack_limit, cl_vm_set_memory_limit, cl_vm_memory_used. 상한에 걸리면 CL_ERROR_INTERRUPT 또는 panic(Stack overflow, OutOfMemory)이고 VM은 계속 쓸 수 있다. 메모리 상한은 VM이 쥔 전체 바이트 기준이라 스크립트에 N 바이트를 주려면 cl_vm_memory_used(vm) + N으로 건다. spawn 스레드도 같은 상한을 쓴다.
-- 할당 실패: eval 중 호스트 할당자가 실패해도 프로세스는 죽지 않는다. 컴파일 중이면 CL_ERROR_COMPILE이고 다음 eval 앞에서 VM을 reset한다(persist_main의 지역 변수와 선언은 사라지고 연료, 상한, 프린터 같은 호스트 설정은 남는다). 실행 중이면 panic: OutOfMemory다. VM을 만드는 함수와 호스트가 값을 만드는 함수(cl_str_init 등)의 할당 실패는 여전히 abort다. cl_vm_init_mem(CLMemFuncs)으로 VM의 모든 메모리를 호스트의 alloc/free로 돌릴 수 있다. 컴파일러의 고정 한계(지역 256, 매개변수 255, 필드 255)는 CompileError다.
+- 상한: cl_vm_set_fuel(검사점(checkpoint)은 역방향 점프와 호출), cl_vm_interrupt(다른 스레드에서 호출 가능), cl_vm_set_stack_limit, cl_vm_set_memory_limit, cl_vm_memory_used. 상한에 걸리면 CL_ERROR_INTERRUPT 또는 panic(Stack overflow, OutOfMemory)이고 VM은 계속 쓸 수 있다. 메모리 상한은 VM이 쥔 전체 바이트 기준이라 스크립트에 N 바이트를 주려면 cl_vm_memory_used(vm) + N으로 건다. spawn 스레드도 같은 상한을 쓴다.
+- 할당 실패: eval 중 호스트 할당자가 실패해도 프로세스는 죽지 않는다. 컴파일 중이면 CL_ERROR_COMPILE이고 다음 eval 앞에서 VM을 reset한다(persist_main의 지역 변수와 선언은 사라지고 연료(fuel), 상한, 프린터 같은 호스트 설정은 남는다). 실행 중이면 panic: OutOfMemory다. VM을 만드는 함수와 호스트가 값을 만드는 함수(cl_str_init 등)의 할당 실패는 여전히 abort다. cl_vm_init_mem(CLMemFuncs)으로 VM의 모든 메모리를 호스트의 alloc/free로 돌릴 수 있다. 컴파일러의 고정 한계(지역 256, 매개변수 255, 필드 255)는 CompileError다.
 - 실패한 첫 컴파일 뒤에는 VM이 스스로 reset한다. 성공 뒤 실패한 eval의 선언은 넘어가지 않는다.
 - 능력 바인딩: #[bind] 선언과 cl_mod_add_func. 값 매개변수(str, []T, 관리 필드를 가진 구조체)는 호스트가 소유하고 cl_str_deinit, cl_slice_deinit으로 해제한다. [&]T로 선언하면 빌리기만 한다.
 - 출력은 cl_vm_set_printer로 가로챈다. print, eprint 콜백의 첫 인자는 CLThread*다(0.4.5에서 고쳐짐, VM은 cl_thread_vm(t)). 결과 값은 CLEvalResult.res, res_t와 cl_value_desc. persist_main에서는 마지막 맨 표현식이 결과다.
@@ -25,7 +25,7 @@
   - cl_vm_pending_future(vm): 기다리는 Future(빌린 포인터). cl_vm_pending_futures(vm, out, cap): 기다리는 Future 목록과 개수. 보통의 await는 1개, 스크립트의 Future.wait_any(futures [&]Future[T]) -> int로 멈췄으면 목록 전체다. 호스트는 아무것이나, 여러 개를 완료시키고 resume한다. cl_vm_resume(vm, &res): 이어 실행, 결과는 cl_vm_evalx와 같은 규칙. 완료하지 않고 resume하면 다시 CL_AWAIT.
   - cl_vm_abandon(vm): 멈춘 eval을 버린다. 결과는 interrupt와 같다(지역 변수는 사라지고 선언은 남는다). cl_vm_reset, cl_vm_deinit도 먼저 버린다.
   - 멈춘 동안의 cl_vm_eval*, cl_vm_validate, cl_vm_compile*은 CL_ERROR_SUSPENDED.
-  - 규칙: 모든 호출과 완료는 eval을 돌리는 스레드에서 한다. 연료는 다시 채워지지 않는다(한 eval 전체를 센다). 멈춘 동안 들어온 interrupt 요청은 resume이 지운다(034fae2c). 그래서 승인 대기 중에 벽시계 타이머가 울려도 스크립트를 끊지 않는다. 타이머는 resume 직전에 다시 시작하고, 멈춘 eval을 끊는 길은 cl_vm_abandon 하나다. cl_vm_interrupt 말고는 다른 스레드에서 부를 수 있는 함수가 없다. spawn 스레드 안의 await와 호스트 함수가 부른 스크립트 안의 await는 panic이다. 한 번에 Future 하나만 기다린다.
+  - 규칙: 모든 호출과 완료는 eval을 돌리는 스레드에서 한다. 연료는 다시 채워지지 않는다(한 eval 전체를 센다). 멈춘 동안 들어온 interrupt 요청은 resume이 지운다(034fae2c). 그래서 승인 대기 중에 벽시계(wall-clock) 타이머가 울려도 스크립트를 끊지 않는다. 타이머는 resume 직전에 다시 시작하고, 멈춘 eval을 끊는 길은 cl_vm_abandon 하나다. cl_vm_interrupt 말고는 다른 스레드에서 부를 수 있는 함수가 없다. spawn 스레드 안의 await와 호스트 함수가 부른 스크립트 안의 await는 panic이다. 한 번에 Future 하나만 기다린다.
   - 스크립트가 직접 만든 미완료 Future(FutureResolver)도 CL_AWAIT가 된다. pending future가 우리 능력이 만든 것이 아니면 abandon한다.
   - 취소 알림은 없다. 스크립트가 버린 미완료 Future는 참조가 없어지면 해제되고 그 주소는 새 Future에 다시 쓰일 수 있다. 그래서 tars-agent는 능력이 만든 Future를 cl_thread_retain으로 잡아 두고 완료하거나 eval이 끝날 때 놓는다. 요청 표의 포인터 대조가 주소 재사용에 속지 않는다.
   - 피연산자는 왼쪽에서 오른쪽으로 평가된다(18dde37c, F-98 수정). a.await() + b.await()에서 두 번째 요청은 첫 await 뒤에 나간다.

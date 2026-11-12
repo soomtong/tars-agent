@@ -15,7 +15,7 @@
 | assistant | 응답 content 그대로 (사고 블록 포함), stop_reason, usage |
 | run | tool_use_id, 코드, validate 결과. 실행 전에 쓴다 |
 | cap | 능력, 인자 요약, 결정(allow/ask-허용/ask-거부/deny, 근거 규칙), 걸린 시간, 결과 크기, 오류 |
-| result | tool_use_id, 결과 본문, 실패 종류, 연료 사용량, 걸린 시간 |
+| result | tool_use_id, 결과 본문, 실패 종류, 연료(fuel) 사용량, 걸린 시간 |
 | system | 덧붙인 system 메시지 (모드 변경 등) |
 | memo, todo | 호스트 상태 변경 |
 | compact | 요약, 새 히스토리의 시작 seq |

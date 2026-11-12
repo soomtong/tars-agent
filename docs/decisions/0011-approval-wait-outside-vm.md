@@ -19,7 +19,7 @@ fn write(path str, text str) -> !void:
 - 부작용은 승인 뒤에만 일어난다. 미완료 Future를 만드는 단계에서는 아무 작업도 하지 않는다.
 - 사용자가 거부하면 Future를 error.Denied로 완료하고 resume한다. 02의 denied 행(VM 유지, 오류 값으로 돌아간다)과 같다.
 - 사용자가 취소(Esc)하면 resume하지 않고 멈춘 eval을 버린다. 결과는 interrupted와 같다(지역 변수 초기화).
-- 벽시계 상한은 eval이 도는 동안만 센다. 멈춘 동안 타이머는 멈춘다.
+- 벽시계(wall-clock) 상한은 eval이 도는 동안만 센다. 멈춘 동안 타이머는 멈춘다.
 
 ## 근거
 

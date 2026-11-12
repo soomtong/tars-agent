@@ -17,7 +17,7 @@
 
 코드를 쓰기 전에 세 가지를 증명하고 한 가지를 판정한다. 산출물은 버려도 되는 스파이크와 남기는 평가 도구(eval/)다.
 
-- [ ] 스파이크 1, 호스트 경계: build.zig.zon으로 cyber를 받아 Zig에서 링크. 능력 2개(fs.read, proc.exec), 호스트 로더(c 거부), deny_raw_ptrs, 연료, 벽시계 interrupt, 스택과 메모리 상한, persist_main 반복 eval, validate, 능력 안에서 블록 후 반환
+- [ ] 스파이크 1, 호스트 경계: build.zig.zon으로 cyber를 받아 Zig에서 링크. 능력 2개(fs.read, proc.exec), 호스트 로더(c 거부), deny_raw_ptrs, 연료(fuel), 벽시계(wall-clock) interrupt, 스택과 메모리 상한, persist_main 반복 eval, validate, 능력 안에서 블록 후 반환
 - [ ] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인할 것" 여섯 항목)
 - [ ] 스파이크 2, 제공자: Zig std.http로 api.anthropic.com에 스트리밍 요청, SSE 해석, run 도구 한 번 왕복. TLS와 CA 묶음이 macOS와 tars 게스트에서 되는지. 안 되면 대안(curl 프로세스)을 정한다
 - [ ] cyber C1 (json 모듈)이 끝난 뒤 평가를 돌린다. 스파이크 셋은 C1과 나란히 한다

@@ -8,7 +8,7 @@ agentd는 Zig 0.17 데몬이고 libcyber를 링크한다 (방식 A). 순수 Cybe
 
 ## 근거
 
-- 초기 요구사항이 Zig 호스트를 요구하고, 중단, 연료, 할당자, deny_raw_ptrs, validate 는 libcyber에만 있다.
+- 초기 요구사항이 Zig 호스트를 요구하고, 중단, 연료(fuel), 할당자, deny_raw_ptrs, validate 는 libcyber에만 있다.
 - tars-linux 코드베이스와 같은 언어다.
 
 ## 이후 결정
