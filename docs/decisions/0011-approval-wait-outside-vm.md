@@ -1,6 +1,6 @@
 # 0011 승인 대기는 VM 밖에서 한다 (cyber CL_AWAIT)
 
-상태: 확정 (2026-11-12). 0009의 "능력 안에서 스크립트를 멈추고 재개하기" 행을 바꾼다. cyber 쪽 구현을 요청했다 (docs/requests/cyber-cl-await.md). 구현이 들어오기 전까지는 아래 "도입 전까지"를 따른다.
+상태: 확정 (2026-11-12). 0009의 "능력 안에서 스크립트를 멈추고 재개하기" 행을 바꾼다. cyber 쪽 구현을 요청했다 (docs/requests/cyber-cl-await.md). 2026-11-12 cyber master 8de18b05에 구현됐고 검토를 통과했다(전체 테스트 82단계 통과, 요청 13개 항목 충족). 최종 API는 spec/08. cyber 릴리스가 나와 고정 버전을 올리기 전까지는 아래 "도입 전까지"를 따른다.
 
 ## 결정
 
@@ -54,6 +54,15 @@ fn write(path str, text str) -> !void:
 
 - 승인 대기는 지금처럼 능력 함수 안에서 동기적으로 블록한다. 대기는 취소 플래그를 확인하고, 그동안 벽시계 타이머를 멈춘다.
 - 능력의 바인딩 층은 결과를 돌려주는 방식만 바꾸면 되도록 짠다. 게이트 판정, 승인 요청, 실제 작업을 세 함수로 나누어 두면 CL_AWAIT가 들어왔을 때 앞의 두 단계와 뒤의 한 단계 사이만 Future로 끊으면 된다.
+
+## cyber가 고른 동작 (요청의 열린 항목)
+
+- fiber 안의 await도 eval을 탈출하고, 재개는 그 fiber 안에서 이어진다.
+- spawn 스레드 안의 호스트 Future await는 panic이다.
+- Future 완료는 eval을 돌리는 스레드에서만 한다.
+- 완료하지 않고 resume하면 다시 CL_AWAIT다.
+- 스크립트가 만든 미완료 Future도 CL_AWAIT가 된다. 우리 Future가 아니면 abandon한다.
+- interrupt 요청은 resume 뒤로 이어진다. 멈춘 동안에는 cl_vm_interrupt를 부르지 않고, 취소는 abandon으로 한다.
 
 ## 결과
 

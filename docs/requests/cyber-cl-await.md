@@ -2,6 +2,8 @@
 
 soomtong/cyber에 2026-11-12에 전달한 요청 원문이다. 결정은 docs/decisions/0011-approval-wait-outside-vm.md.
 
+결과: 같은 날 cyber master 8de18b05에 구현됐다(미릴리스). 8번은 탈출 허용, 9번은 panic, 12번은 eval 스레드에서만. 최종 API는 docs/spec/08-cyber-implementation.md.
+
 ## 배경
 
 tars-agent(soomtong/tars-agent)는 libcyber를 정적 링크해 모델이 쓴 Cyber 스크립트를 실행하는 에이전트다. 스크립트는 호스트가 등록한 능력 함수(fs.write, proc.exec 등)로만 바깥에 닿고, 일부 능력은 실행 전에 사용자 승인이 필요하다.
