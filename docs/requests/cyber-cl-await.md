@@ -2,7 +2,7 @@
 
 soomtong/cyber에 2026-11-12에 전달한 요청 원문이다. 결정은 docs/decisions/0011-approval-wait-outside-vm.md.
 
-결과: 같은 날 cyber master 8de18b05와 034fae2c에 구현됐다(0.4.8 예정). cyber의 보고는 docs/requests/cyber-cl-await-report.md. 8번은 탈출 허용, 9번은 panic, 12번은 eval 스레드에서만. 최종 API는 docs/spec/08-cyber-implementation.md.
+결과: 같은 날 cyber master 8de18b05~de98510f에 구현됐다(0.4.8 예정, wait_any 포함). cyber의 보고는 docs/requests/cyber-cl-await-report.md. 8번은 탈출 허용, 9번은 panic, 12번은 eval 스레드에서만. 최종 API는 docs/spec/08-cyber-implementation.md.
 
 ## 배경
 

@@ -2,8 +2,8 @@
 
 soomtong/cyber에서 2026-11-12에 받은 보고 원문이다. 요청은 docs/requests/cyber-cl-await.md, 반영은 docs/spec/08-cyber-implementation.md와 ADR 0011.
 
-요청서 `cyber-cl-await-request.md`에 대한 답이다. 2026-11-12 구현, soomtong/cyber의 master 로컬 커밋 `8de18b05`
-(push 전). 릴리스는 0.4.8 예정이고 tars-agent의 피드백을 확인한 뒤에 낸다. 그때까지는 master를 빌드해서 쓴다.
+요청서 `cyber-cl-await-request.md`에 대한 답이다. 2026-11-12 구현, soomtong/cyber의 master 로컬 커밋 `8de18b05`부터
+`de98510f`까지(push 전). 릴리스는 0.4.8 예정이고 tars-agent의 피드백을 확인한 뒤에 낸다. 그때까지는 master를 빌드해서 쓴다.
 
 원본 기록은 cyber 저장소의 `docs/decisions/project_coroutines.md` "단계 1 구현 (2026-11-12)" 절, 계약은 `src/include/cyber.h`의
 "Suspended evals and host futures" 절, 동작하는 호스트는 `examples/libcyber/host_await.c`다.
@@ -17,6 +17,7 @@ CLFuture*    cl_future_new(CLThread* t, CLType* future_t);
 bool         cl_future_complete(CLVM* vm, CLFuture* future, const void* value);
 bool         cl_future_complete_error(CLVM* vm, CLFuture* future, int64_t err);
 CLFuture*    cl_vm_pending_future(CLVM* vm);
+size_t       cl_vm_pending_futures(CLVM* vm, CLFuture** out, size_t cap);
 CLResultCode cl_vm_resume(CLVM* vm, CLEvalResult* res);
 void         cl_vm_abandon(CLVM* vm);
 
@@ -24,7 +25,8 @@ void         cl_vm_abandon(CLVM* vm);
 CL_ERROR_SUSPENDED
 ~~~
 
-요청서의 예시 이름을 그대로 썼고 `cl_future_new` · `cl_future_complete_error` · `CL_ERROR_SUSPENDED`를 더했다.
+요청서의 예시 이름을 그대로 썼고 `cl_future_new` · `cl_future_complete_error` · `cl_vm_pending_futures` · `CL_ERROR_SUSPENDED`를
+더했다. 스크립트 쪽에는 `Future.wait_any`가 새로 생겼다(아래 "여러 Future를 동시에 기다리기").
 
 ### cl_future_new
 
@@ -60,6 +62,25 @@ CLFuture* f = cl_future_new(t, future_t);
 - 멈춘 eval이 기다리는 Future. 멈춘 eval이 없으면 `NULL`.
 - 빌린 포인터다. `cl_vm_resume` 또는 `cl_vm_abandon`까지 유효하다.
 - 호스트는 `cl_future_new`가 돌려준 포인터와 비교해 어느 요청인지 찾는다.
+
+### 여러 Future를 동시에 기다리기: Future.wait_any와 cl_vm_pending_futures
+
+~~~cy
+futs := []Future[str]{tool_async('a'), tool_async('b'), tool_async('c')}
+i := Future.wait_any(futs.span())      -- 먼저 끝난 것의 인덱스. 여럿이면 목록에서 앞선 것
+print(futs[i].await())                 -- 끝난 Future의 await는 멈추지 않는다
+~~~
+
+- `fn Future :: wait_any(futures [&]Future[T]) -> int`. 한 목록에는 같은 `T`만 넣는다. 빈 목록은 `panic: No futures to wait for.`
+- 목록의 Future가 전부 호스트 Future(또는 스크립트의 미완료 Future)이고 아무것도 끝나지 않았으면 eval이 `CL_AWAIT`로 멈춘다.
+- `cl_vm_pending_futures(vm, out, cap)`는 멈춘 eval이 기다리는 Future를 목록 순서대로 `out`에 최대 `cap`개 쓰고 전체 개수를
+  돌려준다. `out`은 `NULL`이어도 된다. 평범한 `await`로 멈췄으면 1개, 멈춘 eval이 없으면 0이다. `cl_vm_pending_future`는 이 목록의
+  첫 번째다.
+- 호스트는 그중 아무것이나 완료시킨다. resume 전에 여러 개를 완료시켜도 된다. 아무것도 완료시키지 않고 resume하면 다시
+  `CL_AWAIT`다.
+- 목록에 `spawn`이 만든 Future가 하나라도 있으면 eval을 탈출하지 않고 VM 안에서 그 스레드를 기다린다.
+- `wait_any` 없이도 동시 실행은 된다. 스크립트가 요청을 먼저 다 보낸 뒤 순서대로 await하면, 호스트는 자기가 만든 Future를
+  전부 알고 있으니 첫 `CL_AWAIT`에서 한꺼번에 처리하고 완료시킬 수 있다. `wait_any`가 더하는 것은 "먼저 끝난 것부터"다.
 
 ### cl_vm_resume
 
@@ -108,18 +129,20 @@ CLFuture* f = cl_future_new(t, future_t);
 - 호스트 함수가 스크립트를 다시 부른 안쪽의 await는 `panic: Cannot await across a host call.`이다. 공개 C API에는 호스트가
   스크립트 함수를 부르는 수단이 없어 tars-agent의 능력 함수에서는 닿지 않는다.
 - `fn main() -> !T`가 돌려준 오류는 이제 `panic: Unwrapped error ...`이고 호스트는 `CL_ERROR_PANIC`을 받는다(이전에는
-  `!T` 값이 조용히 결과로 왔다). 같은 0.4.8에 들어간다.
+  `!T` 값이 조용히 결과로 왔다). `fn main() -> error`가 돌려준 오류도 같다. 같은 0.4.8에 들어간다.
+- 피연산자의 평가 순서가 왼쪽에서 오른쪽으로 지켜진다(F-98 수정). 이전에는 `host.ask(2).await() + host.ask(3).await()`가 요청
+  둘을 먼저 보낸 뒤 첫 await에 닿았다. 이제 첫 await가 끝난 뒤에 두 번째 요청이 나간다. 요청을 동시에 보내려면 Future를
+  변수에 먼저 받아 둔다(`a := ask(2)` · `b := ask(3)` 뒤 `a.await() + b.await()`).
 - wasm32에서 `cl_thread_retain` 등 `CLValue`를 값으로 주고받는 함수 일곱 개의 ABI가 헤더와 달랐던 것을 고쳤다. 64비트
   타깃은 영향이 없다.
 
 ## 4. 남은 제약과 알려진 문제
 
-- 호스트는 한 번에 Future 하나만 본다. 여러 Future를 동시에 기다리는 수단(`wait_any`, 단계 4)이 없어 도구 여러 개를 동시에
-  돌리는 스크립트는 쓸 수 없다. await는 순서대로 하나씩 호스트에 온다.
+- `wait_any`의 목록은 같은 `T`의 Future만 받는다. 결과 타입이 다른 도구를 한 목록에 넣으려면 공통 타입(`str` 등)으로 맞춘다.
+- 취소는 없다. 스크립트가 끝나지 않은 Future를 버려도 호스트에 알리지 않는다. 그 Future는 참조가 없어지면 해제되므로,
+  호스트가 `cl_vm_pending_future(s)`로 지금 받은 포인터가 아닌 옛 포인터를 완료시키려면 만들 때 `cl_thread_retain`으로 잡아 둔
+  것이어야 한다. 잡지 않은 옛 포인터는 쓰지 않는다.
 - fiber 안의 await는 eval 전체를 멈춘다. 다른 fiber에 양보하지 않는다(단계 3).
-- 한 식 안에 임시 값을 수신자로 하는 메서드 호출이 둘 이상이면 수신자를 먼저 전부 만든다(F-98, 미수정).
-  `host.ask(2).await() + host.ask(3).await()`는 요청 둘이 모두 나간 뒤 첫 await에 닿는다. 래퍼 함수를 거치면
-  (`ask(2) + ask(3)`) 순서가 지켜지고, 문장을 나눠도 지켜진다. 머리말의 래퍼만 모델에 보이는 tars-agent 방식에서는 드러나지 않는다.
 - `spawn`한 스레드 안의 호스트 Future await는 panic이다.
 - 임베딩용 `CL_YIELD`(루트 맥락의 `suspend`)와 AOT(C 백엔드) 지원은 없다.
 - 호스트 함수 안에서 막힌 호출을 interrupt로 끊지 못하는 것(F-42)은 그대로다. 이번 변경은 막히는 대신 Future를 돌려주게 해서
@@ -127,7 +150,7 @@ CLFuture* f = cl_future_new(t, future_t);
 
 ## 5. 검증
 
-- lib 테스트 `src/lib_test/await.zig` 10개(누수 검사 할당자). 요청서의 검증 목록 전체를 다룬다: 기본 · 연속 await, 깊은 호출 ·
+- lib 테스트 `src/lib_test/await.zig` 11개(누수 검사 할당자, `wait_any` 포함). 요청서의 검증 목록 전체를 다룬다: 기본 · 연속 await, 깊은 호출 ·
   generator 본문 · fiber, 값 · 오류 완료와 `!else`, 완료된 Future의 빠른 경로, await하지 않은 · 미완료 Future,
   `persist_main` 지역 이월, 버리기 뒤 재사용 · 멈춘 동안의 거부, resume 뒤 연료 · interrupt · 메모리 상한 · panic, spawn 스레드.
 - 예제 `examples/libcyber/host_await.c`: `fs.write`를 승인 · 거부 · 취소하는 호스트. `zig build lib-standalone-test`가 실행한다.
@@ -135,6 +158,9 @@ CLFuture* f = cl_future_new(t, future_t);
 
 ## 6. 커밋과 릴리스
 
+- `a14e33c7` Panic on an error returned from main, fix multi-delimiter trim and quadratic join
 - `8de18b05` Suspend an eval at an await of a host future and resume it (CL_AWAIT)
-- 같은 범위의 앞선 커밋: `a14e33c7`(main이 돌려준 오류를 panic으로).
+- `034fae2c` Clear an interrupt request from the time of the suspension on resume
+- `18dde37c` Evaluate operands left to right, panic on an error returned by main
+- `de98510f` Add Future.wait_any and cl_vm_pending_futures
 - 릴리스 버전: 0.4.8 예정. 아직 태그하지 않았다.
