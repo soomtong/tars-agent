@@ -38,7 +38,7 @@
 - [ ] C2 regex 모듈 (역추적 없는 엔진). M2보다 먼저
 - [ ] C2 time 모듈. M2보다 먼저
 - [ ] C3 임베딩 옵션 (모듈 허용 표, spawn 차단). M1 중
-- [~] C3 CL_AWAIT: 루트 맥락 중단과 재개, 호스트 Future C API (ADR 0011). 2026-11-12 요청, master 8de18b05~3adb833b와 태그 API(커밋 전) 구현(wait_any 포함), 검토 통과. 남은 것: cyber 0.4.8 릴리스
+- [~] C3 CL_AWAIT: 루트 맥락 중단과 재개, 호스트 Future C API (ADR 0011). 2026-11-12 요청, master 8de18b05~94350e31 구현(태그 API 포함)(wait_any 포함), 검토 통과. 남은 것: cyber 0.4.8 릴리스
 - [ ] cyber 0.4.8 릴리스 뒤: deps.md 고정 버전 올리기, 프롬프트 안내 갱신(슬라이스 시작 생략 a[..n], fn main() -> !T의 오류가 panic, trim 여러 구분자 수정), 안내 예제 재실행
 - [x] C3 #[bind] 문서: cyber 0.4.5의 docs/docs.md Attributes 절과 #[bind] hooks 절
 - [ ] 수시: 프로세스를 죽이는 경로 수정

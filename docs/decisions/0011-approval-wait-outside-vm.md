@@ -1,6 +1,6 @@
 # 0011 승인 대기는 VM 밖에서 한다 (cyber CL_AWAIT)
 
-상태: 확정 (2026-11-12). 0009의 "능력 안에서 스크립트를 멈추고 재개하기" 행을 바꾼다. cyber 쪽 구현을 요청했다 (docs/requests/cyber-cl-await.md). 2026-11-12 cyber master 8de18b05~3adb833b와 커밋 전의 태그 API로 구현됐고(0.4.8 예정, 보고 docs/requests/cyber-cl-await-report.md) 검토를 통과했다(전체 테스트 82단계 통과, 요청 13개 항목 충족). 최종 API는 spec/08. cyber 릴리스가 나와 고정 버전을 올리기 전까지는 아래 "도입 전까지"를 따른다.
+상태: 확정 (2026-11-12). 0009의 "능력 안에서 스크립트를 멈추고 재개하기" 행을 바꾼다. cyber 쪽 구현을 요청했다 (docs/requests/cyber-cl-await.md). 2026-11-12 cyber master 8de18b05~94350e31(태그 API 포함)로 구현됐고(0.4.8 예정, 보고 docs/requests/cyber-cl-await-report.md) 검토를 통과했다(전체 테스트 82단계 통과, 요청 13개 항목 충족). 최종 API는 spec/08. cyber 릴리스가 나와 고정 버전을 올리기 전까지는 아래 "도입 전까지"를 따른다.
 
 ## 결정
 

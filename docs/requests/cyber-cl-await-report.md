@@ -3,7 +3,7 @@
 soomtong/cyber에서 2026-11-12에 받은 보고 원문이다. 요청은 docs/requests/cyber-cl-await.md, 반영은 docs/spec/08-cyber-implementation.md와 ADR 0011.
 
 요청서 `cyber-cl-await-request.md`에 대한 답이다. 2026-11-12 구현, soomtong/cyber의 master 로컬 커밋 `8de18b05`부터
-`3adb833b`까지. 릴리스는 0.4.8 예정이고 tars-agent의 피드백을 확인한 뒤에 낸다. 그때까지는 master를 빌드해서 쓴다.
+`94350e31`까지(origin/master에 push됨). 릴리스는 0.4.8 예정이고 tars-agent의 피드백을 확인한 뒤에 낸다. 그때까지는 master를 빌드해서 쓴다.
 
 원본 기록은 cyber 저장소의 `docs/decisions/project_coroutines.md` "단계 1 구현 (2026-11-12)" 절, 계약은 `src/include/cyber.h`의
 "Suspended evals and host futures" 절, 동작하는 호스트는 `examples/libcyber/host_await.c`다.
@@ -176,4 +176,5 @@ print(futs[i].await())                 -- 끝난 Future의 await는 멈추지 �
 - `18dde37c` Evaluate operands left to right, panic on an error returned by main
 - `de98510f` Add Future.wait_any and cl_vm_pending_futures
 - `3adb833b` Make a host retain the futures whose pointers it keeps
+- `94350e31` Tag host futures with the request they belong to (cl_future_tag)
 - 릴리스 버전: 0.4.8 예정. 아직 태그하지 않았다.
