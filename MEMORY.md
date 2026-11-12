@@ -19,3 +19,4 @@
 - [0013 범위](docs/decisions/0013-scope-coding-agent-and-tars-self-operation.md) — 코딩 에이전트, tars 자기 조작(명령 실행, 콘솔 입력), tars-linux 개선 포함
 - [0014 개발 중 저렴한 모델](docs/decisions/0014-cheap-models-for-development.md) — 전송 형식 둘(Anthropic Messages, OpenAI Chat Completions) 지원, 기본 제공자 DeepSeek, 평가는 OpenRouter의 Qwen, stop_reason 어긋남
 - [0015 제공자 설계](docs/decisions/0015-provider-message-model-and-adapters.md) — 자체 메시지 모델(블록 기반), 형식별 어댑터, 제공자는 설정 데이터, 원문은 불투명 칸
+- [0016 동시 승인과 v1의 fiber](docs/decisions/0016-concurrent-approvals-and-fibers-in-v1.md) — cyber 0.4.9 대응: 요청 번호 순으로 하나씩 묻고 resume, 안내는 fiber와 scope를 가르치지 않음, 되살리는 조건
