@@ -22,4 +22,5 @@
 - [0016 동시 승인과 v1의 fiber](docs/decisions/0016-concurrent-approvals-and-fibers-in-v1.md) — cyber 0.4.9 대응: 요청 번호 순으로 하나씩 묻고 resume, 안내는 fiber와 scope를 가르치지 않음, 되살리는 조건
 - [0017 M0 스파이크의 발견과 추천](docs/decisions/0017-m0-spike-findings.md) — 링크, 승인 흐름, 상한, 두 형식, tars 게스트 실행 확인. cyber 결함 둘(컴파일 실패 뒤 죽음, !str 복사). 본체 추천 일곱
 - [M0 스파이크 검토 결과](docs/spikes/2026-11-13-m0-spikes-review.md) — 에이전트가 도는 법, 스파이크별 실측, direct 대 CodeAct 비교, 아키텍처 추천 열다섯
+- [M0 스파이크 검토 02](docs/spikes/2026-11-13-m0-spikes-review-02.md) — cyber dev로 재실행: 결함 둘 우회 없이 통과, 모델이 Cyber를 쓰는 양과 틀리는 패턴, 안내 갱신 효과, `not` 우선순위 결함 후보
 - [스파이크의 결함은 모두 고치고 진행](docs/decisions/feedback-fix-spike-defects-first.md) — 우회를 본체에 옮기지 않는다. 이웃 저장소 결함은 요청, 릴리스, 재현 통과 확인 뒤 진행

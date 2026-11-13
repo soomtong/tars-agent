@@ -33,6 +33,13 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 남은 작업
 
+2026-11-13 뒤 세션: cyber dev(master dcedfc48 + 작업 트리)로 스파이크를 다시 돌렸다. 결과는 docs/spikes/2026-11-13-m0-spikes-review-02.md. 결함 둘은 dev에서 우회 없이 통과(릴리스 대기). 안내(prompt/cyber-subset*.md)를 기준 0.4.10-DEV로 고쳤고 컴파일 오류가 크게 줄었다. 사용자가 정할 것 셋:
+
+- [ ] `not`이 `and`, `or`보다 약하게 묶이는 것(review-02 6.2)을 cyber 결함으로 요청할지. 스파이크 결함 규칙에 든다고 봄
+- [ ] 안내가 약 6,000토큰으로 커져 TODO의 4,000토큰 목표를 넘는다. 목표를 바꿀지 안내를 줄일지 (review-02 8절)
+- [ ] review-02 7절의 cyber 요청 후보 중 어느 것을 요청서로 쓸지
+
+
 정본은 docs/TODO.md다. 본체 구현은 페어 코딩이다: 사용자와 함께 검토하며 한 단계씩 간다 (CLAUDE.md, ADR 0012).
 
 - [ ] 사용자가 docs/spikes/2026-11-13-m0-spikes-review.md를 읽고 ADR 0017의 추천을 받거나 바꾼다. 그 뒤 spike/를 지운다
