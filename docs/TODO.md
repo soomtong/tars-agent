@@ -42,7 +42,13 @@
 
 필요한 것은 cyber에 만든다. 작업 장소는 soomtong/cyber이고 그 저장소의 절차를 따른다. 목록과 필요의 증거는 08 문서 "cyber에서 만들 것"이 정본이다. M 단계와 나란히 간다.
 
-- [ ] C0 결함 둘 (요청서 docs/requests/cyber-m0-spike-findings.md, 2026-11-13): 실패한 컴파일 뒤 다음 컴파일에서 죽는 것, `!str` 값 복사의 컴파일 오류. M1보다 먼저
+- [ ] C0 스파이크의 결함 (요청서 docs/requests/cyber-m0-spike-findings.md, 2026-11-13). 모두 닫힌 뒤에 본체 첫 단계로 간다 (feedback-fix-spike-defects-first.md)
+  - [ ] 실패한 컴파일 뒤 다음 컴파일에서 죽는 것
+  - [ ] `!str` 값 복사의 컴파일 오류
+  - [ ] 빌드 내보내기
+  - [ ] spawn 차단 옵션
+  - [ ] 호스트 함수의 인자 읽기 순서 (문서 또는 확인)
+  - [ ] 수정 릴리스 뒤: 고정 버전 올리기, 스파이크 재현 재실행, 우회를 걷어 낸 모양으로 통과 확인
 - [ ] C1 json 모듈 (parse, stringify, 값 트리). M0의 평가 실행보다 먼저
 - [ ] C1 toon 모듈 (stringify, parse). 목적은 모델에게 돌려주는 결과의 토큰 절약. 값 트리는 json 모듈과 같이 쓴다. json 다음에 요청서를 쓴다
 - [ ] C1 빌드 내보내기: 스파이크 1에서 필요가 확인됐다 (artifact("cyber")가 없다). 요청서에 포함

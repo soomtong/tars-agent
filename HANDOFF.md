@@ -36,7 +36,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 정본은 docs/TODO.md다. 본체 구현은 페어 코딩이다: 사용자와 함께 검토하며 한 단계씩 간다 (CLAUDE.md, ADR 0012).
 
 - [ ] 사용자가 docs/spikes/2026-11-13-m0-spikes-review.md를 읽고 ADR 0017의 추천을 받거나 바꾼다. 그 뒤 spike/를 지운다
-- [ ] cyber에 요청서 전달 (docs/requests/cyber-m0-spike-findings.md): 결함 둘이 M1의 선행 조건이다
+- [ ] cyber에 요청서 전달 (docs/requests/cyber-m0-spike-findings.md). 스파이크의 결함은 모두 고치고 진행한다(사용자 지시, feedback-fix-spike-defects-first.md): 수정 릴리스, 고정 버전 올리기, 재현 재실행, 우회 없이 통과 확인이 본체 첫 단계의 선행 조건이다. 우회(fork 검증, 손잡이, zig build lib)는 본체에 넣지 않는다
 - [ ] 본체 첫 단계: 저장소 뼈대와 runtime 경계. 단계의 결정, 편집, 기능 표를 먼저 낸다
 
 - [ ] ADR 0015의 "2a 뒤에 정할 것" 넷: 스파이크의 답은 검토 문서 4.2에 있다. 확정은 본체의 메시지 모델 단계에서

@@ -4,7 +4,7 @@
 
 호스트는 Zig 0.17.1, macOS arm64와 x86_64-linux-gnu(tars 게스트). 라이브러리는 받은 패키지에서 `zig build lib -Doptimize=ReleaseFast -Dffi=false -Dstatic=true`로 만들었다. eval 설정은 persist_main과 deny_raw_ptrs를 켰다.
 
-우선순위 순이다. 1과 2가 tars-agent M1의 선행 조건이다.
+우선순위 순이다. tars-agent는 스파이크의 결함을 모두 고친 뒤에 본체로 간다(사용자 지시). 1~4와 5의 첫 항목이 본체 첫 단계의 선행 조건이다.
 
 ## 1. 실패한 컴파일 뒤 다음 컴파일에서 프로세스가 죽는다
 
