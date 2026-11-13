@@ -449,6 +449,10 @@ pub fn main(init: std.process.Init) !void {
     if (args.len > 1 and std.mem.eql(u8, args[1], "spawn")) return spawnProbe();
     if (args.len > 1 and std.mem.eql(u8, args[1], "crash")) return crashRepro(if (args.len > 2 and args[2][0] == '2') 2 else 1, !(args.len > 3));
 
+    // 앞선 실행이 남긴 파일이 검사를 속이지 않게 임시 폴더를 비우고 시작한다.
+    std.Io.Dir.cwd().deleteTree(g_io, scratch) catch {};
+    std.Io.Dir.cwd().createDirPath(g_io, scratch) catch {};
+
     const ver = c.cl_full_version();
     std.debug.print("libcyber: {s}\n\n", .{S(ver)});
 
