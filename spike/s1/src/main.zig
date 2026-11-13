@@ -378,6 +378,31 @@ fn crashRepro(variant: u8, persist: bool) void {
     std.debug.print("no crash\n", .{});
 }
 
+// 재현: 파일에 든 스크립트들을 "\n=====\n"로 나눠 한 VM에서 차례로 validate, eval한다.
+// 스파이크 2의 세션에서 죽은 순서를 그대로 다시 돌리는 데 쓴다.
+fn replay(path: []const u8, no_validate: bool) void {
+    const data = std.Io.Dir.cwd().readFileAlloc(g_io, path, g_gpa, .limited(1 << 20)) catch return;
+    const vm = newVm();
+    var res: c.CLEvalResult = undefined;
+    _ = c.cl_vm_evalx(vm, B("prelude"), B("use fs\nuse proc\n"), evalConfig(), &res);
+    var it = std.mem.splitSequence(u8, data, "\n=====\n");
+    var i: usize = 0;
+    while (it.next()) |src| : (i += 1) {
+        std.debug.print("script {d}: ", .{i});
+        if (!no_validate) {
+            const v = c.cl_vm_validate(vm, B(src));
+            std.debug.print("validate={s} ", .{codeName(v)});
+            if (v != c.CL_SUCCESS) {
+                std.debug.print("\n", .{});
+                continue;
+            }
+        }
+        const r = run(vm, src, .{});
+        std.debug.print("eval={s}\n", .{codeName(r.code)});
+    }
+    std.debug.print("no crash\n", .{});
+}
+
 // spawn 관찰: 스레드 안의 능력 호출, 스레드 안의 무한 루프와 상한.
 fn spawnProbe() void {
     const vm = newVm();
@@ -420,6 +445,7 @@ pub fn main(init: std.process.Init) !void {
     std.Io.Dir.cwd().createDirPath(g_io, scratch) catch {};
 
     const args = try init.minimal.args.toSlice(init.arena.allocator());
+    if (args.len > 1 and std.mem.eql(u8, args[1], "replay")) return replay(args[2], args.len > 3);
     if (args.len > 1 and std.mem.eql(u8, args[1], "spawn")) return spawnProbe();
     if (args.len > 1 and std.mem.eql(u8, args[1], "crash")) return crashRepro(if (args.len > 2 and args[2][0] == '2') 2 else 1, !(args.len > 3));
 

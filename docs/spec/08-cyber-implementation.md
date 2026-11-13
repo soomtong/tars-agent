@@ -50,14 +50,17 @@
 - JSON, 정규식, 날짜 라이브러리. cyber 표준 모듈로 만든다 (아래 목록).
 - c 모듈을 끄는 옵션과 spawn을 끄는 옵션. 지금은 호스트 로더에서 거부하고 deny_raw_ptrs를 켠다.
 
-## M0에서 확인할 것
+## M0에서 확인한 것 (2026-11-13, 스파이크 1과 3. 상세는 docs/spikes/2026-11-13-m0-spikes-review.md)
 
-- cyber를 build.zig.zon 의존으로 받아 Zig 모듈 또는 정적 라이브러리로 링크할 수 있는가. 안 되면 fork의 build.zig에 내보내기를 더한다.
-- 점이 든 모듈 이름(fs.read)이 use fs와 호스트 모듈 등록으로 그대로 되는가: 된다(cyber host_await.c의 use fs, fs.write). 기본값 매개변수가 #[bind] 함수에서 되는가. 안 되면 Cyber 쪽 래퍼 함수를 머리말에 둔다.
-- 호스트 로더에서 core의 일부 함수를 가릴 필요가 있는가. 0.4.7에서 intrinsic이 스크립트에서 막혀 남은 후보는 적다. fiber는 스레드를 만들지 않으므로 막을 대상이 아니다.
-- spawn을 막는 가장 싼 방법.
-- deny_raw_ptrs와 호스트 모듈 선언이 함께 동작하는가 (호스트 모듈은 표준 모듈이 아니다).
-- x86_64-linux-gnu 교차 빌드와 tars 게스트에서의 실행.
+- build.zig.zon 의존: 받아지지만 `artifact("cyber")`가 없다. 지금은 build.zig에서 받은 패키지 폴더로 `zig build lib -Dffi=false -Dstatic=true`를 실행해 libcyber.a를 링크한다. 내보내기를 cyber에 요청했다. Zig 0.17.1에는 @cImport가 없어 cyber.h는 translate-c 패키지나 손으로 쓴 extern으로 가져온다.
+- 점이 든 모듈 이름(use fs, fs.read)은 호스트 로더로 그대로 된다. `#[bind]` 함수에 기본값 매개변수는 쓸 수 없다(Cyber에 기본값 매개변수가 없다). 머리말에 래퍼를 둔다.
+- core의 함수를 가릴 필요는 보이지 않았다. 다만 로더는 차단 목록이 아니라 허용 목록으로 써야 한다(기본 로더가 io 모듈을 준다).
+- spawn은 막는 장치가 없고 스레드 안에서 능력 함수가 불린다. 연료와 interrupt는 스레드의 폭주도 멈춘다. 차단 옵션을 cyber에 요청했다. 그 전에는 능력 함수가 메인 스레드가 아니면 panic을 돌려준다.
+- deny_raw_ptrs와 호스트 모듈 선언은 함께 동작한다. cl_vm_validate도 세션의 deny_raw_ptrs를 따른다.
+- x86_64-linux-gnu 교차 빌드는 macOS에서 43초, tars 게스트(Linux 6.18.60)에서 검사 31개가 통과했다.
+- 호스트 함수의 인자 읽기는 순서가 있다: cl_thread_ret 먼저, 매개변수는 선언 순서. 어기면 죽는다.
+- 결함 둘 (요청서 docs/requests/cyber-m0-spike-findings.md): 실패한 컴파일 뒤 다음 컴파일에서 Segmentation fault. `!str` 값의 복사가 컴파일 오류라 `Future[!str]`을 쓸 수 없다(문자열 결과는 `Future[!int]` 손잡이와 take(h)로 우회).
+- mimalloc은 FFI를 끈 라이브러리 빌드에 들어가지 않는다.
 
 ## cyber에서 만들 것 (ADR 0010)
 

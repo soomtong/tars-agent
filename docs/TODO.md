@@ -24,12 +24,13 @@
 
 스파이크는 Claude가 혼자 검토, 구현하고 결정도 위임받았다 (ADR 0012의 덧붙임, 2026-11-13). 코드는 spike/에, 상세한 검토 결과는 docs/spikes/에 둔다. 사용자는 검토 결과로 아키텍처의 감을 잡고, 본체 구현은 페어로 한다.
 
-- [ ] 스파이크 1, 호스트 경계: build.zig.zon으로 cyber를 받아 Zig에서 링크. 능력 2개(fs.read, proc.exec), 호스트 로더(c 거부), deny_raw_ptrs, 연료(fuel), 벽시계(wall-clock) interrupt, 스택과 메모리 상한, persist_main 반복 eval, validate, 능력 안에서 블록 후 반환
-- [ ] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인할 것" 여섯 항목)
-- [ ] 스파이크 1에서 동시 승인 확인 (ADR 0016): scope 블록으로 요청 둘을 걸고 번호 순으로 하나씩 완료, 중첩 블록에서 그룹 밖 요청 먼저 완료(cyber F-111), 하나를 거부하면 나머지가 버려지고 요청 표가 비는지
-- [ ] 스파이크 2, 제공자: 전송 형식 둘(Anthropic Messages, OpenAI Chat Completions)을 DeepSeek으로 확인 (ADR 0014). Zig std.http로 스트리밍 요청, SSE 해석, run 도구 한 번 왕복. TLS와 CA 묶음이 macOS와 tars 게스트에서 되는지. 안 되면 대안(curl 프로세스)을 정한다
+- [x] 스파이크 1, 호스트 경계: build.zig.zon으로 cyber를 받아 Zig에서 링크. 능력 2개(fs.read, proc.exec), 호스트 로더(c 거부), deny_raw_ptrs, 연료(fuel), 벽시계(wall-clock) interrupt, 스택과 메모리 상한, persist_main 반복 eval, validate, 능력 안에서 블록 후 반환
+- [x] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인할 것" 여섯 항목)
+- [x] 스파이크 1에서 동시 승인 확인 (ADR 0016): scope 블록으로 요청 둘을 걸고 번호 순으로 하나씩 완료, 중첩 블록에서 그룹 밖 요청 먼저 완료(cyber F-111), 하나를 거부하면 나머지가 버려지고 요청 표가 비는지
+- [x] 스파이크 2, 제공자: 전송 형식 둘(Anthropic Messages, OpenAI Chat Completions)을 DeepSeek으로 확인 (ADR 0014). Zig std.http로 스트리밍 요청, SSE 해석, run 도구 한 번 왕복. TLS와 CA 묶음이 macOS와 tars 게스트에서 되는지. 안 되면 대안(curl 프로세스)을 정한다
+- [x] 스파이크 검토 결과: docs/spikes/2026-11-13-m0-spikes-review.md, 발견과 추천은 ADR 0017 (2026-11-13). 스파이크 코드(spike/)는 사용자가 검토한 뒤 지운다
 - [ ] cyber C1 (json 모듈)이 끝난 뒤 평가를 돌린다. 스파이크 셋은 C1과 나란히 한다
-- [ ] 스파이크 3, 교차 빌드: x86_64-linux-gnu 산출물이 tars 게스트(QEMU)에서 실행되는지
+- [x] 스파이크 3, 교차 빌드: x86_64-linux-gnu 산출물이 tars 게스트(QEMU)에서 실행되는지
 - [ ] Cyber 부분집합 안내 초안 (prompt/cyber-subset.md, 4,000 토큰 이하, 예제 10개)
 - [ ] eval/: 과제 20개와 채점기. 과제는 실제 쓰임에서 고른다 (파일 찾아 고치기, 여러 파일 집계, 명령 실행 후 출력 가공, 오류 처리, JSON 꺼내기 등). 과제마다 3회 실행
 - [ ] 평가 실행: CodeAct 대 direct(같은 능력을 JSON 도구로), 모델은 DeepSeek과 OpenRouter의 Qwen 계열 (ADR 0014, 목록은 평가 설계 때 정한다). 기록: 첫 시도 validate 통과율, 과제 성공률, 스텝 수, 토큰, 실패 유형
@@ -41,12 +42,13 @@
 
 필요한 것은 cyber에 만든다. 작업 장소는 soomtong/cyber이고 그 저장소의 절차를 따른다. 목록과 필요의 증거는 08 문서 "cyber에서 만들 것"이 정본이다. M 단계와 나란히 간다.
 
+- [ ] C0 결함 둘 (요청서 docs/requests/cyber-m0-spike-findings.md, 2026-11-13): 실패한 컴파일 뒤 다음 컴파일에서 죽는 것, `!str` 값 복사의 컴파일 오류. M1보다 먼저
 - [ ] C1 json 모듈 (parse, stringify, 값 트리). M0의 평가 실행보다 먼저
 - [ ] C1 toon 모듈 (stringify, parse). 목적은 모델에게 돌려주는 결과의 토큰 절약. 값 트리는 json 모듈과 같이 쓴다. json 다음에 요청서를 쓴다
-- [ ] C1 빌드 내보내기 (스파이크 1에서 필요가 확인되면)
+- [ ] C1 빌드 내보내기: 스파이크 1에서 필요가 확인됐다 (artifact("cyber")가 없다). 요청서에 포함
 - [ ] C2 regex 모듈 (역추적 없는 엔진). M2보다 먼저
 - [ ] C2 time 모듈. M2보다 먼저
-- [ ] C3 임베딩 옵션 (모듈 허용 표, spawn 차단). M1 중
+- [ ] C3 임베딩 옵션 (모듈 허용 표, spawn 차단). M1 중. spawn 차단은 요청서에 포함 (스레드 안에서 능력 함수가 불린다)
 - [x] C3 CL_AWAIT: 루트 맥락 중단과 재개, 호스트 Future C API (ADR 0011). 2026-11-12 요청, master 8de18b05~94350e31 구현(태그 API 포함)(wait_any 포함), 검토 통과, cyber 0.4.8로 릴리스
 - [x] C3 #[bind] 문서: cyber 0.4.5의 docs/docs.md Attributes 절과 #[bind] hooks 절
 - [ ] 수시: 프로세스를 죽이는 경로 수정

@@ -1,0 +1,3 @@
+out/*.log
+out/*.trace
+out/crash-replay.txt

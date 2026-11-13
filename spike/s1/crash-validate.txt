@@ -1,0 +1,8 @@
+names := []str{'a', 'b'}
+counts := Map[str, int]{}
+names.sort(|a, b| counts[a] > counts[b])
+
+=====
+counts := Map[str, int]{}
+counts['a'] = 1
+print(counts['a'])
