@@ -33,11 +33,11 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 남은 작업
 
-2026-11-13 뒤 세션: cyber dev(master dcedfc48 + 작업 트리)로 스파이크를 다시 돌렸다. 결과는 docs/spikes/2026-11-13-m0-spikes-review-02.md. 결함 둘은 dev에서 우회 없이 통과(릴리스 대기). 안내(prompt/cyber-subset*.md)를 기준 0.4.10-DEV로 고쳤고 컴파일 오류가 크게 줄었다. 사용자가 정할 것 셋:
+2026-11-14 세션: cyber master 6ed1b6c4와 작업 트리로 스파이크를 다시 돌렸다. 결과는 docs/spikes/2026-11-14-m0-spikes-review-03.md. review-02의 요청 후보(`not` 우선순위 포함)는 모두 반영됐다. 새 결함 하나: `^[]str`에 `+=`하면 메모리가 깨지고 호스트가 죽는다(0.4.9부터). 요청서는 docs/requests/cyber-m0-spike-review-03.md. 안내(prompt/cyber-subset*.md)는 6ed1b6c4 기준으로 고쳤다. 사용자가 정할 것:
 
-- [ ] `not`이 `and`, `or`보다 약하게 묶이는 것(review-02 6.2)을 cyber 결함으로 요청할지. 스파이크 결함 규칙에 든다고 봄
-- [ ] 안내가 약 6,000토큰으로 커져 TODO의 4,000토큰 목표를 넘는다. 목표를 바꿀지 안내를 줄일지 (review-02 8절)
-- [ ] review-02 7절의 cyber 요청 후보 중 어느 것을 요청서로 쓸지
+- [ ] 요청서 docs/requests/cyber-m0-spike-review-03.md를 cyber에 전달 (1절 결함이 먼저)
+- [ ] 안내가 약 6,300토큰(18.7KB)으로 TODO의 4,000토큰 목표를 넘는다. 목표를 바꿀지 안내를 줄일지 (review-02 8절)
+- [ ] 실행 쪽에서도 호스트가 죽을 수 있으니 runtime 경계에서 VM을 별도 프로세스로 둘지 (review-03 7절, 본체 첫 단계에서)
 
 
 정본은 docs/TODO.md다. 본체 구현은 페어 코딩이다: 사용자와 함께 검토하며 한 단계씩 간다 (CLAUDE.md, ADR 0012).

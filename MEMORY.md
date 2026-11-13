@@ -23,4 +23,5 @@
 - [0017 M0 스파이크의 발견과 추천](docs/decisions/0017-m0-spike-findings.md) — 링크, 승인 흐름, 상한, 두 형식, tars 게스트 실행 확인. cyber 결함 둘(컴파일 실패 뒤 죽음, !str 복사). 본체 추천 일곱
 - [M0 스파이크 검토 결과](docs/spikes/2026-11-13-m0-spikes-review.md) — 에이전트가 도는 법, 스파이크별 실측, direct 대 CodeAct 비교, 아키텍처 추천 열다섯
 - [M0 스파이크 검토 02](docs/spikes/2026-11-13-m0-spikes-review-02.md) — cyber dev로 재실행: 결함 둘 우회 없이 통과, 모델이 Cyber를 쓰는 양과 틀리는 패턴, 안내 갱신 효과, `not` 우선순위 결함 후보
+- [M0 스파이크 검토 03](docs/spikes/2026-11-14-m0-spikes-review-03.md) — 요청 후보 반영 확인, `^[]str` += 메모리 손상(호스트가 죽음), 안내는 세션에서 확인, `^Map` 정렬
 - [스파이크의 결함은 모두 고치고 진행](docs/decisions/feedback-fix-spike-defects-first.md) — 우회를 본체에 옮기지 않는다. 이웃 저장소 결함은 요청, 릴리스, 재현 통과 확인 뒤 진행

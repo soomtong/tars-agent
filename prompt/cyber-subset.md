@@ -2,7 +2,7 @@
 
 Cyber는 Python과 아주 비슷한 문법 구조를 가진다. 들여쓰기로 블록을 만들고, 줄바꿈으로 문장을 끝내고, `for`, `while`, `if`, `fn`, `use`, `print`를 거의 같은 감각으로 쓴다. 하지만 정적 타입이고 값 소유권이 있고 예외가 없다. 이런 부분들이 다르니까 코드를 구성할 때 본 문서를 참고한다. 모르는 문법은 Python 문법으로 추측하지 말고 아래 목록을 먼저 본다.
 
-기준 버전은 Cyber 0.4.10-DEV이다 (0.4.10 릴리스 뒤의 master, 커밋 dcedfc48과 그 뒤의 변경). 학습 데이터에 있는 옛 Cyber 문법(0.3의 `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`)은 모두 틀렸다. 0.4.6까지의 `#[generator] fn f()`와 symbol 리터럴 `@name`도 틀렸다. 지금은 `generator fn f()`와 `symbol.name`이다.
+기준 버전은 Cyber 0.4.10-DEV이다 (0.4.10 릴리스 뒤의 master, 커밋 6ed1b6c4와 그 뒤의 변경). 학습 데이터에 있는 옛 Cyber 문법(0.3의 `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`)은 모두 틀렸다. 0.4.6까지의 `#[generator] fn f()`와 symbol 리터럴 `@name`도 틀렸다. 지금은 `generator fn f()`와 `symbol.name`이다.
 
 Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 특정 시점의 빌드에 맞춘 것이므로 최신 빌드와 어긋날 수 있다. 문서를 사용하거나 고치기 전에 아래를 확인한다.
 
@@ -17,6 +17,8 @@ Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 특정 �
 
 - 타입이 보이는 단순한 코드를 쓴다. int, float, bool, str, []T, Map, ?T, !T, 필드가 단순한 type으로 충분하다.
 - 힙 참조 `^T`, 빌림 `&T`, `move`, trait, 템플릿, 제너레이터, `spawn`은 꼭 필요할 때만 쓴다.
+- `!T`를 돌려주는 호출은 출력하거나 쓰기 전에 `!`를 붙인다: `print(f())`가 아니라 `print(f()!)`.
+- 새 변수는 처음에 반드시 `:=`로 선언한다. 반복문과 `if` 블록 안에서도 그렇다. `x = ...`는 이미 있는 변수를 바꿀 때만 쓴다.
 - "있는 메서드"에 적힌 메서드만 부른다. 확신이 없으면 먼저 작은 조각으로 실행해 본다. 컴파일 오류는 실행 전에 나오고 줄 번호가 있다. 오류 문구대로 고친다.
 
 ## Python과 같은 것
@@ -48,7 +50,7 @@ Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 특정 �
 - `print(a, b)`는 `print(x)`. 인자는 정확히 하나. 합치려면 보간.
 - `len(xs)`는 `xs.len()` 메서드. `xs.len`은 오류.
 - `xs.append(1)`은 `xs += 1` 또는 `xs = xs.append(1)`. 크기를 바꾸는 메서드는 새 값을 돌려주므로 받아야 한다.
-- `xs.sort(key=...)`는 `xs.sort(|a, b| a < b)`. `a`가 앞이면 true를 돌려준다. 바깥 변수를 하나도 쓸 수 없다 ("정렬" 참고).
+- `xs.sort()`는 오름차순 정렬. `xs.sort(key=...)`나 `reverse=True`는 `xs.sort(|a, b| a > b)`: `a`가 앞이면 true를 돌려준다. 바깥 변수를 쓰려면 "정렬"을 본다.
 - `x in xs`는 `xs.contains(x)`, Map은 `m.contains(k)`
 - `[1, 2, 3]`은 `{1, 2, 3}`. 요소 타입은 첫 요소에서 정해진다. `[]int{1, 2, 3}`로 이름을 붙여도 된다. 빈 목록은 타입이 필요하다: `[]int{}`.
 - `{"a": 1, "b": 2}`는 `Map[str, int]{a=1, b=2}`. 맨 이름은 문자열 키다. 식으로 계산한 키는 괄호로 감싼다: `Map[str, int]{(k)=1}`. 빈 Map은 `Map[str, int]{}`.
@@ -61,7 +63,6 @@ Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 특정 �
 
 - 정적 타입이다. 타입 오류는 한 줄도 실행되기 전에 CompileError로 나온다. 변수 타입은 바꿀 수 없다.
 - truthy가 없다. `if x:`의 x는 반드시 bool이다. `if xs.len() > 0:`처럼 쓴다. 비트 연산은 `&&`, `||`, `~`이고 논리는 `and`, `or`, `not`이다.
-- `not`은 뒤의 식 전체에 걸린다: `not a and b`는 `not (a and b)`, `not a or b`는 `not (a or b)`다. Python과 반대이고 오류도 나지 않는다. `(not a) and b`로 쓴다.
 - 정수와 실수가 분리된다. `int + float`는 오류이고 왼쪽 피연산자 타입에 오른쪽이 맞춰진다. `float(i) + f`처럼 명시한다. 정수 값 실수는 `5.0`이 아니라 `5`로 출력된다.
 - 함수는 바깥 지역 변수를 읽지 못한다. 전역은 `global g int = 0`으로 선언한다.
 - 값을 돌려주는 호출을 문장으로 쓰면 오류다. 버리려면 `_ = f()`.
@@ -70,7 +71,7 @@ Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 특정 �
 - 최상위에서 `return`을 못 쓴다.
 - 단일 문자 문자열 `'s'`는 정수 자리에서 코드포인트(115)로 바뀐다. 문자열 변수 타입이 의심스러우면 `var n int = ...`로 확인한다.
 - 문자열 인덱스와 `len()`은 바이트 기준이다. 문자 수는 `s.count()`.
-- 문자열 `<`, `>`는 없다. `a.less(b)`를 쓴다. `==`는 된다.
+- 문자열은 `==`, `<`, `<=`, `>`, `>=`로 비교한다 (바이트 순).
 - Map 순회는 삽입 순서가 아니라 해시 순서다. 순서가 필요하면 `m.keys()`를 받아 정렬한다.
 - `xs[-1]` 음수 인덱스는 panic이다. 마지막은 `xs.last()` 또는 `xs[xs.len() - 1]`.
 - 슬라이스는 시작이나 끝을 생략할 수 있다: `s[..3]`, `s[2..]`. 끝은 제외되고 `s[1..=2]`는 끝을 포함한다. 음수는 안 된다. Python의 `s[:-1]`은 `s[..s.len() - 1]`이다 (`s[..-1]`은 panic).
@@ -88,14 +89,14 @@ str (문자열은 바뀌지 않는다. 모든 메서드가 새 값을 돌려준�
 - `s.len()` 바이트 수, `s.count()` 문자 수
 - `s.contains(sub)`, `s.starts_with(p)`, `s.ends_with(p)`, `s.index(sub)`는 `?int`
 - `s.split(sep)`는 `[]str`, `s.replace(old, new)`, `s.trim(chars)` (인자 필수), `s.upper()`, `s.lower()`, `s.repeat(n)`, `s.concat(t)`
-- 순서 비교 `s.less(t)`, 마지막 바이트 `s.last()`
+- 순서 비교 `a < b`나 `s.less(t)`, 마지막 바이트 `s.last()`
 
 []T:
 
 - `xs.len()`, `xs.contains(x)`, `xs.index(x)`는 `?int`, `xs.last()`
 - `[]str`의 `xs.join(sep)`는 `str`
 - `xs.append(x)`, `xs.insert(i, x)`, `xs.remove(i)`, `xs.clear()`: 새 목록을 돌려준다. 받는다: `xs = xs.remove(0)`
-- `xs.sort(|a, b| ...)`는 제자리에서 정렬하고 아무것도 돌려주지 않는다
+- `xs.sort()` (오름차순)와 `xs.sort(|a, b| ...)`는 제자리에서 정렬하고 아무것도 돌려주지 않는다
 
 Map[K, V]:
 
@@ -112,11 +113,11 @@ Python 이름에서 Cyber 이름으로:
 - `s.strip()`은 `s.trim({' ', '\n', '\t'})`
 - `s.find(sub)`는 `s.index(sub)`이고 `?int`다. `rfind`는 없다. 경로의 마지막 부분은 `p.split('/').last()`
 - `len(m)`은 `m.size()`. `m.items()`는 `for m |e|:`. `list(m)`은 `m.keys()`
-- `sorted(xs)`는 `xs.sort(|a, b| a < b)` (문자열은 `a.less(b)`)이고 `xs`를 바꾼다
+- `sorted(xs)`는 `xs.sort()`이고 `xs`를 바꾼다. `sorted(xs, reverse=True)`는 `xs.sort(|a, b| a > b)`
 
 ## 정렬
 
-`sort`에 주는 함수는 바깥 변수를 하나도 쓸 수 없다. `^T`, `&T`도 안 된다. 그래서 Map에 둔 개수로 이름을 정렬할 수 없다. 정렬 기준 값을 struct에 함께 담고 struct 목록을 필드로 정렬한다 (예제 4).
+`sort`에 주는 함수는 타입이 `^T`나 `&T`인 바깥 변수만 쓸 수 있다. Map의 값으로 키를 정렬하려면 Map을 힙에 선언한다: `counts := ^Map[str, int]{}`. 그러면 `names.sort(|a, b| counts[a] > counts[b])`가 되고, `counts`는 다음 run에도 남는다. 그냥 `Map[str, int]`이면 람다가 오류다. `^`는 Map에만 붙인다. 목록은 그냥 `[]T`로 둔다: `^[]str`로 쓰지 않는다. 최상위에서 빌리지 않는다(`c := &counts`): 최상위 빌림은 다음 run으로 이어질 수 없어 오류다. struct 목록은 필드로 정렬한다: `rows.sort(|a, b| a.n > b.n)`. 예제 4는 Map의 키를 개수로 정렬한다.
 
 ## 없는 것
 
@@ -133,7 +134,7 @@ json, regex, time 모듈은 지금 Cyber 표준에 없고 만드는 중이다 (d
 - `panic('msg')`는 잡을 수 없다. 프로그램 오류에만 쓰고 정상적인 실패는 `!T`로 돌려준다.
 - 최상위에서 쓴 `f()!`나 `fn main() -> !T`가 돌려준 오류는 잡히지 않은 오류라 panic으로 끝난다. 실패를 출력하고 계속하려면 최상위에서는 `try:` 블록으로 감싸고 `else |e|:`에서 출력한다 (최상위 `!else` 블록은 `return`으로 끝낼 수 없다).
 - `!T`를 돌려주는 호출은 `!void`라도 반드시 처리한다. `fs.write(p, s)`만 쓰면 오류다. `try:` 안에서 `fs.write(p, s)!`, 또는 `fs.write(p, s) !else |e|:`.
-- `!T` 값은 풀고 나서 쓴다: `x := r()!` 뒤에 `x.len()`. `r().len()`, `r().ok`는 오류다. `print(r())`는 값이 아니라 타입 이름 `!str`을 찍는다: `print(r()!)`로 쓴다.
+- `!T` 값은 풀고 나서 쓴다: `x := r()!` 뒤에 `x.len()`. `r().len()`, `r().ok`는 오류다. `print(r())`도 오류다: `print(r()!)`로 쓴다.
 - `int('abc')`는 오류 없이 0이다. 검증이 필요하면 `int.parse(s) !else ...`를 쓴다.
 
 ## 값, 참조, 빌림
@@ -142,7 +143,8 @@ json, regex, time 모듈은 지금 Cyber 표준에 없고 만드는 중이다 (d
 - 공유가 필요하면 `^`로 힙에 올린다. `p := ^P{name='a', age=3}`, 읽고 쓰기는 `p.age`, 값 전체는 `p.*`.
 - 함수가 인자를 수정하게 하려면 `fn inc(p &int)` 로 선언하고 `inc(&a)`로 부른다.
 - `Array[T]`는 복사가 금지된다. 넘기거나 옮길 때 `move a`. 이동 뒤 원본을 쓰면 오류다. 일반 목록은 `[]T`를 쓴다.
-- 클로저가 캡처하는 변수는 `^T`나 `&T`여야 하고, `sort`에 주는 함수는 아예 캡처하지 못한다. 단순한 코드에서는 클로저 대신 일반 함수나 반복문을 쓴다.
+- 클로저가 캡처하는 변수는 `^T`나 `&T`여야 한다. 람다가 쓸 변수는 `^`로 선언한다: `counts := ^Map[str, int]{}`. 단순한 코드에서는 클로저 대신 일반 함수나 반복문을 쓴다.
+- 최상위 변수는 다음 run에도 남지만 최상위 빌림(`c := &x`)은 남을 수 없다: `Cannot persist local ... of borrow type`. 함수 안에서 빌리거나 `^T`를 쓴다.
 
 ## 예제
 
@@ -176,27 +178,21 @@ print(mean({1, 2, 3, 4}))
 names := {'bob', 'alice'}
 names += 'carol'
 names = names.append('dave')
-names.sort(|a, b| a.less(b))
+names.sort()
 print(names.join(','))
 ```
 
-4. Map으로 세고 개수로 정렬하기 (해시 순서에 기대지 않는다)
+4. Map으로 세고 단어를 개수로 정렬하기 (해시 순서에 기대지 않는다)
 
 ```cy
-type Count:
-    word str
-    n int
-
-counts := Map[str, int]{}
+counts := ^Map[str, int]{}
 for 'the cat and the hat'.split(' ') |w|:
     counts[w] = (counts.get(w) ?else 0) + 1
 
-rows := []Count{}
-for counts.keys() |k|:
-    rows += Count{word=k, n=counts[k]}
-rows.sort(|a, b| a.n > b.n or (a.n == b.n and a.word.less(b.word)))
-for rows |r|:
-    print('%{r.word}: %{r.n}')
+words := counts.keys()
+words.sort(|a, b| counts[a] > counts[b] or (counts[a] == counts[b] and a < b))
+for words |w|:
+    print('%{w}: %{counts[w]}')
 ```
 
 5. struct, 메서드, 복사 의미
@@ -305,7 +301,7 @@ print('%{x} %{shared.*}')
 
 - `Expected end of line or file. Got ...`: `let`, `function`, `class`, `print "x"`, 세미콜론. Cyber 문법으로 다시 쓴다.
 - `Expected `(`.`: `else if`. `else 조건:`으로 쓴다.
-- `Expected :.`: `for i in xs:`나 `for 'a', 'b' |x|:`. `for xs |i|:`나 `for {'a', 'b'} |x|:`로 쓴다.
+- `Expected `:` or `|x|:`. ...`: `for i in xs:`나 `for 'a', 'b' |x|:`. `for xs |i|:`나 `for {'a', 'b'} |x|:`로 쓴다.
 - `A list literal uses braces: ...`: `['a', 'b']`. `{'a', 'b'}`로 쓴다.
 - `Expected `=` between a key and a value. ...`: `{'a': 1}`나 `P{name: 'x'}`. `Map[str, int]{a=1}`나 `P{name='x'}`로 쓴다.
 - `Expected a target type or at least one element.`: 빈 `{}`. `[]int{}`나 `Map[str, int]{}`로 쓴다.
@@ -324,8 +320,8 @@ print('%{x} %{shared.*}')
 - `Can not find the symbol ... for `?int`.`: Option을 풀지 않음. `?else`나 `if x |v|:`를 쓴다.
 - `Expected assignment to a variable ...`: 값을 버리는 호출. `_ = f()`나 변수에 받는다.
 - `Can not find the symbol `&&` for `bool`.`: 논리 AND. `and`로 쓴다.
-- `Can only capture variables declared with the reference types ...`: 클로저가 바깥 변수를 씀. 반복문을 쓰거나 struct 목록을 정렬한다 ("정렬" 참고).
-- `Expected argument `&OpaqueFunc[...]`, found ... when calling `fn sort(...)``: 정렬 함수가 바깥 변수를 씀. struct 목록을 필드로 정렬한다 ("정렬" 참고).
+- `Can only capture variables declared with the reference types ...`: 람다가 바깥 지역 변수를 씀. 그 변수를 `^`로 선언한다: `counts := ^Map[str, int]{}` ("정렬" 참고).
+- `Cannot persist local ... of borrow type ... across evals.`: 최상위의 `c := &x`. `^T`를 쓰거나 함수 안에서 빌린다.
 - `Cannot copy ..., type implements `NoCopy`.`: Array 복사. `[]T`를 쓰거나 `move`.
 - `Return statement is not allowed in the main block.`: 최상위 return. `fn main():`으로 감싼다.
 - `Missing return statement.`: 일부 경로에 return이 없음. 마지막에 return을 더한다.
