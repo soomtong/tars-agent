@@ -4,7 +4,7 @@
 
 tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code이고, 다른 점은 모델이 JSON 도구 호출 대신 Cyber 스크립트를 써서 실행하는 CodeAct 방식이라는 것이다. 호스트는 Zig 0.17.1, 런타임은 libcyber(soomtong/cyber) 정적 링크. 본체 코드는 아직 없다. 버릴 스파이크 코드가 spike/에 있다.
 
-이번 세션: 사용자가 요청서(cd7b218)에 대한 cyber 회신(docs/requests/cyber-m0-spike-response.md, 사용자가 둔 추적되지 않은 파일)을 받았다. 회신의 각 절을 cyber 로컬 master 6a155275에서 직접 확인했고 모두 회신대로였다. 기준 빌드를 6a155275로 올리고 스파이크, 안내, 문서를 고쳤다. 남은 요청은 커밋을 원격에 올리는 것 하나다.
+이번 세션: 사용자가 요청서(cd7b218)에 대한 cyber 회신(docs/requests/cyber-m0-spike-response.md, 사용자가 둔 추적되지 않은 파일)을 받았다. 회신의 각 절을 cyber 로컬 master 6a155275에서 직접 확인했고 모두 회신대로였다. 기준 빌드를 6a155275로 올리고 스파이크, 안내, 문서를 고쳤다. 이어서 사용자 지시로 회신 파일을 지우고, CodeAct 비교를 새 빌드와 새 안내로 다시 돌려(결과가 결정적이지 않아 회차를 늘림) 요청서에 결과와 새 문구 요청(2절)을 넣었다.
 
 ## 현재 브랜치
 
@@ -17,12 +17,16 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - [x] 스파이크: build.zig의 commit 인자를 6a155275로(버전 문자열은 이 인자를 찍을 뿐 소스에서 읽지 않는다). s1의 누수 둘(errorSummary 복사본, replay와 order의 g_out) 고침. s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2) 확인
 - [x] 안내 두 판: 기준 줄, `trimLeft()`/`trimRight()`와 `lstrip`/`rstrip` 대응 추가, 오류 목록에서 이제 고치는 법을 말하는 두 줄(목록 리터럴 타입, `s.len`) 삭제. 영문판 19,814바이트. 코드 블록 11개 CLI와 세션 통과, 오류 목록 21줄 첫 줄 확인
 - [x] 문서: 요청서(남은 것 push 하나와 확인을 마친 것), 검토 문서(7절 축소, 5절에 회차의 빌드 명시), 08, 00, deps, ADR 0017, 0019, TODO, MEMORY
+- [x] CodeAct 비교 다시: deepseek-chat 3회, qwen3.8-flash 5회, qwen3.8-max 1회, 과제 27개 모두 통과. 과제당 컴파일 오류 ds 0.44→0, flash 2.44→2.13(회차별 1.7~2.7, 흔들림 안), max 0→0.33. 고친 문구가 겨눈 실수는 보간 안의 보간 한 번만 나왔고 문구대로 고쳐졌다. 가장 흔한 오류는 `print(!str)`(33건 중 18). 원자료 spike/s2/out/dev/, 앞 빌드는 out/dev-5de6c83a/. 검토 문서 5절
+- [x] 요청서 2절: 회차에서 문구가 고치는 법을 말하지 않은 다섯(`# 주석`, `for f |{...}|:`, 튜플 반환 타입, 홑따옴표 안의 줄바꿈, 슬라이스 경계의 `?int`). 선행 조건은 아니다
+- [x] 회신 파일 삭제 (사용자 지시)
 - [x] 결정(스파이크 안, 위임): 능력이 반환 슬롯을 먼저 받는 규칙을 본체 추천에서 뺐다. `elif`, 보간 안의 보간, `and` 안의 풀기는 안내에 새로 넣지 않는다(컴파일러 문구가 말한다)
 
 ## 시도했으나 실패한 접근
 
 - `rg`로 spike/s2/out/dev/<회차>/의 trace 찾기: .gitignore에 걸린다. `rg --no-ignore`를 쓴다.
 - 비교를 시작한 뒤 s2나 안내를 고치기: 회차가 섞인다.
+- `s2 --help`, `s2 --version`: 인자가 아니라 질문으로 모델에 보낸다.
 - `/usr/local/bin/cyber`로 안내 확인: 기준 빌드가 아니다. cyber 저장소에서 `zig build cli -Doptimize=ReleaseFast -Dcommit=<커밋> --prefix <스크래치>`로 만든다(저장소의 zig-out은 건드리지 않는다).
 - 버전 문자열로 기준 빌드 확인하기: build.zig의 commit 인자가 찍힐 뿐이다. 실제 소스는 `git -C ../cyberscript log -1`과 `status`로 본다.
 - macOS의 `ls -t`: eza 별칭이라 `/bin/ls`를 쓴다.
@@ -34,9 +38,8 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 사용자가 정할 것:
 
-- [ ] 요청서(push 하나)를 cyber에 전달. 이것이 본체 첫 단계의 선행 조건이다
-- [ ] 회신 파일(docs/requests/cyber-m0-spike-response.md)을 지울지. 반영은 끝났다 (추적되지 않은 파일이라 두었다)
-- [ ] CodeAct 비교를 6a155275와 새 안내로 다시 돌릴지(API 비용). 검토 문서 5절의 숫자는 5de6c83a로 잰 것이다. 다시 돌리면 고쳐진 문구가 작은 모델의 컴파일 오류(과제당 2.4)를 줄이는지 본다
+- [ ] 요청서를 cyber에 전달. 1절(push)이 본체 첫 단계의 선행 조건이다
+- [ ] `print(!str)`가 작은 모델의 가장 흔한 오류다. 능력의 모양이나 안내로 줄일지 (본체의 능력 설계 때)
 - [ ] 안내가 4,000토큰 목표를 넘는다(약 6,600~6,800토큰). 목표를 바꿀지 안내를 줄일지 (검토 문서 8절)
 - [ ] 검토 문서를 읽고 ADR 0017의 추천을 받거나 바꾼다. 그 뒤 spike/를 지운다
 
@@ -51,8 +54,8 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 핵심 파일
 
-- `docs/requests/cyber-m0-spike-requests.md` — 남은 것(push)과 6a155275에서 확인을 마친 것
-- `docs/spikes/2026-11-14-m0-spikes-review.md` — 1절 요약, 3절 호스트 경계, 5절 비교(5de6c83a), 7절 cyber에 남은 것, 11절 다시 돌리는 법
+- `docs/requests/cyber-m0-spike-requests.md` — 1절 push, 2절 회차의 문구 다섯, 6a155275에서 확인을 마친 것
+- `docs/spikes/2026-11-14-m0-spikes-review.md` — 1절 요약, 3절 호스트 경계, 5절 비교(6a155275, 앞 빌드와 견줌), 7절 cyber에 남은 것, 11절 다시 돌리는 법
 - `docs/decisions/0017-m0-spike-findings.md`, `0019-fix-spike-defects-first.md`, `0020-docs-current-state-only.md`
 - `docs/spec/08-cyber-implementation.md` — 기준 빌드의 사실
 - `spike/s1/src/main.zig` — 검사 40개, `replay`, `spawn`. `spike/s1/src/inc_check.c`

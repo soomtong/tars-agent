@@ -26,4 +26,4 @@
 ## 결정이 아닌 참고
 
 - [초기 요구사항 대조](docs/spec/09-legacy-requirements.md) — 이력, 재검토에서 바꾼 것과 닫은 질문
-- [M0 스파이크 검토 결과](docs/spikes/2026-11-14-m0-spikes-review.md) — cyber 6a155275(비교 회차는 5de6c83a): 에이전트가 도는 법, 스파이크별 실측, direct 대 CodeAct, 모델이 틀리는 곳, 안내, 아키텍처 추천
+- [M0 스파이크 검토 결과](docs/spikes/2026-11-14-m0-spikes-review.md) — cyber 6a155275(비교는 5de6c83a 회차와 견줌): 에이전트가 도는 법, 스파이크별 실측, direct 대 CodeAct, 모델이 틀리는 곳, 안내, 아키텍처 추천
