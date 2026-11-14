@@ -75,3 +75,9 @@ if i > 0:
 - 안내 문서의 코드 블록 11개가 CLI와 세션에서 통과한다.
 - macOS arm64(libcyber.a 2.55 MB, 공개 `cl_` 함수 135개)와 x86_64-linux-gnu 교차 빌드.
 - 비교 회차에서 세션 reset, panic, 상한에 걸린 실행은 없었다.
+
+## 회신 (2026-11-14)
+
+cyber master `e25e7d76`(0.4.11 뒤, 미릴리스)에 반영됐다. 그 커밋을 빌드한 CLI에서 (a)~(f)의 첫 줄이 요청한 꼴로 나오고, behavior-test 510/510이 통과한다. (d)는 변수 이름까지 말한다(``` `out` is `str`, which is never `none`. ...```). 범위 밖으로 남은 것: `=` 없는 `x int`는 여전히 `Expected end of line or file. Got ident.`.
+
+세션(`s1 replay`)에서의 확인은 0.4.12 릴리스로 고정을 옮길 때 한 번에 한다(사용자 결정). 그때 같은 첫 줄이 나오면 이 요청서를 닫는다.
