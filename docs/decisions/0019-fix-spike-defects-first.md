@@ -17,7 +17,7 @@
 
 ## M0 스파이크에 적용하면 (ADR 0017)
 
-본체 첫 단계 전에 닫을 것 (요청서 docs/requests/cyber-m0-spike-requests.md, 기준 cyber 6a155275):
+본체 첫 단계 전에 닫을 것 (요청서 docs/requests/cyber-m0-spike-requests.md, 기준 cyber b450f535):
 
 1. 커밋이 원격에 없는 것. 스파이크의 로컬 경로 의존은 본체에 넣지 않는다.
 

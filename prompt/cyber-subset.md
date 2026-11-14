@@ -2,7 +2,7 @@
 
 Cyber는 Python과 아주 비슷한 문법 구조를 가진다. 들여쓰기로 블록을 만들고, 줄바꿈으로 문장을 끝내고, `for`, `while`, `if`, `fn`, `use`, `print`를 거의 같은 감각으로 쓴다. 하지만 정적 타입이고 값 소유권이 있고 예외가 없다. 이런 부분들이 다르니까 코드를 구성할 때 본 문서를 참고한다. 모르는 문법은 Python 문법으로 추측하지 말고 아래 목록을 먼저 본다.
 
-기준 버전은 soomtong/cyber의 커밋 6a155275인 Cyber 0.4.10-DEV다 (그 커밋을 빌드하면 `cyber version`이 `Cyber 0.4.10-DEV build-0-6a155275`를 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
+기준 버전은 soomtong/cyber의 커밋 b450f535인 Cyber 0.4.10-DEV다 (그 커밋을 빌드하면 `cyber version`이 `Cyber 0.4.10-DEV build-0-b450f535`를 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
 
 Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 한 빌드에 맞춘 것이므로 더 새 빌드와 어긋날 수 있다. 문서를 사용하거나 고치기 전에 아래를 확인한다.
 
@@ -345,7 +345,7 @@ print('%{x} %{shared.*}')
 - `Return statement is not allowed in the main block.`: 최상위 return. 코드를 `fn main():`으로 감싼다.
 - `Missing return statement.`: return이 없는 경로가 있다. 끝에 return을 더한다.
 - ``fn` declarations are not allowed here.`: 블록 안의 함수. 최상위에서 선언한다.
-- `Import path does not exist`: `use json`, `use regex`, `use time`. 없는 모듈이다.
+- `Failed to load module: json` (`regex`, `time`도): 없는 모듈이다. 모듈 없이 쓴다.
 
 실행 중 panic: `Out of bounds index: -1`은 음수 인덱스(`xs.last()`를 쓴다), 슬라이스의 `OutOfBounds`는 음수이거나 너무 큰 경계, `MissingKey`는 없는 키의 `m[k]`다(`m.get(k)`를 쓴다).
 

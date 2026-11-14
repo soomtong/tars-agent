@@ -1,6 +1,6 @@
 # Cyber 런타임 사실과 제약
 
-출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber 로컬 master의 커밋 6a155275 (버전 문자열 `0.4.10-DEV`, 원격에는 아직 없다), 확인일 2026-11-14. 구현을 시작하기 전에 다시 확인한다.
+출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber 로컬 master의 커밋 b450f535 (버전 문자열 `0.4.10-DEV`, 원격에는 아직 없다), 확인일 2026-11-14. 구현을 시작하기 전에 다시 확인한다.
 
 ## 확인된 사실
 
@@ -51,7 +51,7 @@
 
 ## M0에서 확인한 것 (2026-11-14, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
 
-- build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 `Cyber 0.4.10-DEV build-0-6a155275`처럼 commit 인자를 찍는다(소스에서 읽지 않는다). ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
+- build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 `Cyber 0.4.10-DEV build-0-b450f535`처럼 commit 인자를 찍는다(소스에서 읽지 않는다). ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
 - 능력이 `Future[!str]`을 돌려주고 str 값이나 오류로 완료한다.
 - 검증은 세션 VM에서 바로 한다. 보통의 컴파일 실패 뒤에는 같은 VM의 다음 검증과 실행이 된다. 모듈 소스가 실패한 뒤 다음 use에서 다시 불러온다. 이스케이프 오류(`\|`, `\xZZ`)는 위치 있는 컴파일 오류이고 세션이 남는다.
 - `'\0'`은 NUL이다. 타입 없는 목록 리터럴은 원소를 첫 원소의 타입으로 바꾸지 않는다(`{1, 'a'}`는 컴파일 오류).
@@ -71,7 +71,7 @@
 | 순서 | 항목 | 필요의 증거 | 메모 |
 |---|---|---|---|
 | C0 | 커밋을 원격에 올리기 | URL과 해시로 고정하려면 필요하다 | 요청서 1절. 본체 첫 단계의 선행 조건 |
-| C0 | 회차에서 모델이 만난 문구(`# 주석`, `for f \|{...}\|:`, 튜플 반환 타입, 홑따옴표 안의 줄바꿈, 슬라이스 경계의 `?int`) | M0 CodeAct 회차(6a155275) | 요청서 2절 |
+| C0 | `a[i] = v`의 값 쪽 불일치에 남은 내부 이름(`@set_index`) | M0 확인(b450f535). 회차에서는 나오지 않았다 | 요청서 2절. 회차의 문구 다섯은 b450f535에서 고쳐졌다 |
 | C1 | json 모듈: parse, stringify, 값 트리 | 평가 과제의 다수가 JSON을 다룬다. 설정 파일, API 응답, 도구 출력 | 깊이와 크기 상한. 값 타입은 복사 가능한 부분집합 안에서 다룰 수 있어야 한다 |
 | C1 | toon 모듈: stringify, parse | 토큰 절약. 스크립트가 구조화된 결과(파일 목록, 검색 결과 같은 균일한 객체 배열)를 모델에게 돌려줄 때 JSON보다 적은 토큰으로 싣는다 | 값 트리는 json 모듈의 것을 쓴다. 깊이와 크기 상한. parse를 C1에 넣을지는 요청서를 쓸 때 정한다 |
 | C2 | regex 모듈 | 로그와 명령 출력에서 값 뽑기. str 메서드만으로는 스크립트가 길어진다 | 역추적 없는 엔진(선형 시간), 직접 쓴다. 문법은 ripgrep 기본 문법의 부분집합 |

@@ -18,7 +18,7 @@
 - [0014 개발 중 저렴한 모델](docs/decisions/0014-cheap-models-for-development.md) — 전송 형식 둘(Anthropic Messages, OpenAI Chat Completions) 지원, 기본 제공자 DeepSeek, 평가는 OpenRouter의 Qwen, stop_reason 어긋남
 - [0015 제공자 설계](docs/decisions/0015-provider-message-model-and-adapters.md) — 자체 메시지 모델(블록 기반), 형식별 어댑터, 제공자는 설정 데이터, 원문은 불투명 칸
 - [0016 동시 승인과 v1의 fiber](docs/decisions/0016-concurrent-approvals-and-fibers-in-v1.md) — 요청 번호 순으로 하나씩 묻고 resume, 안내는 fiber와 scope를 가르치지 않음, 되살리는 조건
-- [0017 M0 스파이크의 발견과 추천](docs/decisions/0017-m0-spike-findings.md) — cyber master 6a155275 기준: 아티팩트 링크, Future[!str] 능력, 세션 검증과 reset 알림, 승인 흐름, 상한, deny_spawn, 두 형식 확인. 열린 것은 기준 커밋의 push. 본체 추천
+- [0017 M0 스파이크의 발견과 추천](docs/decisions/0017-m0-spike-findings.md) — cyber master b450f535 기준: 아티팩트 링크, Future[!str] 능력, 세션 검증과 reset 알림, 승인 흐름, 상한, deny_spawn, 두 형식 확인. 열린 것은 기준 커밋의 push. 본체 추천
 - [0018 커밋과 push 위임](docs/decisions/0018-commit-delegation.md) — 의미 있는 변경은 묻지 않고 커밋하고 push
 - [0019 스파이크의 결함은 모두 고치고 진행](docs/decisions/0019-fix-spike-defects-first.md) — 우회를 본체에 옮기지 않는다. 이웃 저장소 결함은 요청, 수정, 재현 통과 확인 뒤 진행
 - [0020 문서는 지금의 상태만](docs/decisions/0020-docs-current-state-only.md) — 고쳐진 결함, 걷어 낸 우회, 버전별 변천은 적지 않는다(git 이력에 있다). 반영된 요청서는 지운다
@@ -26,4 +26,4 @@
 ## 결정이 아닌 참고
 
 - [초기 요구사항 대조](docs/spec/09-legacy-requirements.md) — 이력, 재검토에서 바꾼 것과 닫은 질문
-- [M0 스파이크 검토 결과](docs/spikes/2026-11-14-m0-spikes-review.md) — cyber 6a155275(비교는 5de6c83a 회차와 견줌): 에이전트가 도는 법, 스파이크별 실측, direct 대 CodeAct, 모델이 틀리는 곳, 안내, 아키텍처 추천
+- [M0 스파이크 검토 결과](docs/spikes/2026-11-14-m0-spikes-review.md) — cyber b450f535(비교 회차는 6a155275, 5de6c83a 회차와 견줌): 에이전트가 도는 법, 스파이크별 실측, direct 대 CodeAct, 모델이 틀리는 곳, 안내, 아키텍처 추천

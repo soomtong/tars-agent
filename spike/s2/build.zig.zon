@@ -5,7 +5,7 @@
     .fingerprint = 0xcd5194f6e0ab868f,
     .dependencies = .{
         .cyber = .{
-            // cyber 로컬 저장소의 6a155275. 원격에 아직 없어 경로 의존으로 받는다.
+            // cyber 로컬 저장소의 b450f535. 원격에 아직 없어 경로 의존으로 받는다.
             .path = "../../../cyberscript",
         },
         .translate_c = .{

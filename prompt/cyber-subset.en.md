@@ -2,7 +2,7 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the lists below first.
 
-The reference version is Cyber 0.4.10-DEV at commit 6a155275 of soomtong/cyber (`cyber version` prints `Cyber 0.4.10-DEV build-0-6a155275` for a build of that commit). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
+The reference version is Cyber 0.4.10-DEV at commit b450f535 of soomtong/cyber (`cyber version` prints `Cyber 0.4.10-DEV build-0-b450f535` for a build of that commit). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
 
 Cyber is still gaining features. This document matches one build and can fall behind a newer one. Before you use or edit this document, check the following.
 
@@ -345,7 +345,7 @@ Most compile errors say how to fix the code, for example `Did you mean starts_wi
 - `Return statement is not allowed in the main block.`: a top-level return. Wrap the code in `fn main():`.
 - `Missing return statement.`: some path has no return. Add a return at the end.
 - ``fn` declarations are not allowed here.`: a function inside a block. Declare it at the top level.
-- `Import path does not exist`: `use json`, `use regex`, `use time`. These modules are missing.
+- `Failed to load module: json` (also `regex`, `time`): these modules are missing. Write the code without them.
 
 Runtime panics: `Out of bounds index: -1` is a negative index (use `xs.last()`), `OutOfBounds` on a slice is a negative or too large bound, and `MissingKey` is `m[k]` on a missing key (use `m.get(k)`).
 
