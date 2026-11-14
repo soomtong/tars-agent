@@ -44,8 +44,8 @@ pub const Provider = struct {
     model: []const u8,
 };
 pub const providers = [_]Provider{
-    .{ .name = "ds-anth", .format = .anthropic, .url = "https://api.deepseek.com/anthropic/v1/messages", .auth = .x_api_key, .key_env = "DEEPSEEK_API_KEY", .model = "deepseek-chat" },
-    .{ .name = "ds-oai", .format = .openai, .url = "https://api.deepseek.com/chat/completions", .auth = .bearer, .key_env = "DEEPSEEK_API_KEY", .model = "deepseek-chat" },
+    .{ .name = "ds-anth", .format = .anthropic, .url = "https://api.deepseek.com/anthropic/v1/messages", .auth = .x_api_key, .key_env = "DEEPSEEK_API_KEY", .model = "deepseek-flash" },
+    .{ .name = "ds-oai", .format = .openai, .url = "https://api.deepseek.com/chat/completions", .auth = .bearer, .key_env = "DEEPSEEK_API_KEY", .model = "deepseek-flash" },
     .{ .name = "or-anth", .format = .anthropic, .url = "https://openrouter.ai/api/v1/messages", .auth = .bearer, .key_env = "OPENROUTER_API_KEY", .model = "qwen/qwen3.8-flash" },
     .{ .name = "or-oai", .format = .openai, .url = "https://openrouter.ai/api/v1/chat/completions", .auth = .bearer, .key_env = "OPENROUTER_API_KEY", .model = "qwen/qwen3.8-flash" },
 };

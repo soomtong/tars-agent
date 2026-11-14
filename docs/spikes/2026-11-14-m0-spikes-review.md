@@ -59,7 +59,7 @@ direct와 CodeAct의 차이는 도구 하나의 모양뿐이다.
 | 한 스텝에 할 수 있는 일 | 명령 하나 (셸 파이프로 묶기는 가능) | 호출 여럿, 분기, 반복, 중간값 가공 |
 | 권한을 거는 자리 | 명령 문자열 전체 | 능력 호출 하나하나 (경로, 명령이 인자로 보인다) |
 
-실제 CodeAct 스텝 하나의 기록 (deepseek-chat, T1의 스텝 3, 스크립트 앞부분):
+실제 CodeAct 스텝 하나의 기록 (DeepSeek-V4.1-Flash, T1의 스텝 3, 스크립트 앞부분):
 
 ~~~text
 [도구 호출] run {"code": "type Row:\n    name str\n    n int\n\nrows := []Row{}\ntotal := 0\nfor {'app.log', 'db.log', 'web.log'} |f|:\n    text := fs.read('logs/%{f}')!\n ... rows.sort(|a, b| a.n > b.n or (a.n == b.n and a.name < b.name)) ..."}
@@ -185,7 +185,7 @@ spawn에 대해: deny_spawn을 켜지 않으면(`s1 spawn`) 스레드 안에서 
 
 호환 엔드포인트에서 본 어긋남:
 
-- OpenRouter의 Anthropic 형식에서 deepseek-chat(상류 DeepInfra)은 tool_use 블록을 내면서 stop_reason을 end_turn으로 줬다. 상류 제공자에 따라 다르다.
+- OpenRouter의 Anthropic 형식에서 `deepseek/deepseek-chat`(OpenRouter의 모델 이름, 상류 DeepInfra)은 tool_use 블록을 내면서 stop_reason을 end_turn으로 줬다. 상류 제공자에 따라 다르다.
 - DeepSeek의 Anthropic 형식에서 deepseek-reasoner는 thinking 블록을 내지만 사고 글은 비어 있고 signature에 메시지 id가 들어 있었다.
 - 사용량의 뜻이 다르다. DeepSeek의 Anthropic 형식은 input_tokens가 캐시되지 않은 몫이고 캐시된 몫은 cache_read_input_tokens에 따로 온다. OpenAI 형식의 prompt_tokens는 캐시된 몫을 포함한다. OpenRouter는 요청별 cost를 준다.
 - DeepSeek은 요청에 캐시 지점을 표시하지 않아도 앞부분을 자동으로 캐시한다. OpenRouter의 Qwen도 캐시가 붙었다(5절).
@@ -226,19 +226,19 @@ Provider(데이터) = {name, format, url, auth, key_env, model}
 
 | 모델 | 모드 | 과제 (회차) | 통과 | 스텝 평균 | 컴파일 오류 (과제당) | 과제당 시간 | 과제당 입력 토큰 |
 |---|---|---|---|---|---|---|---|
-| deepseek-chat | direct | 3 (1) | 3 | 5.7 | | 6초 | 4.0k (캐시 2.9k) |
-| deepseek-chat | codeact | 9 (3) | 9 | 5.2 | 0.00 | 7초 | 37.2k (캐시 35.4k) |
+| DeepSeek-V4.1-Flash | direct | 3 (1) | 3 | 5.7 | | 6초 | 4.0k (캐시 2.9k) |
+| DeepSeek-V4.1-Flash | codeact | 9 (3) | 9 | 5.2 | 0.00 | 7초 | 37.2k (캐시 35.4k) |
 | qwen3.8-flash | direct | 3 (1) | 3 | 7.7 | | 24초 | 11.3k (캐시 8.4k) |
 | qwen3.8-flash | codeact | 15 (5) | 15 | 8.0 | 2.13 | 26초 | 65.0k (캐시 60.9k) |
 | qwen3.8-max | codeact | 3 (1) | 3 | 6.3 | 0.33 | 59초 | 51.8k (캐시 44.8k) |
 
-입력 토큰은 캐시된 몫을 포함한 전체다(DeepSeek의 Anthropic 형식은 둘을 따로 주므로 더했다).
+입력 토큰은 캐시된 몫을 포함한 전체다(DeepSeek의 Anthropic 형식은 둘을 따로 주므로 더했다). DeepSeek 회차는 DeepSeek API에 별칭 `deepseek-chat`으로 요청했고 응답한 모델은 DeepSeek-V4.1-Flash다(API의 모델 목록에서 ID는 `deepseek-flash`). 응답도 별칭을 그대로 돌려주므로 원자료의 모델 칸은 `deepseek-chat`이다. s2는 이제 ID `deepseek-flash`로 요청한다.
 
 앞 빌드(5de6c83a)와 그때의 안내로 돈 CodeAct 회차와 견주면(같은 과제, 같은 s2):
 
 | 모델 | 회차 (5de6c83a → 6a155275) | 과제당 컴파일 오류 | 오류가 난 과제 | 스텝 평균 |
 |---|---|---|---|---|
-| deepseek-chat | 3 → 3 | 0.44 → 0.00 | 9개 중 4 → 9개 중 0 | 5.7 → 5.2 |
+| DeepSeek-V4.1-Flash | 3 → 3 | 0.44 → 0.00 | 9개 중 4 → 9개 중 0 | 5.7 → 5.2 |
 | qwen3.8-flash | 3 → 5 | 2.44 → 2.13 | 9개 중 9 → 15개 중 15 | 7.9 → 8.0 |
 | qwen3.8-max | 1 → 1 | 0.00 → 0.33 | 3개 중 0 → 3개 중 1 | 5.0 → 6.3 |
 
@@ -253,7 +253,7 @@ Provider(데이터) = {name, format, url, auth, key_env, model}
 
 ### 5.1 모델이 틀린 곳
 
-6a155275 회차의 컴파일 오류 33건(deepseek-chat 0, qwen3.8-flash 32, qwen3.8-max 1):
+6a155275 회차의 컴파일 오류 33건(DeepSeek-V4.1-Flash 0, qwen3.8-flash 32, qwen3.8-max 1):
 
 | 오류 | 건수 | 문구가 고치는 법을 말하는가 |
 |---|---|---|
@@ -282,7 +282,7 @@ Provider(데이터) = {name, format, url, auth, key_env, model}
 
 | 모델 | run 호출 | 셸 위임 | 입출력만 | 로직 | 로직 스크립트 평균 줄 |
 |---|---|---|---|---|---|
-| deepseek-chat | 42 | 14 | 9 | 19 | 12.4 |
+| DeepSeek-V4.1-Flash | 42 | 14 | 9 | 19 | 12.4 |
 | qwen3.8-flash | 64 | 20 | 14 | 30 | 21.8 |
 | qwen3.8-max | 16 | 8 | 2 | 6 | 17.5 |
 
@@ -348,7 +348,7 @@ Provider(데이터) = {name, format, url, auth, key_env, model}
 | 13 | 검증에 `cl_vm_set_error_recovery`와 `cl_vm_compile_report`를 켜서 오류를 전부 돌려주는 것을 시험한다 | 모델은 한 스텝에 오류 하나씩 고친다(5절). 스파이크에서는 시험하지 않았다 |
 | 14 | 안내 문서의 예제와 조언은 에이전트와 같은 조건(세션 VM, persist_main, 검증 뒤 실행)에서 확인한다. 안내 검사 도구를 둔다면 runtime 경계 위에서 돈다 | 3.5, 8 |
 | 15 | 안내는 회차에서 모델이 틀린 곳으로 고친다. 문구가 고치는 법을 말하는 오류는 안내에 넣지 않는다 | 5.1. 안내의 크기를 지키는 기준이 된다 |
-| 16 | 평가의 모델 목록에 크기가 다른 모델을 함께 넣는다 (deepseek-chat, qwen flash, qwen max). direct 모드는 대조군이면서 작은 모델용 기본값 후보로 본다 | 5 |
+| 16 | 평가의 모델 목록에 크기가 다른 모델을 함께 넣는다 (DeepSeek-V4.1-Flash, qwen flash, qwen max). direct 모드는 대조군이면서 작은 모델용 기본값 후보로 본다 | 5 |
 
 ## 10. 아직 모르는 것
 
