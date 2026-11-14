@@ -393,12 +393,14 @@ fn replay(path: []const u8, no_validate: bool) void {
             const v = c.cl_vm_validate(vm, B(src));
             std.debug.print("validate={s} ", .{codeName(v)});
             if (v != c.CL_SUCCESS) {
-                std.debug.print("\n", .{});
+                std.debug.print("| {s}\n", .{firstLine(errorSummary(vm))});
                 continue;
             }
         }
         const r = run(vm, src, .{});
-        std.debug.print("eval={s}\n", .{codeName(r.code)});
+        std.debug.print("eval={s} 출력={s}", .{ codeName(r.code), std.mem.trim(u8, g_out.items, "\n") });
+        if (r.code != c.CL_SUCCESS) std.debug.print(" | {s}", .{firstLine(errorSummary(vm))});
+        std.debug.print("\n", .{});
     }
     std.debug.print("no crash\n", .{});
 }

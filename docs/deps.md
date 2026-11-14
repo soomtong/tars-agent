@@ -7,7 +7,7 @@
 | 의존 | 버전 | 라이선스 | 이유 | 조건 |
 |---|---|---|---|---|
 | Zig 표준 라이브러리 | 0.17.1 | MIT | HTTP, TLS, JSON, 프로세스, 파일 | |
-| soomtong/cyber (libcyber) | 0.4.9 이후, 태그와 해시 고정 (0.4.9 → 03d24f4e, build-833) | MIT | 스크립트 VM과 표준 모듈(json, regex, time은 만들 것) | 반드시 -Dffi=false. FFI를 켜면 tcc(LGPL)가 링크된다 |
+| soomtong/cyber (libcyber) | 0.4.10, 태그와 해시 고정 (`ref=0.4.10` → 9490ddaf, 해시 `cyber-0.4.10-AW3fkIoojADPaitjKIOnCljht4Rlcw7TxGW5SJVhaheh`. CLI 릴리스는 build-856-3e6b02e) | MIT | 스크립트 VM과 표준 모듈(json, regex, time은 만들 것) | 반드시 -Dffi=false. FFI를 켜면 tcc(LGPL)가 링크된다 |
 | translate-c (ziglang) | cyber와 같은 커밋 | MIT | 빌드할 때 cyber.h를 Zig 모듈로 바꾼다 | 스파이크에서만 썼다. 본체는 손으로 쓴 extern을 추천한다 (ADR 0017). 링크되지 않는다 |
 | glibc (동적, 대상 시스템의 것) | Debian | LGPL | 대상 환경의 바닥 라이브러리 | 동적 링크만. 정적 링크하지 않는다 |
 
@@ -25,4 +25,4 @@
 
 - 정규식 라이브러리: 엔진을 cyber에 직접 쓴다 (ADR 0010).
 - TOML 해석기, TUI 라이브러리, linenoise: 필요한 범위를 직접 쓰거나 범위에서 뺐다 (ADR 0009).
-- mimalloc: cyber의 FFI를 끈 라이브러리 빌드에는 들어가지 않는다 (2026-11-13 스파이크 1에서 심볼로 확인).
+- mimalloc: cyber의 FFI를 끈 라이브러리 빌드에는 들어가지 않는다 (스파이크 1에서 심볼로 확인).

@@ -1,12 +1,12 @@
 # Cyber 런타임 사실과 제약
 
-출처: soomtong/cyber의 src/include/cyber.h와 docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt)와 docs/releases/0.4.5~0.4.9. 0.4.9(태그 0.4.9 → 03d24f4e, build-833), 확인일 2026-11-12. cyber가 보낸 안내는 docs/requests/cyber-0.4.9-report.md. 구현을 시작하기 전에 다시 확인한다.
+출처: soomtong/cyber의 src/include/cyber.h와 docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt)와 docs/releases/0.4.5~0.4.10. 기준은 0.4.10(라이브러리는 `ref=0.4.10` → 9490ddaf, CLI는 build-856-3e6b02e), 확인일 2026-11-14. 0.4.9의 fiber 변경은 cyber가 보낸 안내 docs/requests/cyber-0.4.9-report.md에 있다. 구현을 시작하기 전에 다시 확인한다.
 
 ## 확인된 사실
 
 - fork 용도: 스크립트 CLI와 tars 에이전트 루프의 실행 언어. 백엔드는 바이트코드 VM이고 JIT, LLVM 백엔드는 제거했다. minimum_zig_version은 0.17.1이다.
 - 언어 0.4: 정적 타입과 값 소유권(move, &T 빌림, ^T ARC). 에러는 !T와 error.Name 값. 보간은 %{}. 코루틴은 둘이다. generator fn(stackless, 값을 낸다)과 fiber/suspend(stackful, 기다린다, 0.4.7). 그 밖에 spawn Thread + Future가 있다. symbol 리터럴은 symbol.name이다.
-- 임베딩 수치 (macOS arm64, ReleaseFast, FFI 끔): libcyber.a 2.1 MB, cl_vm_init 0.2 ms, 첫 eval 2.8 ms, 같은 VM의 두 번째 eval 0.01 ms. VM당 RSS 약 2 MB, 첫 VM만 약 7 MB.
+- 임베딩 수치 (macOS arm64, ReleaseFast, FFI 끔, 0.4.10 스파이크 1): libcyber.a 2.46 MB, VM 생성과 첫 eval 개당 2 ms, VM 하나가 쥔 메모리 약 1.9 MiB, 같은 VM의 validate와 eval은 200회에 각 1~2 ms.
 - 상태 유지: persist_main으로 함수, 타입, use, main 지역 변수가 eval 사이에 이어진다. 같은 이름을 다시 선언하면 새 선언이 이긴다. panic과 interrupt에서는 지역 변수가 버려진다. 빌림 타입 지역은 맨 위에서 선언할 수 없다.
 - 검증: cl_vm_validate는 세션을 지우지 않고 현재 세션 위에서 컴파일만 한다. 검증한 소스의 선언은 다음 eval로 넘어가지 않는다.
 - 구조화된 컴파일 오류 (0.4.5): cl_vm_compile_error(vm, &err)가 마지막 eval, compile, validate의 오류를 CLCompileError로 준다. kind(토큰, 파싱, 컴파일), msg(위치 없는 메시지), uri, has_loc, line, col(0부터, 바이트), len. 컴파일러는 첫 오류에서 멈추므로 컴파일당 하나다. 문맥(이전 선언, 템플릿 호출 지점)은 요약 문자열(cl_vm_compile_error_summary)에만 있다. 요약에는 기본으로 터미널 이스케이프 코드가 없다(cl_vm_set_error_color로 켠다).
@@ -42,6 +42,11 @@
   - Fiber.cancel(), Fiber.waiting(), Fiber.wait_ready(), Scope(new, start, join, active, abort). 진행 중인 fiber의 소멸은 panic이 아니라 취소다(들어가 있는 호출이 바로 반환하고 값은 해제, @deinit 포함). ^T 참조의 @deinit 안에서 멈춘 fiber는 취소할 수 없고 소멸은 여전히 panic이다.
   - fn main() -> T의 결과(CLEvalResult의 값)는 VM이 소유하고 다음 eval, cl_vm_reset, cl_vm_deinit까지 유효하다. cl_vm_release_result(vm)가 바로 해제한다. cl_thread_rc로 누수를 세는 호스트(평가 도구)는 먼저 이것을 부른다.
   - 그 밖: 스택이 옮겨질 때 배타 빌림 주소가 보정되지 않아 나던 Segmentation fault 수정(fiber 안의 지역 배열 << 로 재현되던 것). r64 → float 변환이 부호 없는 값으로 읽는다. cyber fmt와 cl_vm_format이 리터럴 필드의 = 양쪽을 띄운다(Vec2{x = 1}).
+- 0.4.10의 변경 (docs/releases/0.4.10.md): 언어 문법은 바뀌지 않았다. 임베딩에 쓸 만한 것:
+  - cl_vm_set_error_recovery(vm, true): 컴파일러가 본문(main 블록, 함수, 메서드)마다 첫 오류를 내고 나머지 본문을 계속 검사한다. 구문 오류와 선언의 오류는 지금처럼 컴파일을 끝낸다. cl_vm_compile_report_count, cl_vm_compile_report(vm, idx, &rep)가 오류 전부를 CLReport(시작과 끝의 줄, 열, 바이트 오프셋)로 준다. 모델이 한 스텝에 오류 하나씩 고치는 것을 줄일 수 있다. 스파이크에서는 시험하지 않았다.
+  - 한 VM으로 컴파일을 되풀이할 때 메모리가 늘던 것(F-114)과, persist_main 세션에서 시그니처가 해석되지 않은 템플릿 메서드를 다시 부를 때 죽던 것(F-118)이 고쳐졌다. 컴파일러가 죽던 입력 여럿(F-112, F-115, F-117)이 컴파일 오류가 됐다.
+  - 심볼 조회(cl_vm_set_symbol_info, cl_vm_symbol_at 등)는 언어 서버용이다. tars-agent는 쓰지 않는다.
+  - 0.4.10에도 남은 결함은 아래 "M0에서 확인한 것".
 - spawn 스레드의 await는 main과 같이 블록한다 (2026-11-08 수정). 예전의 @panic(TODO) 경로는 없다. 연료는 스레드마다 따로 센다.
 - tars devlayer에 있는 것은 CLI 번들(cyber-linux-x64.tar.gz)이고 2026-11-12 기준 0.4.6이다. 0.4.7부터 CLI는 표준 모듈을 실행 파일에 내장해 번들이 cyber 파일 하나다(옆의 src/를 읽지 않는다). 오류 위치는 core:196:5처럼 모듈 이름으로 찍힌다. tars-agent는 CLI를 쓰지 않고 libcyber를 정적 링크한다.
 
@@ -50,17 +55,21 @@
 - JSON, 정규식, 날짜 라이브러리. cyber 표준 모듈로 만든다 (아래 목록).
 - c 모듈을 끄는 옵션과 spawn을 끄는 옵션. 지금은 호스트 로더에서 거부하고 deny_raw_ptrs를 켠다.
 
-## M0에서 확인한 것 (2026-11-13, 스파이크 1과 3. 상세는 docs/spikes/2026-11-13-m0-spikes-review.md)
+## M0에서 확인한 것 (0.4.10, 2026-11-14, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
 
-- build.zig.zon 의존: 받아지지만 `artifact("cyber")`가 없다. 지금은 build.zig에서 받은 패키지 폴더로 `zig build lib -Dffi=false -Dstatic=true`를 실행해 libcyber.a를 링크한다. 내보내기를 cyber에 요청했다. Zig 0.17.1에는 @cImport가 없어 cyber.h는 translate-c 패키지나 손으로 쓴 extern으로 가져온다.
+- build.zig.zon 의존: 받아지지만 `artifact("cyber")`가 없다. 스파이크는 build.zig에서 받은 패키지 폴더로 `zig build lib -Dffi=false -Dstatic=true`를 실행해 libcyber.a를 링크한다. 이렇게 만든 라이브러리의 버전 문자열은 `0.4.10-DEV build-0-local`이다. 내보내기를 cyber에 요청했다. Zig 0.17.1에는 @cImport가 없어 cyber.h는 translate-c 패키지나 손으로 쓴 extern으로 가져온다.
 - 점이 든 모듈 이름(use fs, fs.read)은 호스트 로더로 그대로 된다. `#[bind]` 함수에 기본값 매개변수는 쓸 수 없다(Cyber에 기본값 매개변수가 없다). 머리말에 래퍼를 둔다.
 - core의 함수를 가릴 필요는 보이지 않았다. 다만 로더는 차단 목록이 아니라 허용 목록으로 써야 한다(기본 로더가 io 모듈을 준다).
 - spawn은 막는 장치가 없고 스레드 안에서 능력 함수가 불린다. 연료와 interrupt는 스레드의 폭주도 멈춘다. 차단 옵션을 cyber에 요청했다. 그 전에는 능력 함수가 메인 스레드가 아니면 panic을 돌려준다.
 - deny_raw_ptrs와 호스트 모듈 선언은 함께 동작한다. cl_vm_validate도 세션의 deny_raw_ptrs를 따른다.
-- x86_64-linux-gnu 교차 빌드는 macOS에서 43초, tars 게스트(Linux 6.18.60)에서 검사 31개가 통과했다.
 - 호스트 함수의 인자 읽기는 순서가 있다: cl_thread_ret 먼저, 매개변수는 선언 순서. 어기면 죽는다.
-- 결함 둘 (요청서 docs/requests/cyber-m0-spike-findings.md): 실패한 컴파일 뒤 다음 컴파일에서 Segmentation fault. `!str` 값의 복사가 컴파일 오류라 `Future[!str]`을 쓸 수 없다(문자열 결과는 `Future[!int]` 손잡이와 take(h)로 우회).
+- x86_64-linux-gnu 교차 빌드는 macOS에서 s1 45초, s2 72초에 된다. tars 게스트에서의 실행은 0.4.10으로 확인하지 않았다.
 - mimalloc은 FFI를 끈 라이브러리 빌드에 들어가지 않는다.
+- 결함 셋 (요청서 docs/requests/cyber-0.4.10-m0-spike-findings.md):
+  - 실패한 컴파일 뒤 다음 컴파일에서 Segmentation fault. 검증(cl_vm_validate)에서도 난다. 스파이크는 검증을 fork한 자식에서 해서 피했다.
+  - `!str` 값의 복사가 컴파일 오류(core:2918)라 `Future[!str]`을 쓸 수 없다. 스파이크는 문자열 결과를 `Future[!int]` 손잡이와 take(h)로 돌려줬다.
+  - `^[]str`에 `+=`하면 메모리가 깨지고 실행 중에 호스트가 죽는다. 검증은 통과한다.
+- 조용히 다른 값을 내는 것: 슬라이스의 `..=`가 `..`와 같다(`a[1..=2]`가 `{2}`), `not a and b`가 `not (a and b)`, 풀지 않은 `!int`를 출력하면 `!int`라는 글자. 안내 문서가 피하는 법을 가르친다.
 
 ## cyber에서 만들 것 (ADR 0010)
 

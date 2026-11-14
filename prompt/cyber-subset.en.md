@@ -2,13 +2,13 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the lists below first.
 
-The reference version is Cyber 0.4.10-DEV (master after the 0.4.10 release, commit 6ed1b6c4 and the changes that follow it). Old Cyber syntax in your training data (0.3: `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`) is all wrong. The forms `#[generator] fn f()` and the symbol literal `@name` from 0.4.6 and earlier are also wrong. Write `generator fn f()` and `symbol.name`.
+The reference version is Cyber 0.4.10 (release tag 0.4.10, `cyber version` prints `Cyber 0.4.10 build-856-3e6b02e`). Old Cyber syntax in your training data (0.3: `my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`) is all wrong. The forms `#[generator] fn f()` and the symbol literal `@name` from 0.4.6 and earlier are also wrong. Write `generator fn f()` and `symbol.name`.
 
-Cyber is still gaining features. This document matches one point-in-time build and can fall behind the latest build. Before you use or edit this document, check the following.
+Cyber is still gaining features. This document matches one release and can fall behind a newer build. Before you use or edit this document, check the following.
 
 - Run `cyber version` and compare the real build with the reference version above.
-- Re-run the 10 examples in this document on the latest build. If one fails, the document is stale.
-- Test the "Missing features" list, the "Differences from Python" list and the "Methods that exist" lists against the latest build, one item at a time. If a feature now exists, remove it from the document or fix the entry (for example the json, regex and time modules, or `xs.map`).
+- Re-run the 10 examples in this document on the build, once with the CLI and once in an agent session (the same VM, persist_main). If one fails, the document is stale.
+- Test the "Missing features" list, the "Differences from Python" list and the "Methods that exist" lists against the build, one item at a time. If a feature now exists, remove it from the document or fix the entry (for example the json, regex and time modules, or `xs.map`).
 - If the document and the build disagree, the build is right. Fix the document and update the reference version.
 
 If you want a feature that this document does not list, do not assume it exists. Run a small piece of code to check.
@@ -19,12 +19,13 @@ If you want a feature that this document does not list, do not assume it exists.
 - Use heap references `^T`, borrows `&T`, `move`, traits, templates, generators and `spawn` only when you must.
 - A call that returns `!T` needs `!` before you print or use the value: `print(f()!)`, not `print(f())`.
 - Declare every new variable with `:=` the first time, also inside loops and `if` blocks. `x = ...` only changes a variable that already exists.
+- Write the element type of every list literal: `[]str{'a', 'b'}`, not `{'a', 'b'}`.
 - Call only the methods listed in "Methods that exist". If you are not sure a method exists, run a small piece first. Compile errors appear before execution and carry a line number. Fix the code as the message says.
 
 ## Same as Python
 
 - Indented blocks, the colon, `pass`, `break`, `continue`, `return`
-- `and`, `or`, `not`, `==`, `!=`, `<`, `+=`, `-=`, `*=`, `/=`
+- `and`, `or`, `==`, `!=`, `+=`, `-=`, `*=`, `/=`, and `<`, `<=`, `>`, `>=` for numbers
 - Function calls `f(x)`, method calls `s.upper()`, indexing `xs[0]`, the idea of slicing `s[1..3]`
 - Single and double quotes are the same for strings. Strings are immutable UTF-8.
 - `[]T`, which you use like a list, shares its buffer on assignment (the same aliasing as a Python list)
@@ -39,7 +40,7 @@ Syntax. Each line is Python, then the Cyber form.
 - `def f(a, b):` becomes `fn f(a, b int) -> int:`. Parameter types and the return type are required. Group equal types as `a, b int`.
 - `elif c:` becomes `else c:` (not `else if`)
 - `for x in xs:` becomes `for xs |x|:`. With the index: `for xs |i, x|:`
-- `for x in 'a', 'b':` or `for x in ['a', 'b']:` becomes `for {'a', 'b'} |x|:`
+- `for x in 'a', 'b':` or `for x in ['a', 'b']:` becomes `for []str{'a', 'b'} |x|:`
 - `for i in range(n):` becomes `for 0..n |i|:` (end excluded). `0..=n` includes the end. `n..>0` counts down.
 - `f"{x}"` becomes `'%{x}'` interpolation. Expressions work: `'%{a + b}'`
 - `x if c else y` becomes `if (c) x else y`. The parentheses around the condition are required.
@@ -50,10 +51,10 @@ Syntax. Each line is Python, then the Cyber form.
 - `print(a, b)` becomes `print(x)`. It takes exactly one argument. Join values with interpolation.
 - `len(xs)` becomes `xs.len()`. It is a method. `xs.len` is an error.
 - `xs.append(1)` becomes `xs += 1` or `xs = xs.append(1)`. Methods that change the size return a new value, so you must take it.
-- `xs.sort()` sorts in ascending order. `xs.sort(key=...)` or `reverse=True` becomes `xs.sort(|a, b| a > b)`: the function returns true when `a` goes first. To use an outer variable in it, see "Sorting".
+- `xs.sort()` becomes `xs.sort(|a, b| a < b)`. `sort` always takes a function that returns true when `a` goes first: `|a, b| a > b` for descending, `|a, b| a.less(b)` for strings. The function cannot use outer variables; see "Sorting".
 - `x in xs` becomes `xs.contains(x)`, and for a Map `m.contains(k)`
-- `[1, 2, 3]` becomes `{1, 2, 3}`. The element type comes from the first element. `[]int{1, 2, 3}` names it. An empty list needs the type: `[]int{}`.
-- `{"a": 1, "b": 2}` becomes `Map[str, int]{a=1, b=2}`. A bare name is a string key. For a key computed from an expression, use parentheses: `Map[str, int]{(k)=1}`. An empty Map is `Map[str, int]{}`.
+- `[1, 2, 3]` becomes `[]int{1, 2, 3}`. The element type is required, also for an empty list: `[]int{}`. A bare `{1, 2, 3}` is an error.
+- `{"a": 1, "b": 2}` becomes `Map[str, int]{a=1, b=2}`. A bare name is a string key. A key computed from an expression goes in after creation: `m[k] = 1`. An empty Map is `Map[str, int]{}`.
 - `(1, 2)` tuple becomes `type Pt(x, y float)` for a named tuple, or a struct
 - `None` becomes `none`. Only inside a `?T` type.
 - `assert` becomes `use test`, then `test.eq(expected, actual)`
@@ -63,6 +64,7 @@ Semantics:
 
 - Typing is static. A type error appears as a CompileError before a single line runs. A variable cannot change its type.
 - There is no truthiness. The `x` in `if x:` must be a bool. Write `if xs.len() > 0:`. Bitwise operators are `&&`, `||` and `~`. Logic is `and`, `or` and `not`.
+- `not` takes the whole expression after it: `not a and b` means `not (a and b)`, unlike Python. Write `(not a) and b`, or `!a and b`. `!a` binds tightly.
 - Integers and floats are separate. `int + float` is an error, and the right operand is fitted to the type of the left one. Convert explicitly: `float(i) + f`. A float with an integer value prints as `5`, not `5.0`.
 - A function cannot read a local variable of the outer scope. Declare a global with `global g int = 0`.
 - Using a call that returns a value as a statement is an error. To discard the value, write `_ = f()`.
@@ -71,10 +73,10 @@ Semantics:
 - `return` is not allowed at top level.
 - A one-character string `'s'` becomes a code point (115) where an integer is expected. If you doubt a variable's type, check it with `var n int = ...`.
 - String indexing and `len()` count bytes. Use `s.count()` for the number of characters.
-- Strings compare with `==`, `<`, `<=`, `>`, `>=` (byte order).
-- Map iteration follows hash order, not insertion order. If you need an order, take `m.keys()` and sort them.
+- Strings compare with `==` and `!=`. For order use `a.less(b)`. `a < b` on strings is an error.
+- Map iteration follows hash order, not insertion order. If you need an order, copy the entries into a list and sort it.
 - A negative index `xs[-1]` panics. Use `xs.last()` or `xs[xs.len() - 1]` for the last element.
-- A slice can omit its start or end: `s[..3]`, `s[2..]`. The end is excluded; `s[1..=2]` includes it. Negative bounds are not allowed. Python's `s[:-1]` is `s[..s.len() - 1]` (`s[..-1]` panics).
+- A slice can omit its start or end: `s[..3]`, `s[2..]`. The end is excluded. Do not write `..=` in a slice: `s[1..=2]` gives the same as `s[1..2]` without an error. Write `s[1..3]`. Negative bounds are not allowed. Python's `s[:-1]` is `s[..s.len() - 1]` (`s[..-1]` panics).
 - `xs[5]` out of range panics, and `m[k]` on a missing key panics. `m.get(k)` returns `?V`.
 - Integer overflow wraps around. Division by zero panics.
 - A number can contain the digit separator `_`: `1_000_000`, `0xff_ff`.
@@ -89,14 +91,14 @@ str (strings do not change; every method returns a new value):
 - `s.len()` bytes, `s.count()` characters
 - `s.contains(sub)`, `s.starts_with(p)`, `s.ends_with(p)`, `s.index(sub)` gives `?int`
 - `s.split(sep)` gives `[]str`, `s.replace(old, new)`, `s.trim(chars)` (the argument is required), `s.upper()`, `s.lower()`, `s.repeat(n)`, `s.concat(t)`
-- `a < b` or `s.less(t)` for ordering, `s.last()` the last byte
+- `s.less(t)` for ordering, `s.last()` the last byte
 
 []T:
 
 - `xs.len()`, `xs.contains(x)`, `xs.index(x)` gives `?int`, `xs.last()`
 - `xs.join(sep)` for `[]str`, gives `str`
 - `xs.append(x)`, `xs.insert(i, x)`, `xs.remove(i)`, `xs.clear()`: each returns the new list; take it: `xs = xs.remove(0)`
-- `xs.sort()` (ascending) and `xs.sort(|a, b| ...)` sort in place and return nothing
+- `xs.sort(|a, b| ...)` sorts in place and returns nothing. The function is required.
 
 Map[K, V]:
 
@@ -113,11 +115,13 @@ Python name to Cyber name:
 - `s.strip()` is `s.trim({' ', '\n', '\t'})`
 - `s.find(sub)` is `s.index(sub)`, which gives `?int`. There is no `rfind`. For the last part of a path use `p.split('/').last()`
 - `len(m)` is `m.size()`. `m.items()` is `for m |e|:`. `list(m)` is `m.keys()`
-- `sorted(xs)` is `xs.sort()`, which changes `xs`. `sorted(xs, reverse=True)` is `xs.sort(|a, b| a > b)`
+- `sorted(xs)` is `xs.sort(|a, b| a < b)`, which changes `xs`. `sorted(xs, reverse=True)` is `xs.sort(|a, b| a > b)`. For `[]str` use `a.less(b)` and `b.less(a)`
 
 ## Sorting
 
-The function given to `sort` can use an outer variable only if its type is `^T` or `&T`. To sort keys by the values of a Map, declare the Map on the heap: `counts := ^Map[str, int]{}`. Then `names.sort(|a, b| counts[a] > counts[b])` works, and `counts` still persists between runs. With a plain `Map[str, int]` the lambda is an error. Put `^` on the Map only. Keep lists as plain `[]T`: do not write `^[]str`. Do not borrow at top level (`c := &counts`): a top-level borrow cannot persist between runs and is an error. A list of structs sorts by a field: `rows.sort(|a, b| a.n > b.n)`. Example 4 sorts Map keys by their counts.
+The function given to `sort` can use only its two parameters. It cannot use an outer variable, not even one declared with `^` or `&`. So you cannot sort Map keys by looking up the Map inside the function. Instead, copy what you need into a list of structs and sort by a field: `rows.sort(|a, b| a.n > b.n)`. Example 4 counts words in a Map, copies the entries into a struct list, and sorts by count, then by word.
+
+Keep lists as plain `[]T`. Do not write `^[]str`: appending to it with `+=` corrupts memory and can crash the program.
 
 ## Missing features
 
@@ -130,11 +134,12 @@ The json, regex and time modules are not in the Cyber standard library now and a
 - A value that may be absent has type `?T`. To unwrap: `if x |v|:`, `x ?else default`, `x.?` (panics when absent).
 - `?else` and `!else` bind weaker than `==` and `+`. Put them in parentheses inside a larger expression: `(h() ?else '') == 'server'`, `(f() !else 0) + 1`.
 - An operation that may fail returns `!T`. A failure is `return error.Name`. The caller uses `f()!` (pass the failure to the caller; the enclosing function must return `!U`), `f() !else default`, or a `f() !else |e|:` block (the block must end with `return` or `panic`).
+- `!` works only on a `!T` value. On a `?T` (such as `s.index(x)`) use `?else` or `if x |v|:`.
 - To handle several calls together, use a `try:` block with `!` inside and receive the failure in `else |e|:`.
 - `panic('msg')` cannot be caught. Use it for program bugs only. Return normal failures as `!T`.
 - An error from `f()!` at the top level, or returned by `fn main() -> !T`, is an uncaught error and ends in a panic. To print a failure and go on, wrap the top-level code in a `try:` block and print it in `else |e|:` (a top-level `!else` block cannot end with `return`).
 - A call that returns `!T` must be handled, even `!void`. A bare `fs.write(p, s)` is an error. Write `fs.write(p, s)!` inside `try:`, or `fs.write(p, s) !else |e|:`.
-- Unwrap a `!T` before you use the value: `x := r()!`, then `x.len()`. `r().len()` and `r().ok` are errors. `print(r())` is an error too: write `print(r()!)`.
+- Unwrap a `!T` before you use the value: `x := r()!`, then `x.len()`. `r().len()` and `r().ok` are errors. Do not print, interpolate or copy a `!T` that is not unwrapped. For `!str` the error points into the standard library (`found `Ptr[!str]``, `core:2918`), and for `!int` it prints the text `!int` instead of the value. Write `print(r()!)`.
 - `int('abc')` gives 0 without an error. When you need validation, use `int.parse(s) !else ...`.
 
 ## Values, references, borrows
@@ -143,7 +148,7 @@ The json, regex and time modules are not in the Cyber standard library now and a
 - To share, lift the value to the heap with `^`: `p := ^P{name='a', age=3}`. Read and write fields as `p.age`, and use `p.*` for the whole value.
 - To let a function modify an argument, declare `fn inc(p &int)` and call `inc(&a)`.
 - `Array[T]` cannot be copied. Use `move a` to pass or relocate it. Using the original after a move is an error. For an ordinary list use `[]T`.
-- A closure can only capture variables of type `^T` or `&T`. Declare a variable the lambda needs with `^`: `counts := ^Map[str, int]{}`. In simple code use a plain function or a loop instead of a closure.
+- A closure can only capture variables of type `^T` or `&T`, and a closure that captures cannot be passed to `sort`. In simple code use a plain function or a loop instead of a closure.
 - Top-level variables persist between runs, but a top-level borrow (`c := &x`) cannot: `Cannot persist local ... of borrow type`. Borrow inside a function, or use `^T`.
 
 ## Examples
@@ -169,30 +174,36 @@ fn mean(xs []int) -> float:
         sum += x
     return float(sum) / float(xs.len())
 
-print(mean({1, 2, 3, 4}))
+print(mean([]int{1, 2, 3, 4}))
 ```
 
 3. Building and sorting a list (take the value that append returns)
 
 ```cy
-names := {'bob', 'alice'}
+names := []str{'bob', 'alice'}
 names += 'carol'
 names = names.append('dave')
-names.sort()
+names.sort(|a, b| a.less(b))
 print(names.join(','))
 ```
 
 4. Counting with a Map, then sorting the words by count (do not rely on hash order)
 
 ```cy
-counts := ^Map[str, int]{}
+type WordCount:
+    word str
+    n int
+
+counts := Map[str, int]{}
 for 'the cat and the hat'.split(' ') |w|:
     counts[w] = (counts.get(w) ?else 0) + 1
 
-words := counts.keys()
-words.sort(|a, b| counts[a] > counts[b] or (counts[a] == counts[b] and a < b))
-for words |w|:
-    print('%{w}: %{counts[w]}')
+rows := []WordCount{}
+for counts |e|:
+    rows += WordCount{word=e.key, n=e.value}
+rows.sort(|a, b| a.n > b.n or (a.n == b.n and a.word.less(b.word)))
+for rows |r|:
+    print('%{r.word}: %{r.n}')
 ```
 
 5. Struct, methods, copy semantics
@@ -225,9 +236,9 @@ fn first_even(xs []int) -> ?int:
             return x
     return none
 
-if first_even({1, 4, 5}) |v|:
+if first_even([]int{1, 4, 5}) |v|:
     print('found %{v}')
-print(first_even({1, 3}) ?else -1)
+print(first_even([]int{1, 3}) ?else -1)
 ```
 
 7. Returning and handling an error
@@ -300,11 +311,13 @@ print('%{x} %{shared.*}')
 Each line is the first line of the error, then the cause and the fix.
 
 - `Expected end of line or file. Got ...`: `let`, `function`, `class`, `print "x"`, a semicolon. Rewrite in Cyber syntax.
-- `Expected `(`.`: `else if`. Write `else condition:`.
-- `Expected `:` or `|x|:`. ...`: `for i in xs:` or `for 'a', 'b' |x|:`. Write `for xs |i|:` or `for {'a', 'b'} |x|:`.
-- `A list literal uses braces: ...`: `['a', 'b']`. Write `{'a', 'b'}`.
-- `Expected `=` between a key and a value. ...`: `{'a': 1}` or `P{name: 'x'}`. Write `Map[str, int]{a=1}` or `P{name='x'}`.
-- `Expected a target type or at least one element.`: an empty `{}`. Write `[]int{}` or `Map[str, int]{}`.
+- `Expected `(`.`: `else if`, or an if expression without parentheses (`y := if c: 1 else 2`). Write `else condition:`, or `if (c) 1 else 2`.
+- `Expected :.`: `for x in xs:` or `for 'a', 'b' |x|:`. Write `for xs |x|:` or `for []str{'a', 'b'} |x|:`.
+- `Expected `]`.`: a Python list `['a', 'b']`. Write `[]str{'a', 'b'}`.
+- `Expected `Vector` element type.`: a Python list inside an expression, such as `xs + ['a']`. Write `xs + []str{'a'}`, or `xs += 'a'`.
+- `Expected closing brace.`: `{'a': 1}` or `P{name: 'x'}`. Write `Map[str, int]{a=1}` or `P{name='x'}`.
+- `Expected record key.`: an expression key such as `Map[str, int]{(k)=1}`. Create the Map, then `m[k] = 1`.
+- `TODO: infer tuple type`: a list literal without the element type, such as `{1, 2}` or `{}`. Write `[]int{1, 2}` or `[]int{}`.
 - `Unknown token: slash`: a `//` comment. Write `--`.
 - `Expected right operand.`: `i++`, `10 // 3`. Write `i += 1`, `/`.
 - `Expected type `bool`, got `int`.`: a truthy condition. Use a comparison.
@@ -312,15 +325,21 @@ Each line is the first line of the error, then the cause and the fix.
 - `Variable `x` is already declared in the block.`: repeated `:=`. Write `x = ...`.
 - `Undeclared variable `x`.`: `x = ...` without `x := ...` first, or an outer local variable used in a function. Declare it with `:=`, pass it as a parameter, or use `global`.
 - `Can not find the symbol `join` in `str`.`: `sep.join(xs)`. Write `xs.join(sep)`.
-- `Can not find the symbol `m` in ...`: a method that does not exist. Use "Methods that exist".
+- `Can not find the symbol `<` in `str`.`: string ordering. Write `a.less(b)`.
+- `Can not find the symbol `m` in ...`: a method that does not exist, often a Python or JavaScript name (`startsWith`, `find`, `pop`, `strip`, `items`). Use "Methods that exist" and "Python name to Cyber name".
 - `Field `len` does not exist`: `xs.len`. Write `xs.len()`.
 - `Expected to handle the error case for `!void`.`: a `!T` call used as a statement. Add `!` (inside `try:`) or `!else`.
 - `Can not find the symbol `len` in `!str`.` or `Field `ok` does not exist in `!str`.`: a `!T` value used before it is unwrapped. Write `x := f()!` first.
+- `Expected type instance of `Result`, found `Ptr[!str]`.` (at `core:2918`): a `!str` printed, interpolated or copied before it is unwrapped, such as `print(proc.exec('ls'))`. Write `print(proc.exec('ls')!)`.
+- `Expected type instance of `Result`, found `?int`.` or `found `str``: `!` on a value that is not `!T`. For `?T` use `?else` or `if x |v|:`. For a plain value, drop the `!`.
 - `Expected `2` arguments, found `1`, when calling the function `fn trim(...)``: `s.trim()`. Write `s.trim(' ')` or `s.trim({' ', '\n'})`.
+- `Expected `2` arguments, found `1`, when calling the function `fn sort(...)``: `xs.sort()`. Write `xs.sort(|a, b| a < b)`.
+- `Expected type `str`, got `bool`.`: `h() ?else '' == 'x'`. Write `(h() ?else '') == 'x'`.
 - `Can not find the symbol ... for `?int`.`: an Option not unwrapped. Use `?else` or `if x |v|:`.
 - `Expected assignment to a variable ...`: a call whose value is discarded. Write `_ = f()` or assign it to a variable.
 - `Can not find the symbol `&&` for `bool`.`: logical AND. Write `and`.
-- `Can only capture variables declared with the reference types ...`: a lambda uses an outer local. Declare that variable with `^`: `counts := ^Map[str, int]{}` (see "Sorting").
+- `Can only capture variables declared with the reference types ...`: a lambda uses an outer local. In `sort`, use a struct list (see "Sorting"). Elsewhere, use a loop or a function with parameters.
+- `Expected argument `&OpaqueFunc[...]`, found `Func[...]`` or `found `OpaqueFunc[...]``: a lambda given to `sort` captures an outer variable. Use a struct list (see "Sorting").
 - `Cannot persist local ... of borrow type ... across evals.`: a top-level `c := &x`. Use `^T`, or borrow inside a function.
 - `Cannot copy ..., type implements `NoCopy`.`: copying an Array. Use `[]T`, or `move`.
 - `Return statement is not allowed in the main block.`: a top-level return. Wrap the code in `fn main():`.
