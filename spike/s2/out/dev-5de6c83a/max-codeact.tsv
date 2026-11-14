@@ -1,3 +1,0 @@
-T1	PASS	or-oai	qwen/qwen3.8-max-0902	codeact	5	6	0	39302	36224	984	73073	compile_errors=0
-T2	PASS	or-oai	qwen/qwen3.8-max-0902	codeact	5	6	0	37615	34304	1211	60680	compile_errors=0
-T3	PASS	or-oai	qwen/qwen3.8-max-0902	codeact	5	4	0	36919	34304	1031	55470	compile_errors=0

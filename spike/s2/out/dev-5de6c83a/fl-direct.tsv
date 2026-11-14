@@ -1,3 +1,0 @@
-T1	PASS	or-oai	qwen/qwen3.8-flash	direct	6	5	0	7052	5120	520	11777	compile_errors=0
-T2	PASS	or-oai	qwen/qwen3.8-flash	direct	8	9	0	11137	8192	1222	24373	compile_errors=0
-T3	PASS	or-oai	qwen/qwen3.8-flash	direct	9	8	2	15691	11776	2050	34803	compile_errors=0

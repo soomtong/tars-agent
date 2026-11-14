@@ -1,10 +1,10 @@
-# HANDOFF: cyber 9bf8a8e4를 URL과 해시로 고정함, M0 요청 모두 닫힘 (2026-11-14)
+# HANDOFF: cyber 0.4.11로 스파이크 마지막 판 (2026-11-14)
 
 ## 목표
 
 tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code이고, 다른 점은 모델이 JSON 도구 호출 대신 Cyber 스크립트를 써서 실행하는 CodeAct 방식이라는 것이다. 호스트는 Zig 0.17.1, 런타임은 libcyber(soomtong/cyber) 정적 링크. 본체 코드는 아직 없다. 버릴 스파이크 코드가 spike/에 있다.
 
-이번 세션: cyber가 M0 요청을 모두 닫고 9bf8a8e4까지 원격 master에 push했다. 회신을 CLI와 세션(`s1 replay`)에서 확인했고 모두 회신대로였다. 스파이크의 cyber 의존을 URL과 해시로 고정하고(본체 첫 단계의 선행 조건, ADR 0019), 문서를 9bf8a8e4로 고쳤다. 반영이 끝난 요청서와 회신 파일은 지웠다(ADR 0020). docs/requests/는 비었다.
+이번 세션: cyber가 0.4.11을 릴리스했다(태그 0.4.11 = 097b831f, 설치된 CLI `Cyber 0.4.11 build-883-097b831`). 스파이크를 태그 URL과 해시로 고정하고, s1, 안내, 회신 문구를 설치된 CLI와 세션에서 확인하고, 옛 회차 폴더(out/dev, out/dev-5de6c83a)를 지운 뒤 CodeAct 비교를 0.4.11로 모두 다시 돌렸다. 문서를 스파이크의 마지막 판(0.4.11)으로 고쳤다. 회차에서 문구가 고치는 법을 말하지 않은 여섯을 새 요청서로 냈다(선행 조건 아님).
 
 ## 현재 브랜치
 
@@ -12,22 +12,24 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 완료된 작업
 
-- [x] 9bf8a8e4 확인: `a[i] = v`의 값 불일치가 ``An element of `[]int` must be `int`, got `str`.``(`Map`, `?int`, `!int` 포함). 앞 회신의 문구 다섯(`#` 주석, `for f |{...}|:`, 튜플 반환, 홑따옴표 줄바꿈, 인덱스와 경계의 `?int`)도 그대로. CLI와 세션 같다. `xs[0] = 'a'`는 오류가 아니라 97(언어 규칙)
-- [x] 고정: spike/s1, s2의 build.zig.zon `.url = git+https://github.com/soomtong/cyber#9bf8a8e4...`, `.hash = cyber-0.4.10-AW3fkJeBjQCO2jLuKlxiR4KZ2398YcbH8N7ETi0cl_4z`. build.zig commit 인자와 s1 검사 0도 9bf8a8e4. s1 40개 통과, s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2). libcyber.a arm64 2.54 MB, 공개 `cl_` 135개
-- [x] 안내: 기준 줄 9bf8a8e4, 오류 목록의 `use json` 줄은 세션 문구(`Failed to load module: json`). 코드 블록 11개 CLI와 세션 통과
-- [x] 문서: 검토 문서(기준 줄, 1, 3.1, 5.1 표는 지금 문구 기준, 7절 "없다", 8, 11절), 08(C0 줄 삭제), 00, deps, ADR 0017, 0019, TODO(C0 닫힘), MEMORY. 요청서와 회신 파일 삭제
-- [x] CodeAct 비교(6a155275 회차, 다시 돌리지 않음): DeepSeek-V4.1-Flash 사고 없음 3회와 effort high 3회, qwen3.8-flash 5회, qwen3.8-max 1회, 과제 36개 모두 통과. 컴파일 오류 34건 중 18건이 `print(!str)`. 원자료 spike/s2/out/dev/, 앞 빌드는 out/dev-5de6c83a/. 검토 문서 5절
+- [x] 고정: spike/s1, s2의 build.zig.zon `.url = git+https://github.com/soomtong/cyber?ref=0.4.11#097b831f...`, `.hash = cyber-0.4.11-AW3fkEXwjQClbWIfwyRDrnTCj0k7VNbfWrg4S4Bzkzea`. build.zig 의존 인자 `.dev = false, .build = "883", .commit = "097b831"`로 릴리스와 같은 버전 문자열. s1 검사 0은 문자열 전체를 비교
+- [x] s1 40개 통과, s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2). libcyber.a arm64 2.55 MB, x86_64 3.09 MB, 공개 `cl_` 135개
+- [x] 스파이크 결함 수정: `s1 spawn`이 출력 버퍼와 요청 목록을 해제하지 않아 SafeAllocator가 누수를 보고했다. spawnProbe에 `g_out`, `g_reqs`, `g_asked`의 deinit과 VM 둘의 `cl_vm_deinit`을 넣었다(검사 모드는 `process.exit`로 끝나 누수 검사를 거치지 않는다)
+- [x] 안내 두 판: 기준 줄 `Cyber 0.4.11 build-883-097b831`(영문판 19,777바이트). 코드 블록 11개 CLI와 세션 통과
+- [x] 비교 회차(out/0.4.11/): direct 2(DS 사고 없음, qwen3.8-flash), CodeAct 12(DS 사고 없음 3, DS effort high 3, qwen3.8-flash 5, qwen3.8-max 1). CodeAct 36개 중 35 통과(DS 사고 없음 3회차 T2는 모델의 판정 논리 실수), direct 6개 모두. 과제당 컴파일 오류 DS 0.78, DS high 0.22, flash 1.67, max 0. 컴파일 오류 34건 중 13건이 `print(!str)`. OpenRouter 캐시가 입력의 절반 안팎만 덮었다
+- [x] 요청서 docs/requests/cyber-0.4.11-codeact-messages.md: `for p |s| in`, `q: byte = 0`, `in_s str = ''`, 옵션 아닌 값과 `none`, 옵션 아닌 값의 `?else`, `str > int`. 권장 코드는 0.4.11에서 돈다
+- [x] 문서: 검토 문서(기준 줄, 1, 2의 예시, 3절 실측, 5절 전체, 7, 8, 11절), 08, 00, deps, ADR 0017, 0019, TODO, MEMORY
 - [x] 모델 이름: s2는 `deepseek-flash`(기본 effort high로 사고), OpenRouter는 `deepseek/deepseek-v4.1-flash-1017`. 옛 별칭 `deepseek-chat`은 사고하지 않는다. `output_config.effort`가 받아들여지는지는 미확인
 - [x] 결정(스파이크 안, 위임): 능력이 반환 슬롯을 먼저 받는 규칙은 본체 추천에서 뺐다. 컴파일러 문구가 고치는 법을 말하는 실수는 안내에 넣지 않는다
 
 ## 시도했으나 실패한 접근
 
+- 회차 도중에 안내를 고치기: s2가 실행마다 안내를 읽어 회차가 섞인다. 이번에 안내의 기준 줄을 고치지 않은 채 회차를 시작했다가 멈추고 다시 돌렸다. 회차 전에 안내를 먼저 확정한다.
+- 릴리스 CLI를 태그에서 스크래치로 빌드하기: 사용자가 설치한 `/usr/local/bin/cyber`를 쓴다(`cyber version`으로 먼저 확인).
 - `zig fetch --save=cyber <url>`로 기존 `.path` 의존을 덮기: `.path`에 URL을 넣고 해시를 빼 zon이 깨진다. `zig fetch <url>`로 해시만 받고 zon을 손으로 고친다.
-- `rg`로 spike/s2/out/dev/<회차>/의 trace 찾기: .gitignore에 걸린다. `rg --no-ignore`를 쓴다.
-- 비교를 시작한 뒤 s2나 안내를 고치기: 회차가 섞인다.
+- zsh에서 맞는 것이 없는 glob(`rm out/cmp-*`): 명령 전체가 멈춘다. 따로 지운다.
+- `rg`로 spike/s2/out/<회차>/의 trace 찾기: .gitignore에 걸린다. `rg --no-ignore`를 쓴다.
 - `s2 --help`, `s2 --version`: 인자가 아니라 질문으로 모델에 보낸다.
-- `/usr/local/bin/cyber`로 안내 확인: 기준 빌드가 아니다. cyber 저장소에서 `zig build cli -Doptimize=ReleaseFast -Dcommit=<커밋> --prefix <스크래치>`로 만든다(저장소의 zig-out은 건드리지 않는다).
-- 버전 문자열로 기준 빌드 확인하기: build.zig의 commit 인자가 찍힐 뿐이다. 실제 소스는 zon의 URL이 정한다.
 - 안내의 오류 문구를 CLI로만 확인하기: 모듈 로더가 달라 `use json`처럼 세션과 다른 문구가 있다. `s1 replay`로도 본다.
 - macOS의 `ls -t`: eza 별칭이라 `/bin/ls`를 쓴다.
 - 이전 세션들의 버린 대안은 ADR 0004~0016에 있다. 다시 제안하지 않는다.
@@ -38,14 +40,14 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 사용자가 정할 것:
 
+- [ ] 요청서(문구 여섯)를 cyber에 전달. 선행 조건은 아니다
 - [ ] `print(!str)`가 작은 모델의 가장 흔한 오류다. 능력의 모양이나 안내로 줄일지 (본체의 능력 설계 때)
-- [ ] 안내가 4,000토큰 목표를 넘는다(약 6,600~6,800토큰). 목표를 바꿀지 안내를 줄일지 (검토 문서 8절)
+- [ ] 안내가 4,000토큰 목표를 넘는다(첫 요청 입력 약 6,500토큰). 목표를 바꿀지 안내를 줄일지 (검토 문서 8절)
 - [ ] 검토 문서를 읽고 ADR 0017의 추천을 받거나 바꾼다. 그 뒤 spike/를 지운다
 
 그 밖:
 
 - [ ] 본체 첫 단계: 저장소 뼈대와 runtime 경계. 선행 조건은 닫혔다. 단계의 결정, 편집, 기능 표를 먼저 낸다
-- [ ] cyber 릴리스(0.4.11 등)나 태그가 정해지면 고정을 옮긴다
 - [ ] tars 게스트에서 기준 빌드로 스파이크 실행 (tars-linux 산출물 필요)
 - [ ] cyber C1: json, toon. C2: regex, time. C3: 모듈 허용 표
 - [ ] 평가: eval/ 과제 20개, CodeAct 대 direct, 판정을 docs/decisions에 기록
@@ -53,12 +55,13 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 핵심 파일
 
-- `docs/spikes/2026-11-14-m0-spikes-review.md` — 1절 요약, 3절 호스트 경계, 5절 비교(6a155275 회차, 앞 빌드와 견줌), 7절 cyber에 남은 것(없다), 11절 다시 돌리는 법
+- `docs/spikes/2026-11-14-m0-spikes-review.md` — 스파이크의 마지막 판(0.4.11). 1절 요약, 3절 호스트 경계, 5절 비교, 7절 cyber에 남은 것, 11절 다시 돌리는 법
+- `docs/requests/cyber-0.4.11-codeact-messages.md` — 열린 요청(문구 여섯)
 - `docs/decisions/0017-m0-spike-findings.md`, `0019-fix-spike-defects-first.md`, `0020-docs-current-state-only.md`
 - `docs/spec/08-cyber-implementation.md` — 기준 빌드의 사실
-- `spike/s1/build.zig.zon`, `spike/s2/build.zig.zon` — cyber 고정(URL과 해시)
-- `spike/s1/src/main.zig` — 검사 40개, `replay`, `spawn`. `spike/s1/src/inc_check.c`
-- `spike/s2/src/vm.zig` — 검증, 실행, 승인, reset 알림
+- `spike/s1/build.zig.zon`, `spike/s2/build.zig.zon` — cyber 고정(태그 URL과 해시)
+- `spike/s2/out/0.4.11/` — 비교 회차 원자료
+- `spike/s1/src/main.zig` — 검사 40개, `replay`, `spawn`. `spike/s2/src/vm.zig` — 검증, 실행, 승인, reset 알림
 
 ## 다음 에이전트에게
 

@@ -408,7 +408,11 @@ const order_forms = [_]struct { name: []const u8, src: []const u8, want: []const
 // spawn 관찰: 스레드 안의 능력 호출, 스레드 안의 무한 루프와 상한.
 fn spawnProbe() void {
     g_deny_spawn = false;
+    defer g_out.deinit(g_gpa);
+    defer g_reqs.deinit(g_gpa);
+    defer g_asked.deinit(g_gpa);
     const vm = newVm();
+    defer c.cl_vm_deinit(vm);
     const r1 = run(vm,
         \\use fs
         \\fn work(p str) -> int:
@@ -421,6 +425,7 @@ fn spawnProbe() void {
     std.debug.print("A. spawn 안의 능력 호출: code={s} 출력={s} | {s}\n", .{ codeName(r1.code), std.mem.trim(u8, g_out.items, "\n"), if (r1.code != c.CL_SUCCESS) firstLine(errorSummary(vm)) else "" });
 
     const vm2 = newVm();
+    defer c.cl_vm_deinit(vm2);
     c.cl_vm_set_fuel(vm2, 1_000_000);
     const th = std.Thread.spawn(.{}, timerThread, .{ vm2, 500 }) catch unreachable;
     const t0 = nowMs();
@@ -459,7 +464,7 @@ pub fn main(init: std.process.Init) !void {
     std.debug.print("libcyber: {s}\n\n", .{S(ver)});
 
     // 0. 빌드: 의존의 아티팩트로 링크하고, C 쪽은 그 include 경로로 cyber.h를 받는다
-    check("0. 아티팩트 링크, 버전 문자열의 커밋, #include \"cyber.h\"의 구조체 크기", std.mem.indexOf(u8, S(ver), "9bf8a8e4") != null and inc_eval_config_size() == @sizeOf(c.CLEvalConfig) and inc_compile_config_size() == @sizeOf(c.CLCompileConfig), "version={s} CLEvalConfig C={d} Zig={d}, CLCompileConfig C={d} Zig={d}", .{ S(ver), inc_eval_config_size(), @sizeOf(c.CLEvalConfig), inc_compile_config_size(), @sizeOf(c.CLCompileConfig) });
+    check("0. 아티팩트 링크, 버전 문자열의 커밋, #include \"cyber.h\"의 구조체 크기", std.mem.eql(u8, S(ver), "Cyber 0.4.11 build-883-097b831") and inc_eval_config_size() == @sizeOf(c.CLEvalConfig) and inc_compile_config_size() == @sizeOf(c.CLCompileConfig), "version={s} CLEvalConfig C={d} Zig={d}, CLCompileConfig C={d} Zig={d}", .{ S(ver), inc_eval_config_size(), @sizeOf(c.CLEvalConfig), inc_compile_config_size(), @sizeOf(c.CLCompileConfig) });
 
     // 1. 기본: eval, print 가로채기, 결과 값
     {

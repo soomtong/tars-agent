@@ -1,3 +1,0 @@
-T1	PASS	or-oai	qwen/qwen3.8-flash	codeact	8	7	1	64930	61440	804	15945	compile_errors=1
-T2	PASS	or-oai	qwen/qwen3.8-flash	codeact	8	7	1	61563	58624	1712	24155	compile_errors=1
-T3	PASS	or-oai	qwen/qwen3.8-flash	codeact	7	6	3	53001	49664	1948	22544	compile_errors=3

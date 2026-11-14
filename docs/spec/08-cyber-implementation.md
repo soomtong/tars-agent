@@ -1,12 +1,12 @@
 # Cyber 런타임 사실과 제약
 
-출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber master의 커밋 9bf8a8e4 (버전 문자열 `0.4.10-DEV`), 확인일 2026-11-14. 구현을 시작하기 전에 다시 확인한다.
+출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber 릴리스 0.4.11 (태그 0.4.11 = 커밋 097b831f, 버전 문자열 `Cyber 0.4.11 build-883-097b831`), 확인일 2026-11-14. 구현을 시작하기 전에 다시 확인한다.
 
 ## 확인된 사실
 
 - fork 용도: 스크립트 CLI와 tars 에이전트 루프의 실행 언어. 백엔드는 바이트코드 VM이고 JIT, LLVM 백엔드는 없다. minimum_zig_version은 0.17.1이다.
 - 언어: 정적 타입과 값 소유권(move, &T 빌림, ^T ARC). 에러는 !T와 error.Name 값. 보간은 %{}. 코루틴은 둘이다. generator fn(stackless, 값을 낸다)과 fiber/suspend(stackful, 기다린다). 그 밖에 spawn Thread + Future가 있다. symbol 리터럴은 symbol.name이다. 모델에게 가르치는 부분집합은 prompt/cyber-subset*.md.
-- 임베딩 수치 (macOS arm64, ReleaseFast, FFI 끔, M0 스파이크 1): libcyber.a 2.53 MB, 공개 `cl_` 함수 135개, VM 생성과 첫 eval 개당 2 ms, VM 하나가 쥔 메모리 약 2.6 MiB, 같은 VM의 validate와 eval은 200회에 각 2 ms.
+- 임베딩 수치 (macOS arm64, ReleaseFast, FFI 끔, M0 스파이크 1): libcyber.a 2.55 MB, 공개 `cl_` 함수 135개, VM 생성과 첫 eval 개당 2~3 ms, VM 하나가 쥔 메모리 약 2.6 MiB, 같은 VM의 validate와 eval은 200회에 각 1~2 ms.
 - 상태 유지: persist_main으로 함수, 타입, use, main 지역 변수가 eval 사이에 이어진다. 같은 이름을 다시 선언하면 새 선언이 이긴다. panic과 interrupt에서는 지역 변수가 버려진다. 빌림 타입 지역은 맨 위에서 선언할 수 없다(`Cannot persist local ... of borrow type`).
 - 검증: cl_vm_validate는 세션을 지우지 않고 현재 세션 위에서 컴파일만 한다. 검증한 소스의 선언은 다음 eval로 넘어가지 않는다. 설정 인자가 없고 마지막 eval의 설정(persist_main, deny_raw_ptrs, deny_spawn)을 쓴다(cyber.h에 적혀 있다). 첫 eval 전에는 모두 꺼져 있으므로 머리말을 eval한 뒤에 검증한다.
 - 실패한 컴파일 뒤: 같은 VM의 다음 검증, 컴파일, eval이 그대로 되고 세션이 남는다(문자열 이스케이프 오류 포함). 실패한 컴파일이 펼친 템플릿 인스턴스는 다음 컴파일이 다시 검사하고, 실패한 컴파일이 처음 불러온 모듈은 다음 use에서 다시 불러온다. VM의 첫 컴파일이 실패하거나 컴파일러, 지역 이월 중에 할당이 실패하면 다음 eval이나 검증이 reset된 VM에서 시작한다. cl_vm_reset_pending(vm)이 그것을 알려 준다. panic과 interrupt는 reset이 아니다: 최상위 지역은 모두 사라지고 함수와 use는 남으며 cl_vm_reset_pending은 false다. 성공 뒤 실패한 eval의 선언은 넘어가지 않는다.
@@ -51,7 +51,7 @@
 
 ## M0에서 확인한 것 (2026-11-14, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
 
-- build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 `Cyber 0.4.10-DEV build-0-9bf8a8e4`처럼 commit 인자를 찍는다(소스에서 읽지 않는다). ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
+- build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 `Cyber 0.4.11 build-883-097b831`처럼 버전 번호에 의존 인자 `dev`(기본 true면 `-DEV`), `build`, `commit`을 붙여 찍는다(커밋은 소스에서 읽지 않는다). ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
 - 능력이 `Future[!str]`을 돌려주고 str 값이나 오류로 완료한다.
 - 검증은 세션 VM에서 바로 한다. 보통의 컴파일 실패 뒤에는 같은 VM의 다음 검증과 실행이 된다. 모듈 소스가 실패한 뒤 다음 use에서 다시 불러온다. 이스케이프 오류(`\|`, `\xZZ`)는 위치 있는 컴파일 오류이고 세션이 남는다.
 - `'\0'`은 NUL이다. 타입 없는 목록 리터럴은 원소를 첫 원소의 타입으로 바꾸지 않는다(`{1, 'a'}`는 컴파일 오류).
@@ -70,6 +70,7 @@
 
 | 순서 | 항목 | 필요의 증거 | 메모 |
 |---|---|---|---|
+| 수시 | 회차에서 모델이 만난 문구 여섯(`for ... in`, `q: byte`, `var` 없는 타입 선언, 옵션 아닌 값과 `none`, 옵션 아닌 값의 `?else`, `str`과 `int`의 비교) | 0.4.11 CodeAct 회차 | 요청서 docs/requests/cyber-0.4.11-codeact-messages.md. 선행 조건 아님 |
 | C1 | json 모듈: parse, stringify, 값 트리 | 평가 과제의 다수가 JSON을 다룬다. 설정 파일, API 응답, 도구 출력 | 깊이와 크기 상한. 값 타입은 복사 가능한 부분집합 안에서 다룰 수 있어야 한다 |
 | C1 | toon 모듈: stringify, parse | 토큰 절약. 스크립트가 구조화된 결과(파일 목록, 검색 결과 같은 균일한 객체 배열)를 모델에게 돌려줄 때 JSON보다 적은 토큰으로 싣는다 | 값 트리는 json 모듈의 것을 쓴다. 깊이와 크기 상한. parse를 C1에 넣을지는 요청서를 쓸 때 정한다 |
 | C2 | regex 모듈 | 로그와 명령 출력에서 값 뽑기. str 메서드만으로는 스크립트가 길어진다 | 역추적 없는 엔진(선형 시간), 직접 쓴다. 문법은 ripgrep 기본 문법의 부분집합 |
