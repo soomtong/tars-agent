@@ -24,10 +24,12 @@ J
   curl -sS -m 120 "$2" -H "$3" -H "content-type: application/json" -d @out/$1.req.json > out/$1.sse
 }
 
-anth ds-anth        https://api.deepseek.com/anthropic/v1/messages "x-api-key: $DEEPSEEK_API_KEY" deepseek-chat ''
-oai  ds-oai         https://api.deepseek.com/chat/completions "Authorization: Bearer $DEEPSEEK_API_KEY" deepseek-chat ''
-anth ds-anth-think  https://api.deepseek.com/anthropic/v1/messages "x-api-key: $DEEPSEEK_API_KEY" deepseek-reasoner '"thinking":{"type":"enabled","budget_tokens":1024},'
-oai  ds-oai-think   https://api.deepseek.com/chat/completions "Authorization: Bearer $DEEPSEEK_API_KEY" deepseek-reasoner ''
+anth ds-anth        https://api.deepseek.com/anthropic/v1/messages "x-api-key: $DEEPSEEK_API_KEY" deepseek-flash ''
+oai  ds-oai         https://api.deepseek.com/chat/completions "Authorization: Bearer $DEEPSEEK_API_KEY" deepseek-flash ''
+anth ds-anth-think  https://api.deepseek.com/anthropic/v1/messages "x-api-key: $DEEPSEEK_API_KEY" deepseek-flash '"thinking":{"type":"enabled","budget_tokens":1024},'
+oai  ds-oai-think   https://api.deepseek.com/chat/completions "Authorization: Bearer $DEEPSEEK_API_KEY" deepseek-flash '"thinking":{"type":"enabled"},'
 anth or-anth-qwen   https://openrouter.ai/api/v1/messages "Authorization: Bearer $OPENROUTER_API_KEY" qwen/qwen3.8-flash ''
 oai  or-oai-qwen    https://openrouter.ai/api/v1/chat/completions "Authorization: Bearer $OPENROUTER_API_KEY" qwen/qwen3.8-flash ''
+anth or-anth-ds     https://openrouter.ai/api/v1/messages "Authorization: Bearer $OPENROUTER_API_KEY" deepseek/deepseek-v4.1-flash-1017 ''
+oai  or-oai-ds      https://openrouter.ai/api/v1/chat/completions "Authorization: Bearer $OPENROUTER_API_KEY" deepseek/deepseek-v4.1-flash-1017 ''
 wc -c out/*.sse

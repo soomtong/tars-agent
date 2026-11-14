@@ -1,0 +1,4 @@
+{"model":"deepseek/deepseek-v4.1-flash-1017","max_tokens":1024,"stream":true,
+ "system":"You are a coding agent. Use the sh tool to act. Be brief.",
+ "tools":[{"name":"sh","description":"Run a shell command and return its output","input_schema":{"type":"object","properties":{"cmd":{"type":"string"}},"required":["cmd"]}}],
+ "messages":[{"role":"user","content":"How many lines does /etc/hosts have? Use the tool."}]}

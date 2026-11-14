@@ -163,7 +163,7 @@ spawn에 대해: deny_spawn을 켜지 않으면(`s1 spawn`) 스레드 안에서 
 
 ## 4. 스파이크 2: 제공자
 
-코드: spike/s2a (curl 스크립트와 원문 응답), spike/s2/src/provider.zig. 이 절은 cyber와 무관하다. 2a의 원문 응답은 2026-11-13에 받았고, 5절의 회차에서도 두 형식(DeepSeek의 Anthropic 형식, OpenRouter의 OpenAI 형식)이 같은 어댑터로 돌았다.
+코드: spike/s2a (curl 스크립트와 원문 응답), spike/s2/src/provider.zig. 이 절은 cyber와 무관하다. 2a의 원문 응답은 2026-11-14에 지금의 모델 ID(DeepSeek API의 `deepseek-flash`, OpenRouter의 `qwen/qwen3.8-flash`와 `deepseek/deepseek-v4.1-flash-1017`)로 받았고, 5절의 회차에서도 두 형식(DeepSeek의 Anthropic 형식, OpenRouter의 OpenAI 형식)이 같은 어댑터로 돌았다.
 
 ### 4.1 두 형식의 실제 모양 (2a)
 
@@ -185,8 +185,10 @@ spawn에 대해: deny_spawn을 켜지 않으면(`s1 spawn`) 스레드 안에서 
 
 호환 엔드포인트에서 본 어긋남:
 
-- OpenRouter의 Anthropic 형식에서 `deepseek/deepseek-chat`(OpenRouter의 모델 이름, 상류 DeepInfra)은 tool_use 블록을 내면서 stop_reason을 end_turn으로 줬다. 상류 제공자에 따라 다르다.
-- DeepSeek의 Anthropic 형식에서 deepseek-reasoner는 thinking 블록을 내지만 사고 글은 비어 있고 signature에 메시지 id가 들어 있었다.
+- OpenRouter는 같은 모델을 여러 상류 제공자로 보낸다(이번 응답은 qwen이 Alibaba, DeepSeek이 InferenceNet). 끝난 이유와 사용량 칸의 모양은 상류에 따라 달라질 수 있다. 이번 응답에서는 두 형식 모두 도구 호출에 맞는 끝난 이유(tool_use, tool_calls)가 왔다.
+- OpenRouter의 OpenAI 형식은 `finish_reason`을 두 조각에 걸쳐 두 번 보낸다. 누적기는 두 번째를 덮어써도 되게 한다.
+- DeepSeek의 Anthropic 형식에서 `deepseek-flash`는 요청에 thinking을 켜지 않아도 thinking 블록을 낸다. 사고 글은 비어 있고(thinking_tokens 0) signature에는 메시지 id가 들어 있다. thinking을 켜면 같은 모양에 text 블록이 더해진다.
+- DeepSeek의 OpenAI 형식에서 `"thinking":{"type":"enabled"}`는 아무 효과가 없었다(응답이 넣지 않은 것과 같고 reasoning_content가 없다). 모델 목록은 사고의 정도를 effort(low, high, max)로 준다고 적는다. 사고를 켜는 법은 본체에서 제공자를 다룰 때 확인한다.
 - 사용량의 뜻이 다르다. DeepSeek의 Anthropic 형식은 input_tokens가 캐시되지 않은 몫이고 캐시된 몫은 cache_read_input_tokens에 따로 온다. OpenAI 형식의 prompt_tokens는 캐시된 몫을 포함한다. OpenRouter는 요청별 cost를 준다.
 - DeepSeek은 요청에 캐시 지점을 표시하지 않아도 앞부분을 자동으로 캐시한다. OpenRouter의 Qwen도 캐시가 붙었다(5절).
 
@@ -201,7 +203,7 @@ Provider(데이터) = {name, format, url, auth, key_env, model}
 
 - 블록 넷으로 두 형식, 제공자 둘, 모델 셋의 응답을 모두 받았다. 다섯 번째 블록은 필요하지 않았다.
 - 불투명 칸(thinking.raw)은 필요하다. Anthropic 형식의 signature가 거기 들어가고 다음 요청에 그대로 되돌아간다. OpenAI 형식에서는 reasoning_content 필드로 되돌렸다. 거절(400)은 없었다.
-- 끝난 이유를 내용에서 다시 계산하는 규칙(도구 호출이 있으면 tool_use)이 위의 어긋남을 흡수했다.
+- 끝난 이유는 내용에서 다시 계산한다(도구 호출이 있으면 tool_use). 상류에 따라 끝난 이유가 어긋나도 루프가 흔들리지 않는다.
 - 제공자 넷이 표의 네 줄이다. 어댑터 코드는 형식 수만큼인 둘이다.
 - OpenAI 형식으로 내보낼 때 블록 목록을 풀어야 한다: tool_result는 별도 메시지로 나가고, text, thinking, tool_call은 assistant 메시지 하나의 필드 셋으로 흩어진다. 한 메시지 안의 블록 순서는 OpenAI 형식에서 사라진다.
 - 내부 이벤트는 넷으로 충분했다: 글 조각, 사고 조각, 도구 시작, 인자 조각.

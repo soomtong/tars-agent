@@ -20,6 +20,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - [x] CodeAct 비교 다시: DeepSeek-V4.1-Flash 3회, qwen3.8-flash 5회, qwen3.8-max 1회, 과제 27개 모두 통과. 과제당 컴파일 오류 ds 0.44→0, flash 2.44→2.13(회차별 1.7~2.7, 흔들림 안), max 0→0.33. 고친 문구가 겨눈 실수는 보간 안의 보간 한 번만 나왔고 문구대로 고쳐졌다. 가장 흔한 오류는 `print(!str)`(33건 중 18). 원자료 spike/s2/out/dev/, 앞 빌드는 out/dev-5de6c83a/. 검토 문서 5절
 - [x] 요청서 2절: 회차에서 문구가 고치는 법을 말하지 않은 다섯(`# 주석`, `for f |{...}|:`, 튜플 반환 타입, 홑따옴표 안의 줄바꿈, 슬라이스 경계의 `?int`). 선행 조건은 아니다
 - [x] 회신 파일 삭제 (사용자 지시)
+- [x] 모델 이름: DeepSeek 회차의 모델은 DeepSeek-V4.1-Flash(옛 별칭 deepseek-chat으로 요청했다). s2는 `deepseek-flash`, OpenRouter는 날짜로 고정한 `deepseek/deepseek-v4.1-flash-1017`을 쓴다 (사용자 지시). s2a를 이 ID들로 다시 돌려 검토 문서 4.1의 관찰을 고쳤다
 - [x] 결정(스파이크 안, 위임): 능력이 반환 슬롯을 먼저 받는 규칙을 본체 추천에서 뺐다. `elif`, 보간 안의 보간, `and` 안의 풀기는 안내에 새로 넣지 않는다(컴파일러 문구가 말한다)
 
 ## 시도했으나 실패한 접근

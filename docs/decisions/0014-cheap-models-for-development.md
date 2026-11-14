@@ -13,7 +13,7 @@
 ## 확인한 것 (2026-11-12, curl로 도구 하나를 준 스트리밍 요청)
 
 - DeepSeek에는 Anthropic Messages 호환 엔드포인트가 있다: https://api.deepseek.com/anthropic/v1/messages, 인증은 x-api-key 헤더. message_start, content_block_delta 등 같은 SSE 이벤트가 온다.
-- OpenRouter에도 있다: https://openrouter.ai/api/v1/messages, 인증은 Authorization: Bearer 헤더. 모델 이름은 deepseek/deepseek-chat 꼴이다.
+- OpenRouter에도 있다: https://openrouter.ai/api/v1/messages, 인증은 Authorization: Bearer 헤더. 모델 이름은 deepseek/deepseek-v4.1-flash-1017 꼴이다. 날짜가 붙은 ID로 고정한다(`~...-latest`와 DeepSeek API의 옛 별칭 deepseek-chat은 가리키는 모델이 바뀐다).
 - 호환이 완전하지 않다. OpenRouter(상류 DeepInfra)는 tool_use 블록을 냈는데 stop_reason이 tool_use가 아니라 end_turn이었다. 루프는 stop_reason만 믿지 말고 응답에 tool_use 블록이 있는지를 본다.
 - usage의 모양이 다르다. OpenRouter는 cost를 준다. 캐시 필드는 null일 수 있다.
 
