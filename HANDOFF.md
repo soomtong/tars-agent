@@ -17,10 +17,11 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - [x] 스파이크: build.zig의 commit 인자를 6a155275로(버전 문자열은 이 인자를 찍을 뿐 소스에서 읽지 않는다). s1의 누수 둘(errorSummary 복사본, replay와 order의 g_out) 고침. s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2) 확인
 - [x] 안내 두 판: 기준 줄, `trimLeft()`/`trimRight()`와 `lstrip`/`rstrip` 대응 추가, 오류 목록에서 이제 고치는 법을 말하는 두 줄(목록 리터럴 타입, `s.len`) 삭제. 영문판 19,814바이트. 코드 블록 11개 CLI와 세션 통과, 오류 목록 21줄 첫 줄 확인
 - [x] 문서: 요청서(남은 것 push 하나와 확인을 마친 것), 검토 문서(7절 축소, 5절에 회차의 빌드 명시), 08, 00, deps, ADR 0017, 0019, TODO, MEMORY
-- [x] CodeAct 비교 다시: DeepSeek-V4.1-Flash 3회, qwen3.8-flash 5회, qwen3.8-max 1회, 과제 27개 모두 통과. 과제당 컴파일 오류 ds 0.44→0, flash 2.44→2.13(회차별 1.7~2.7, 흔들림 안), max 0→0.33. 고친 문구가 겨눈 실수는 보간 안의 보간 한 번만 나왔고 문구대로 고쳐졌다. 가장 흔한 오류는 `print(!str)`(33건 중 18). 원자료 spike/s2/out/dev/, 앞 빌드는 out/dev-5de6c83a/. 검토 문서 5절
+- [x] CodeAct 비교 다시: DeepSeek-V4.1-Flash 사고 없음 3회, qwen3.8-flash 5회, qwen3.8-max 1회, 과제 27개 모두 통과. 과제당 컴파일 오류 ds 0.44→0, flash 2.44→2.13(회차별 1.7~2.7, 흔들림 안), max 0→0.33. 고친 문구가 겨눈 실수는 보간 안의 보간 한 번만 나왔고 문구대로 고쳐졌다. 가장 흔한 오류는 `print(!str)`(33건 중 18). 원자료 spike/s2/out/dev/, 앞 빌드는 out/dev-5de6c83a/. 검토 문서 5절
 - [x] 요청서 2절: 회차에서 문구가 고치는 법을 말하지 않은 다섯(`# 주석`, `for f |{...}|:`, 튜플 반환 타입, 홑따옴표 안의 줄바꿈, 슬라이스 경계의 `?int`). 선행 조건은 아니다
 - [x] 회신 파일 삭제 (사용자 지시)
 - [x] 모델 이름: DeepSeek 회차의 모델은 DeepSeek-V4.1-Flash(옛 별칭 deepseek-chat으로 요청했다). s2는 `deepseek-flash`, OpenRouter는 날짜로 고정한 `deepseek/deepseek-v4.1-flash-1017`을 쓴다 (사용자 지시). s2a를 이 ID들로 다시 돌려 검토 문서 4.1의 관찰을 고쳤다
+- [x] DeepSeek 모드: `deepseek-flash`는 기본 effort high로 사고하고, 옛 별칭 `deepseek-chat`은 사고하지 않는다. 앞의 회차는 사고 없음이었다. 기본 effort high로 3회(과제 9개) 더 돌렸다: 모두 통과, 과제당 컴파일 오류 0.11, 출력 토큰 590 → 784(사고 206), 시간 비슷. `output_config.effort`가 받아들여지는지는 미확인
 - [x] 결정(스파이크 안, 위임): 능력이 반환 슬롯을 먼저 받는 규칙을 본체 추천에서 뺐다. `elif`, 보간 안의 보간, `and` 안의 풀기는 안내에 새로 넣지 않는다(컴파일러 문구가 말한다)
 
 ## 시도했으나 실패한 접근

@@ -18,7 +18,7 @@
 | 검증을 세션 VM에서 바로 할 수 있는가 | 된다. 컴파일 실패 뒤에도 세션이 그대로다. 세션이 reset되는 경우는 `cl_vm_reset_pending`으로 안다 | 3.5 |
 | Zig std.http로 모델 API에 스트리밍 요청을 보낼 수 있는가 | 된다. TLS와 CA 묶음 포함 | 4.3 |
 | 전송 형식 둘을 메시지 모델 하나로 받을 수 있는가 (ADR 0015) | 된다. 블록 넷과 불투명 칸 하나로 충분했다 | 4.2 |
-| CodeAct가 실제 과제를 푸는가 | 푼다. 모델 셋이 과제 27개를 모두 끝냈다(direct도 6개 모두). 컴파일 오류는 작은 모델에 과제당 2.1번, 모두 그 과제 안에서 고쳐졌다 | 5 |
+| CodeAct가 실제 과제를 푸는가 | 푼다. 모델 셋이 과제 36개를 모두 끝냈다(DeepSeek은 두 모드, direct도 6개 모두). 컴파일 오류는 작은 모델에 과제당 2.1번, 모두 그 과제 안에서 고쳐졌다 | 5 |
 | x86_64-linux-gnu 교차 빌드가 되는가 | 된다. tars 게스트에서의 실행은 이 빌드로 확인하지 않았다 | 6 |
 
 가장 무거운 발견 셋:
@@ -59,7 +59,7 @@ direct와 CodeAct의 차이는 도구 하나의 모양뿐이다.
 | 한 스텝에 할 수 있는 일 | 명령 하나 (셸 파이프로 묶기는 가능) | 호출 여럿, 분기, 반복, 중간값 가공 |
 | 권한을 거는 자리 | 명령 문자열 전체 | 능력 호출 하나하나 (경로, 명령이 인자로 보인다) |
 
-실제 CodeAct 스텝 하나의 기록 (DeepSeek-V4.1-Flash, T1의 스텝 3, 스크립트 앞부분):
+실제 CodeAct 스텝 하나의 기록 (DeepSeek-V4.1-Flash 사고 없음, T1의 스텝 3, 스크립트 앞부분):
 
 ~~~text
 [도구 호출] run {"code": "type Row:\n    name str\n    n int\n\nrows := []Row{}\ntotal := 0\nfor {'app.log', 'db.log', 'web.log'} |f|:\n    text := fs.read('logs/%{f}')!\n ... rows.sort(|a, b| a.n > b.n or (a.n == b.n and a.name < b.name)) ..."}
@@ -187,8 +187,8 @@ spawn에 대해: deny_spawn을 켜지 않으면(`s1 spawn`) 스레드 안에서 
 
 - OpenRouter는 같은 모델을 여러 상류 제공자로 보낸다(이번 응답은 qwen이 Alibaba, DeepSeek이 InferenceNet). 끝난 이유와 사용량 칸의 모양은 상류에 따라 달라질 수 있다. 이번 응답에서는 두 형식 모두 도구 호출에 맞는 끝난 이유(tool_use, tool_calls)가 왔다.
 - OpenRouter의 OpenAI 형식은 `finish_reason`을 두 조각에 걸쳐 두 번 보낸다. 누적기는 두 번째를 덮어써도 되게 한다.
-- DeepSeek의 Anthropic 형식에서 `deepseek-flash`는 요청에 thinking을 켜지 않아도 thinking 블록을 낸다. 사고 글은 비어 있고(thinking_tokens 0) signature에는 메시지 id가 들어 있다. thinking을 켜면 같은 모양에 text 블록이 더해진다.
-- DeepSeek의 OpenAI 형식에서 `"thinking":{"type":"enabled"}`는 아무 효과가 없었다(응답이 넣지 않은 것과 같고 reasoning_content가 없다). 모델 목록은 사고의 정도를 effort(low, high, max)로 준다고 적는다. 사고를 켜는 법은 본체에서 제공자를 다룰 때 확인한다.
+- DeepSeek API의 `deepseek-flash`(V4.1 Flash)는 기본 effort가 high다(모델 목록의 `default_level`, 고를 수 있는 것은 low, high, max). 요청에 아무것도 넣지 않아도 사고한다. Anthropic 형식에서는 thinking 블록이 오고 signature에 메시지 id가 들어 있다. 쉬운 질문(2a의 도구 질문)에는 사고 글이 비고 thinking_tokens가 0이며, 계산이 필요한 질문에는 수백 토큰을 사고했다. 옛 별칭 `deepseek-chat`은 같은 질문에도 thinking 블록 없이 답한다(사고 없는 모드).
+- 사고가 이미 켜져 있으므로 `"thinking":{"type":"enabled"}`(OpenAI 형식)는 응답을 바꾸지 않았다. Anthropic 형식의 `output_config.effort`를 low, max로 준 요청 하나씩은 사고 토큰이 730, 459로 기본(386)과 순서가 맞지 않았다. effort 칸이 받아들여지는지는 표본 하나로 말할 수 없다. 본체에서 제공자를 다룰 때 확인한다.
 - 사용량의 뜻이 다르다. DeepSeek의 Anthropic 형식은 input_tokens가 캐시되지 않은 몫이고 캐시된 몫은 cache_read_input_tokens에 따로 온다. OpenAI 형식의 prompt_tokens는 캐시된 몫을 포함한다. OpenRouter는 요청별 cost를 준다.
 - DeepSeek은 요청에 캐시 지점을 표시하지 않아도 앞부분을 자동으로 캐시한다. OpenRouter의 Qwen도 캐시가 붙었다(5절).
 
@@ -228,24 +228,26 @@ Provider(데이터) = {name, format, url, auth, key_env, model}
 
 | 모델 | 모드 | 과제 (회차) | 통과 | 스텝 평균 | 컴파일 오류 (과제당) | 과제당 시간 | 과제당 입력 토큰 |
 |---|---|---|---|---|---|---|---|
-| DeepSeek-V4.1-Flash | direct | 3 (1) | 3 | 5.7 | | 6초 | 4.0k (캐시 2.9k) |
-| DeepSeek-V4.1-Flash | codeact | 9 (3) | 9 | 5.2 | 0.00 | 7초 | 37.2k (캐시 35.4k) |
+| DeepSeek-V4.1-Flash 사고 없음 | direct | 3 (1) | 3 | 5.7 | | 6초 | 4.0k (캐시 2.9k) |
+| DeepSeek-V4.1-Flash 사고 없음 | codeact | 9 (3) | 9 | 5.2 | 0.00 | 7초 | 37.2k (캐시 35.4k) |
+| DeepSeek-V4.1-Flash effort high | codeact | 9 (3) | 9 | 4.8 | 0.11 | 8초 | 34.4k (캐시 32.6k) |
 | qwen3.8-flash | direct | 3 (1) | 3 | 7.7 | | 24초 | 11.3k (캐시 8.4k) |
 | qwen3.8-flash | codeact | 15 (5) | 15 | 8.0 | 2.13 | 26초 | 65.0k (캐시 60.9k) |
 | qwen3.8-max | codeact | 3 (1) | 3 | 6.3 | 0.33 | 59초 | 51.8k (캐시 44.8k) |
 
-입력 토큰은 캐시된 몫을 포함한 전체다(DeepSeek의 Anthropic 형식은 둘을 따로 주므로 더했다). DeepSeek 회차는 DeepSeek API에 별칭 `deepseek-chat`으로 요청했고 응답한 모델은 DeepSeek-V4.1-Flash다(API의 모델 목록에서 ID는 `deepseek-flash`). 응답도 별칭을 그대로 돌려주므로 원자료의 모델 칸은 `deepseek-chat`이다. s2는 이제 ID `deepseek-flash`로 요청한다.
+입력 토큰은 캐시된 몫을 포함한 전체다(DeepSeek의 Anthropic 형식은 둘을 따로 주므로 더했다). DeepSeek은 두 모드로 돌렸다. "사고 없음"은 옛 별칭 `deepseek-chat`으로 요청한 것이다(응답도 별칭을 돌려주므로 원자료의 모델 칸은 `deepseek-chat`). "effort high"는 모델 ID `deepseek-flash`로 요청한 것이고 이것이 모델의 기본값이다(4.1). s2는 이제 `deepseek-flash`로 요청한다. 두 모드의 과제당 출력 토큰은 590과 784(그중 사고 206)다.
 
 앞 빌드(5de6c83a)와 그때의 안내로 돈 CodeAct 회차와 견주면(같은 과제, 같은 s2):
 
 | 모델 | 회차 (5de6c83a → 6a155275) | 과제당 컴파일 오류 | 오류가 난 과제 | 스텝 평균 |
 |---|---|---|---|---|
-| DeepSeek-V4.1-Flash | 3 → 3 | 0.44 → 0.00 | 9개 중 4 → 9개 중 0 | 5.7 → 5.2 |
+| DeepSeek-V4.1-Flash 사고 없음 | 3 → 3 | 0.44 → 0.00 | 9개 중 4 → 9개 중 0 | 5.7 → 5.2 |
 | qwen3.8-flash | 3 → 5 | 2.44 → 2.13 | 9개 중 9 → 15개 중 15 | 7.9 → 8.0 |
 | qwen3.8-max | 1 → 1 | 0.00 → 0.33 | 3개 중 0 → 3개 중 1 | 5.0 → 6.3 |
 
 읽는 법:
 
+- DeepSeek-V4.1-Flash는 사고를 켜도(기본 effort high) 성공률이 같고 컴파일 오류도 거의 없다. 출력 토큰이 3할쯤 늘고 시간은 비슷하다. 이 과제 셋에서는 사고가 차이를 만들지 않는다.
 - 두 빌드 모두 CodeAct 과제를 모두 끝냈다. 이 과제 셋으로는 성공률의 차이가 보이지 않는다. T1의 "file names without the folder"는 확장자를 뗀 이름(`web`)으로 읽힐 수 있다. 채점은 `web.log`를 기대하므로, 평가 과제(eval/)를 만들 때 이런 문장은 뜻이 하나가 되게 쓴다.
 - 고친 문구가 겨눈 실수(`and`로 묶은 옵션 풀기, `elif`, 보간 안의 `\"`, `trimStart`, 최상위 `!else` 블록의 끝)는 이번 회차에서 한 번도 나오지 않았다. 보간 안의 보간은 한 번 나왔고, 모델이 문구가 권한 대로 안쪽 문자열을 변수로 빼서 다음 스텝에 고쳤다. 그래서 고친 문구가 수정 횟수를 줄이는지는 이 표본으로 말할 수 없다. 작은 모델의 과제당 2.4 → 2.1은 회차 사이의 흔들림 안이다(회차별 과제당 1.7~2.7).
 - qwen3.8-flash는 15개 과제 모두에서 컴파일 오류를 한 번 이상 냈다. 오류의 절반 남짓(32건 중 18)이 `!str`을 풀지 않고 출력한 것이다(5.1).
@@ -255,7 +257,7 @@ Provider(데이터) = {name, format, url, auth, key_env, model}
 
 ### 5.1 모델이 틀린 곳
 
-6a155275 회차의 컴파일 오류 33건(DeepSeek-V4.1-Flash 0, qwen3.8-flash 32, qwen3.8-max 1):
+6a155275 회차의 컴파일 오류 34건(DeepSeek-V4.1-Flash 사고 없음 0, effort high 1, qwen3.8-flash 32, qwen3.8-max 1):
 
 | 오류 | 건수 | 문구가 고치는 법을 말하는가 |
 |---|---|---|
@@ -268,6 +270,7 @@ Provider(데이터) = {name, format, url, auth, key_env, model}
 | `?int`를 슬라이스 경계에 씀 (``Expected argument `int`, found `?int`, when calling `fn @slice(...)` ``) | 1 | 타입은 말하지만 푸는 법은 말하지 않는다(요청서 2절) |
 | 보간 안의 보간 | 1 | 말한다 |
 | `for a, b, c \|p\|:` (목록 리터럴 없이) | 1 | 말한다 |
+| `for p in {...}:` (Python 모양) | 1 | 말한다 |
 | 그 밖: 없는 메서드 `indexOfFrom`, 없는 함수 `xs_last`, `byte`를 `str` 매개변수에, `todo.txt_lines :=` | 4 | 무엇이 틀렸는지는 말한다 |
 
 - 가장 흔한 실수는 여전히 `!T`를 풀지 않고 출력하는 것이다. 안내의 원칙 첫머리에 있는데도 작은 모델이 과제마다 되풀이한다. 문구가 정확해서 한 스텝으로 끝나지만 스텝 하나와 그만큼의 입력 토큰이 든다. 이것은 문구가 아니라 능력의 모양(모델이 받는 `!str`)과 안내의 문제다. 본체의 능력 설계와 안내를 다룰 때 다시 본다.
@@ -284,7 +287,7 @@ Provider(데이터) = {name, format, url, auth, key_env, model}
 
 | 모델 | run 호출 | 셸 위임 | 입출력만 | 로직 | 로직 스크립트 평균 줄 |
 |---|---|---|---|---|---|
-| DeepSeek-V4.1-Flash | 42 | 14 | 9 | 19 | 12.4 |
+| DeepSeek-V4.1-Flash 사고 없음 | 42 | 14 | 9 | 19 | 12.4 |
 | qwen3.8-flash | 64 | 20 | 14 | 30 | 21.8 |
 | qwen3.8-max | 16 | 8 | 2 | 6 | 17.5 |
 
