@@ -7,7 +7,7 @@
 | 의존 | 버전 | 라이선스 | 이유 | 조건 |
 |---|---|---|---|---|
 | Zig 표준 라이브러리 | 0.17.1 | MIT | HTTP, TLS, JSON, 프로세스, 파일 | |
-| soomtong/cyber (libcyber) | master b450f535 (`0.4.10-DEV`). 원격에 아직 없어 스파이크는 로컬 경로 의존(`.path = "../../../cyberscript"`)으로 받는다. push되면 커밋과 해시로 고정한다 (요청서). 라이브러리는 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 받고 cyber.h가 따라온다 | MIT | 스크립트 VM과 표준 모듈(json, regex, time은 만들 것) | 반드시 -Dffi=false. FFI를 켜면 tcc(LGPL)가 링크된다 |
+| soomtong/cyber (libcyber) | master 9bf8a8e4 (`0.4.10-DEV`). `git+https://github.com/soomtong/cyber#9bf8a8e408a3c9ca78c25bcacf3b50c3b3092c46`, 해시 `cyber-0.4.10-AW3fkJeBjQCO2jLuKlxiR4KZ2398YcbH8N7ETi0cl_4z`로 고정한다. 릴리스나 태그가 정해지면 그것으로 옮긴다. 라이브러리는 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 받고 cyber.h가 따라온다 | MIT | 스크립트 VM과 표준 모듈(json, regex, time은 만들 것) | 반드시 -Dffi=false. FFI를 켜면 tcc(LGPL)가 링크된다 |
 | translate-c (ziglang) | cyber와 같은 커밋 | MIT | 빌드할 때 cyber.h를 Zig 모듈로 바꾼다 | 스파이크에서만 썼다. 본체는 손으로 쓴 extern을 추천한다 (ADR 0017). 링크되지 않는다 |
 | glibc (동적, 대상 시스템의 것) | Debian | LGPL | 대상 환경의 바닥 라이브러리 | 동적 링크만. 정적 링크하지 않는다 |
 
