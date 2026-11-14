@@ -283,7 +283,7 @@ run 호출을 셋으로 나눴다(규칙은 단순한 정규식).
 
 ## 7. cyber에 남은 것
 
-요청서: docs/requests/cyber-m0-spike-requests.md. 1~5가 본체 첫 단계의 선행 조건이다 (feedback-fix-spike-defects-first.md).
+요청서: docs/requests/cyber-m0-spike-requests.md. 1~5가 본체 첫 단계의 선행 조건이다 (ADR 0019).
 
 ### 7.1 문자열 이스케이프 오류가 세션을 지운다
 

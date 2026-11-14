@@ -4,11 +4,11 @@
 
 tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code이고, 다른 점은 모델이 JSON 도구 호출 대신 Cyber 스크립트를 써서 실행하는 CodeAct 방식이라는 것이다. 호스트는 Zig 0.17.1, 런타임은 libcyber(soomtong/cyber) 정적 링크. 본체 코드는 아직 없다. 버릴 스파이크 코드가 spike/에 있다.
 
-이번 세션: 사용자가 "cyber는 0.4.10+dev(로컬 저장소의 빌드)다. 구버전 테스트 기록과 결과, 구버전 dev에서 생긴 내용은 무시하고 현재 버전에 맞는 문서로 다시 쓰라", "문서를 전체적으로 리빌드해도 된다. 과거 버그나 과거 기록이 LLM 컨텍스트를 오염하지 않도록"이라고 지시했다. 기준 빌드를 cyber master 63e35e88(`0.4.10-DEV`)로 정하고, 스파이크를 우회 없는 모양으로 고쳐 다시 돌리고, 문서를 지금 참인 것만 적도록 다시 썼다. 규칙은 docs/decisions/feedback-docs-current-state-only.md.
+이번 세션: 사용자가 "cyber는 0.4.10+dev(로컬 저장소의 빌드)다. 구버전 테스트 기록과 결과, 구버전 dev에서 생긴 내용은 무시하고 현재 버전에 맞는 문서로 다시 쓰라", "문서를 전체적으로 리빌드해도 된다. 과거 버그나 과거 기록이 LLM 컨텍스트를 오염하지 않도록"이라고 지시했다. 기준 빌드를 cyber master 63e35e88(`0.4.10-DEV`)로 정하고, 스파이크를 우회 없는 모양으로 고쳐 다시 돌리고, 문서를 지금 참인 것만 적도록 다시 썼다. 규칙은 docs/decisions/0020-docs-current-state-only.md.
 
 ## 현재 브랜치
 
-`main`. 커밋과 push는 Claude에게 위임돼 있다 (docs/decisions/feedback-commit-delegation.md).
+`main`. 커밋과 push는 Claude에게 위임돼 있다 (docs/decisions/0018-commit-delegation.md).
 
 ## 완료된 작업
 
@@ -58,7 +58,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - `docs/spikes/2026-11-14-m0-spikes-review.md` — 1절 요약, 3절 호스트 경계, 5절 CodeAct 비교와 모델이 틀린 곳, 7절 cyber에 남은 것, 8절 안내, 9절 본체 추천 열여섯, 11절 다시 돌리는 법
 - `docs/requests/cyber-m0-spike-requests.md` — cyber 요청 일곱 절
 - `docs/decisions/0017-m0-spike-findings.md` — 발견과 추천
-- `docs/decisions/feedback-docs-current-state-only.md` — 문서는 지금의 상태만
+- `docs/decisions/0020-docs-current-state-only.md` — 문서는 지금의 상태만
 - `prompt/cyber-subset.en.md`, `prompt/cyber-subset.md` — 안내. 같은 구조, 같은 코드 블록
 - `docs/spec/08-cyber-implementation.md` — 기준 빌드의 사실, M0에서 확인한 것, cyber에서 만들 것
 - `docs/deps.md` — cyber 63e35e88 고정(해시 포함)
@@ -70,6 +70,6 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 1. 사용자 규칙(~/.claude/CLAUDE.md): 응답은 한국어, 문서와 주석에 ** 강조 금지, 커밋은 접두사 없이 첫 글자 대문자 80자 이내, 검색은 rg와 fd. 문서 코드 펜스는 ~~~. 결정은 docs/decisions에 파일로 남기고 MEMORY.md에 한 줄. 용어 옆에 원어를 괄호로 붙이는 표기(연료(fuel), 벽시계(wall-clock))를 쓴다.
 2. 본체 구현은 페어 코딩이다 (CLAUDE.md, ADR 0012). 단계마다 결정, 편집, 기능을 나눠 공유하고, 구조에 관한 결정은 사용자가 정한다.
-3. 문서는 지금 참인 것만 적는다. 고쳐진 결함, 걷어 낸 우회, 버전별 변천을 문서에 남기지 않는다 (feedback-docs-current-state-only.md).
+3. 문서는 지금 참인 것만 적는다. 고쳐진 결함, 걷어 낸 우회, 버전별 변천을 문서에 남기지 않는다 (ADR 0020).
 4. 기준 빌드는 cyber 로컬 저장소(/Users/dp/Repository/cyberscript)의 master다. 이번 세션은 사용자 지시로 그 저장소를 읽고 빌드했다(편집은 하지 않았다). cyber 쪽 작업은 요청서를 써서 사용자가 전달하는 흐름이고, 그 저장소를 편집하는 것은 사용자가 지시할 때다 (ADR 0013).
 5. 스파이크를 다시 돌리려면 검토 문서 11절. 키는 환경 변수 DEEPSEEK_API_KEY, OPENROUTER_API_KEY.

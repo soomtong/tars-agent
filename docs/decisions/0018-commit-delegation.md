@@ -1,11 +1,8 @@
-# 커밋과 push는 Claude가 알아서 한다
+# 0018 커밋과 push는 Claude가 알아서 한다
 
-상태: 사용자 지시 (2026-11-10)
+상태: 사용자 지시 (2026-11-10). "commit; remember, commit job is up to you. If there are meaningful changes exist, you can make commit easily.", "push it; push is up to you too"
 
-- "commit; remember, commit job is up to you. If there are meaningful changes exist, you can make commit easily."
-- "push it; push is up to you too"
-
-## 규칙
+## 결정
 
 의미 있는 변경이 생기면 묻지 않고 커밋하고 push한다. 시점과 묶는 단위는 Claude가 정한다.
 

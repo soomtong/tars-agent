@@ -23,7 +23,7 @@
 
 스파이크는 Claude가 혼자 검토하고 구현한다. 스파이크 안의 결정도 Claude에게 위임돼 있다 (2026-11-13 사용자 지시, ADR 0012의 덧붙임). 대신 상세한 검토 결과(docs/spikes/)를 낸다. 사용자는 그것을 읽고 아키텍처의 감을 잡는다. 스파이크 코드는 spike/에 두고 끝나면 버린다. 남기는 것은 검토 결과, 배운 것(docs/decisions), 평가 도구(eval/)다.
 
-스파이크에서 발견한 결함은 모두 고치고 진행한다. 우회한 채로 본체에 들어가지 않는다 (docs/decisions/feedback-fix-spike-defects-first.md).
+스파이크에서 발견한 결함은 모두 고치고 진행한다. 우회한 채로 본체에 들어가지 않는다 (docs/decisions/0019-fix-spike-defects-first.md).
 
 에이전트 본체의 구현은 위임이 아니다. 위의 진행 방식대로 사용자와 함께 검토하며 한 단계씩 간다.
 
@@ -36,7 +36,7 @@
 
 ## 커밋
 
-의미 있는 변경은 묻지 않고 커밋하고 push한다 (docs/decisions/feedback-commit-delegation.md).
+의미 있는 변경은 묻지 않고 커밋하고 push한다 (docs/decisions/0018-commit-delegation.md).
 
 ## 참고
 
