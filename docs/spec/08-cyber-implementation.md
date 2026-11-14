@@ -1,6 +1,6 @@
 # Cyber 런타임 사실과 제약
 
-출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber master의 커밋 63e35e88 (버전 문자열 `0.4.10-DEV`), 확인일 2026-11-14. 구현을 시작하기 전에 다시 확인한다.
+출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber 로컬 master의 커밋 5de6c83a (버전 문자열 `0.4.10-DEV`, 원격에는 아직 없다), 확인일 2026-11-14. 구현을 시작하기 전에 다시 확인한다.
 
 ## 확인된 사실
 
@@ -8,15 +8,15 @@
 - 언어: 정적 타입과 값 소유권(move, &T 빌림, ^T ARC). 에러는 !T와 error.Name 값. 보간은 %{}. 코루틴은 둘이다. generator fn(stackless, 값을 낸다)과 fiber/suspend(stackful, 기다린다). 그 밖에 spawn Thread + Future가 있다. symbol 리터럴은 symbol.name이다. 모델에게 가르치는 부분집합은 prompt/cyber-subset*.md.
 - 임베딩 수치 (macOS arm64, ReleaseFast, FFI 끔, M0 스파이크 1): libcyber.a 2.49 MB, 공개 `cl_` 함수 134개, VM 생성과 첫 eval 개당 2 ms, VM 하나가 쥔 메모리 약 2.6 MiB, 같은 VM의 validate와 eval은 200회에 각 2 ms.
 - 상태 유지: persist_main으로 함수, 타입, use, main 지역 변수가 eval 사이에 이어진다. 같은 이름을 다시 선언하면 새 선언이 이긴다. panic과 interrupt에서는 지역 변수가 버려진다. 빌림 타입 지역은 맨 위에서 선언할 수 없다(`Cannot persist local ... of borrow type`).
-- 검증: cl_vm_validate는 세션을 지우지 않고 현재 세션 위에서 컴파일만 한다. 검증한 소스의 선언은 다음 eval로 넘어가지 않는다. 세션의 deny_raw_ptrs를 따른다.
-- 실패한 컴파일 뒤: 같은 VM의 다음 검증, 컴파일, eval이 그대로 된다. 예외가 하나 있다: 문자열 이스케이프 오류(`"a\|b"`, `'\xZZ'`)는 할당 실패로 처리되어 다음 eval 앞에서 VM이 reset되고 세션의 변수, 함수, use가 알림 없이 사라진다(요청서 1절). 실패한 컴파일이 펼친 템플릿 인스턴스는 다음 컴파일이 다시 검사하고, 실패한 컴파일이 처음 불러온 모듈은 다음 use에서 다시 불러온다. VM의 첫 컴파일이 실패하면 VM이 스스로 reset한다. 성공 뒤 실패한 eval의 선언은 넘어가지 않는다.
+- 검증: cl_vm_validate는 세션을 지우지 않고 현재 세션 위에서 컴파일만 한다. 검증한 소스의 선언은 다음 eval로 넘어가지 않는다. 설정 인자가 없고 마지막 eval의 설정(persist_main, deny_raw_ptrs, deny_spawn)을 쓴다. 그래서 머리말을 eval한 뒤에 검증한다.
+- 실패한 컴파일 뒤: 같은 VM의 다음 검증, 컴파일, eval이 그대로 되고 세션이 남는다(문자열 이스케이프 오류 포함). 실패한 컴파일이 펼친 템플릿 인스턴스는 다음 컴파일이 다시 검사하고, 실패한 컴파일이 처음 불러온 모듈은 다음 use에서 다시 불러온다. VM의 첫 컴파일이 실패하거나 컴파일러, 지역 이월 중에 할당이 실패하면 다음 eval이나 검증이 reset된 VM에서 시작한다. cl_vm_reset_pending(vm)이 그것을 알려 준다. panic과 interrupt는 reset이 아니다: 최상위 지역은 모두 사라지고 함수와 use는 남으며 cl_vm_reset_pending은 false다. 성공 뒤 실패한 eval의 선언은 넘어가지 않는다.
 - 구조화된 컴파일 오류: cl_vm_compile_error(vm, &err)가 마지막 eval, compile, validate의 오류를 CLCompileError로 준다. kind(토큰, 파싱, 컴파일), msg(위치 없는 메시지), uri, has_loc, line, col(0부터, 바이트), len. 기본으로 컴파일러는 첫 오류에서 멈춘다. 문맥(이전 선언, 템플릿 호출 지점)은 요약 문자열(cl_vm_compile_error_summary)에만 있다. 요약에는 기본으로 터미널 이스케이프 코드가 없다(cl_vm_set_error_color로 켠다).
 - 오류 모아 받기: cl_vm_set_error_recovery(vm, true)면 컴파일러가 본문(main 블록, 함수, 메서드)마다 첫 오류를 내고 나머지 본문을 계속 검사한다. 구문 오류와 선언의 오류는 컴파일을 끝낸다. cl_vm_compile_report_count, cl_vm_compile_report(vm, idx, &rep)가 오류 전부를 CLReport(시작과 끝의 줄, 열, 바이트 오프셋)로 준다. 스파이크에서는 시험하지 않았다.
 - 오류 문구: 흔한 실수(Python식 문법, 없는 메서드 이름, 풀지 않은 `!T`, 참조의 연산자, `?else`의 우선순위)에는 고치는 법이 붙는다. 예: ``Can not find the symbol `startsWith` in `str`. Did you mean `starts_with`?``. 안내 문서는 고치는 법이 붙지 않는 오류만 따로 적는다.
 - 포매터: cl_vm_format(vm, src, &out)은 cyber fmt와 같은 공백 정리를 한다. 파서만 돌고 VM 상태를 바꾸지 않는다. 결과는 OK, SYNTAX_ERROR(out은 line:col: message), INTERNAL_ERROR, NO_MEMORY.
 - 상한: cl_vm_set_fuel(검사점(checkpoint)은 역방향 점프와 호출), cl_vm_interrupt(다른 스레드에서 호출 가능), cl_vm_set_stack_limit, cl_vm_set_memory_limit, cl_vm_memory_used. 상한에 걸리면 CL_ERROR_INTERRUPT 또는 panic(Stack overflow, OutOfMemory)이고 VM은 계속 쓸 수 있다. 메모리 상한은 VM이 쥔 전체 바이트 기준이라 스크립트에 N 바이트를 주려면 cl_vm_memory_used(vm) + N으로 건다. spawn 스레드도 같은 상한을 쓴다.
 - 할당 실패: eval 중 호스트 할당자가 실패해도 프로세스는 죽지 않는다. 컴파일 중이면 CL_ERROR_COMPILE이고 다음 eval 앞에서 VM을 reset한다(persist_main의 지역 변수와 선언은 사라지고 연료(fuel), 상한, 프린터 같은 호스트 설정은 남는다). 실행 중이면 panic: OutOfMemory다. VM을 만드는 함수와 호스트가 값을 만드는 함수(cl_str_init 등)의 할당 실패는 abort다. cl_vm_init_mem(CLMemFuncs)으로 VM의 모든 메모리를 호스트의 alloc/free로 돌릴 수 있다. 컴파일러의 고정 한계(지역 256, 매개변수 255, 필드 255)는 CompileError다.
-- 능력 바인딩: #[bind] 선언과 cl_mod_add_func. 호스트 함수는 `fn (t: *CLThread) callconv(.c) CLRet` 하나의 모양이고, 인자는 커서처럼 읽는다: 반환 슬롯(cl_thread_ret)을 먼저, 그다음 매개변수를 선언 순서대로(cl_thread_str, cl_thread_int). 순서를 어기면 프로세스가 죽는다. 값 매개변수(str, []T, 관리 필드를 가진 구조체)는 호스트가 소유하고 cl_str_deinit, cl_slice_deinit으로 해제한다. [&]T로 선언하면 빌리기만 한다. `#[bind]` 함수에 기본값 매개변수는 쓸 수 없다(Cyber에 기본값 매개변수가 없다).
+- 능력 바인딩: #[bind] 선언과 cl_mod_add_func. 호스트 함수는 `fn (t: *CLThread) callconv(.c) CLRet` 하나의 모양이고, 매개변수는 커서처럼 선언 순서대로 읽는다(cl_thread_str, cl_thread_int). 반환 슬롯(cl_thread_ret)은 먼저 받는다. cyber.h는 매개변수 뒤에 받아도 된다고 적지만 그것은 직접 호출에서만 맞고, 함수 포인터 값, 함수 union 값, 표준 메서드가 부르는 경로에서는 오류 없이 다른 값을 읽는다(요청서 1절). 값 매개변수(str, []T, 관리 필드를 가진 구조체)는 호스트가 소유하고 cl_str_deinit, cl_slice_deinit으로 해제한다. [&]T로 선언하면 빌리기만 한다. `#[bind]` 함수에 기본값 매개변수는 쓸 수 없다(Cyber에 기본값 매개변수가 없다).
 - 출력은 cl_vm_set_printer로 가로챈다. print, eprint 콜백의 첫 인자는 CLThread*다(VM은 cl_thread_vm(t)). 결과 값은 CLEvalResult.res, res_t와 cl_value_desc. persist_main에서는 마지막 맨 표현식이 결과다. fn main() -> T의 결과는 VM이 소유하고 다음 eval, cl_vm_reset, cl_vm_deinit까지 유효하다. cl_vm_release_result(vm)가 바로 해제한다. cl_thread_rc로 누수를 세는 호스트(평가 도구)는 먼저 이것을 부른다.
 - 로더: 기본 로더는 core, meta, math, cy, c, io, test 일곱 모듈을 안다. os, libc, cli는 CLI 전용이다. cl_vm_set_loader로 호스트 로더를 끼우면 이 표를 줄일 수 있다. 점 표기(`use fs`, `fs.read`)는 호스트 로더가 그 이름에 모듈 소스를 돌려주는 것으로 된다.
 - builtin 모듈(core, meta, cy, c, math, io, test)의 intrinsic(@memcpy, @bitCast, @retain 등)과 #[unsafe], #[consteval], #[reserve] 속성은 스크립트에서 쓸 수 없다. 런타임 내부를 드러내는 길이 컴파일 단계에서 닫혀 있다. 호스트 모듈과 os, libc, cli는 스크립트와 같은 규칙을 받는다. @로 시작하는 함수 이름은 정해진 hook만 선언할 수 있다.
@@ -40,28 +40,27 @@
   - resume 뒤에는 목록을 다시 읽는다. 완료한 Future의 fiber가 다음 요청을 내면 새 Future가 들어온다. 중첩된 scope 블록의 Future도 같은 목록에 평평하게 들어오고 어느 것을 먼저 완료해도 된다.
   - 모델이 쓰는 코드의 함정: out.* += fut.await()는 await 전에 out.*를 읽어 여러 fiber가 같은 값에 더하면 덮어쓴다(v := fut.await() 뒤에 out.* += v). suspend만 반복하는 fiber와 Future를 기다리는 fiber가 한 블록에 섞이면 eval이 나가지 않고 연료 상한까지 돈다. @deinit 안에서 suspend, await를 쓰지 않는다.
   - Fiber.cancel(), Fiber.waiting(), Fiber.wait_ready(), Scope(new, start, join, active, abort). 진행 중인 fiber의 소멸은 panic이 아니라 취소다(들어가 있는 호출이 바로 반환하고 값은 해제, @deinit 포함). ^T 참조의 @deinit 안에서 멈춘 fiber는 취소할 수 없고 소멸은 panic이다.
-- spawn 스레드의 await는 main과 같이 블록한다. 연료는 스레드마다 따로 센다. spawn을 막는 옵션은 없고, 스레드 안에서 능력 함수가 불린다.
+- spawn 스레드의 await는 main과 같이 블록한다. 연료는 스레드마다 따로 센다. CLEvalConfig, CLCompileConfig의 deny_spawn을 켜면 표준 모듈이 아닌 chunk의 spawn이 컴파일 오류이고 호스트 함수는 eval 스레드에서만 불린다. fiber와 scope 블록은 그대로 쓴다.
 - 심볼 조회(cl_vm_set_symbol_info, cl_vm_symbol_at 등)는 언어 서버용이다. tars-agent는 쓰지 않는다.
 - CLI는 표준 모듈을 실행 파일에 내장해 cyber 파일 하나다. 오류 위치는 core:196:5처럼 모듈 이름으로 찍힌다. tars-agent는 CLI를 쓰지 않고 libcyber를 정적 링크한다. tars devlayer의 CLI 번들은 기준 빌드보다 옛 판이다.
 
 ## 없는 것
 
 - JSON, 정규식, 날짜 라이브러리. cyber 표준 모듈로 만든다 (아래 목록).
-- c 모듈을 끄는 옵션과 spawn을 끄는 옵션. 지금은 호스트 로더에서 거부하고 deny_raw_ptrs를 켠다.
-- 라이브러리를 build.zig.zon 의존으로 가져오는 길: cyber의 build.zig가 라이브러리를 `lib` 스텝 아래에서만 설치해 `artifact("cyber")`가 없다.
+- c 모듈을 끄는 옵션. 지금은 호스트 로더에서 거부하고 deny_raw_ptrs를 켠다.
 
 ## M0에서 확인한 것 (2026-11-14, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
 
-- build.zig.zon 의존은 받아진다. 라이브러리는 build.zig에서 받은 패키지 폴더로 `zig build lib -Dffi=false -Dstatic=true`를 실행해 얻는다. 이렇게 만든 라이브러리의 버전 문자열은 `0.4.10-DEV build-0-local`이다(커밋이 찍히지 않는다). Zig 0.17.1에는 @cImport가 없어 cyber.h는 translate-c 패키지나 손으로 쓴 extern으로 가져온다.
+- build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 `Cyber 0.4.10-DEV build-0-5de6c83a`처럼 commit 인자를 찍는다. ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
 - 능력이 `Future[!str]`을 돌려주고 str 값이나 오류로 완료한다.
-- 검증은 세션 VM에서 바로 한다. 보통의 컴파일 실패 뒤에는 같은 VM의 다음 검증과 실행이 된다. 모듈 소스가 실패한 뒤 다음 use에서 다시 불러온다. 문자열 이스케이프 오류만은 세션을 지운다. CodeAct 회차에서 모델이 grep 패턴 `\|`를 써서 실제로 일어났다.
-- `'\0'`은 오류 없이 큰따옴표가 된다.
+- 검증은 세션 VM에서 바로 한다. 보통의 컴파일 실패 뒤에는 같은 VM의 다음 검증과 실행이 된다. 모듈 소스가 실패한 뒤 다음 use에서 다시 불러온다. 이스케이프 오류(`\|`, `\xZZ`)는 위치 있는 컴파일 오류이고 세션이 남는다.
+- `'\0'`은 NUL이다. 타입 없는 목록 리터럴은 원소를 첫 원소의 타입으로 바꾸지 않는다(`{1, 'a'}`는 컴파일 오류).
 - 목록 참조에 대한 `+=`(`out := ^[]str{}` 뒤 `out += 'x'`)는 검증이 잡는 컴파일 오류이고 `out.* += 'x'`로 쓴다.
 - core의 함수를 가릴 필요는 보이지 않았다. 다만 로더는 차단 목록이 아니라 허용 목록으로 써야 한다(기본 로더가 io 모듈을 준다).
-- spawn은 막는 장치가 없고 스레드 안에서 능력 함수가 불린다. 연료와 interrupt는 스레드의 폭주도 멈춘다. 차단 옵션 전에는 능력 함수가 메인 스레드가 아니면 panic을 돌려준다.
+- deny_spawn으로 spawn은 eval과 검증에서 컴파일 오류이고, scope 블록의 동시 승인은 그대로 된다. 호스트 함수의 매개변수를 반환 슬롯보다 먼저 읽으면 직접 호출에서는 맞고 다른 호출 경로에서는 틀린 값을 읽는다(`s1 order`).
 - deny_raw_ptrs와 호스트 모듈 선언은 함께 동작한다.
-- 캡처 오류의 문구가 권하는 최상위 빌림(`b := &counts`)은 persist_main 세션에서 `Cannot persist local` 오류다. 세션에서는 `^T`로 선언하거나 함수 안에서 빌린다. 안내 문서가 그렇게 가르친다.
-- x86_64-linux-gnu 교차 빌드가 macOS에서 된다. tars 게스트에서의 실행은 이 기준 빌드로 확인하지 않았다.
+- 최상위 빌림(`b := &counts`)은 persist_main 세션에서 `Cannot persist local` 오류다. 세션의 캡처 오류 문구는 `^T` 선언을 권하고 빌림은 함수 안에서 하라고 한다.
+- x86_64-linux-gnu 교차 빌드가 macOS에서 의존의 아티팩트로 된다. tars 게스트에서의 실행은 이 기준 빌드로 확인하지 않았다.
 - mimalloc은 FFI를 끈 라이브러리 빌드에 들어가지 않는다.
 - cyber에 낸 요청: docs/requests/cyber-m0-spike-requests.md.
 
@@ -71,12 +70,12 @@
 
 | 순서 | 항목 | 필요의 증거 | 메모 |
 |---|---|---|---|
-| C0 | 이스케이프 오류가 세션을 지우는 것, 세션 reset을 호스트에 알리기 | M0 CodeAct 회차에서 모델이 겪었다 | 요청서 1절. s1 검사 6i |
-| C0 | `\0`이 큰따옴표가 되는 것 | M0 안내 확인 | 요청서 2절 |
-| C0 | 빌드 내보내기: build.zig.zon 의존으로 쓰는 아티팩트, 버전 문자열에 커밋 | M0 스파이크 1 | 요청서 3절 |
-| C0 | spawn 차단 옵션 | M0 스파이크 1: 스레드 안에서 능력 함수가 불린다 | 요청서 4절. 모듈 허용 표와 같은 CLEvalConfig 자리 |
-| C0 | 호스트 함수 인자 읽기 순서의 문서 | M0 스파이크 1: 순서를 어기면 죽는다 | 요청서 5절 |
-| C0 | 세션에 맞는 오류 문구 (캡처 오류의 빌림 제안, `_len` 제안, `not`을 `?T`에 쓴 오류, Rust식 메서드 이름) | M0 안내 확인과 CodeAct 회차 | 요청서 6절 |
+| C0 | 모든 호스트 호출 경로에서 매개변수를 반환 슬롯 앞에 읽어도 맞게 | M0 스파이크 1: 함수 포인터 값, 함수 union 값, sort가 부르는 함수에서 틀린 값 | 요청서 1절. `s1 order` |
+| C0 | 커밋을 원격에 올리기 | URL과 해시로 고정하려면 필요하다 | 요청서 2절 |
+| C0 | `str`의 `s.len`에 메서드 제안 | M0 안내 확인 | 요청서 3절 |
+| C0 | `cl_vm_validate`가 쓰는 설정의 문서 | M0 스파이크 1: eval 전의 VM에서는 deny_spawn이 걸리지 않는다 | 요청서 4절 |
+| C0 | `{'a', 1}` 문구의 설명 | M0 안내 확인 | 요청서 5절 |
+| C0 | 회차에서 모델이 만난 문구(보간 안의 보간, `elif`, 최상위 `!else` 블록의 끝, `trimStart` 류, `and`로 묶은 옵션 풀기, 보간 안의 `\"`) | M0 CodeAct 회차 | 요청서 6절 |
 | C1 | json 모듈: parse, stringify, 값 트리 | 평가 과제의 다수가 JSON을 다룬다. 설정 파일, API 응답, 도구 출력 | 깊이와 크기 상한. 값 타입은 복사 가능한 부분집합 안에서 다룰 수 있어야 한다 |
 | C1 | toon 모듈: stringify, parse | 토큰 절약. 스크립트가 구조화된 결과(파일 목록, 검색 결과 같은 균일한 객체 배열)를 모델에게 돌려줄 때 JSON보다 적은 토큰으로 싣는다 | 값 트리는 json 모듈의 것을 쓴다. 깊이와 크기 상한. parse를 C1에 넣을지는 요청서를 쓸 때 정한다 |
 | C2 | regex 모듈 | 로그와 명령 출력에서 값 뽑기. str 메서드만으로는 스크립트가 길어진다 | 역추적 없는 엔진(선형 시간), 직접 쓴다. 문법은 ripgrep 기본 문법의 부분집합 |

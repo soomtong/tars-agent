@@ -40,13 +40,13 @@
 | 종류 | 원인 | VM 상태 |
 |---|---|---|
 | compile error | validate 실패 | 유지 |
-| panic | CL_ERROR_PANIC. 스택 오버플로와 OutOfMemory 포함. 트레이스는 양 끝 20프레임 | 변수 초기화 |
-| interrupted | 연료 소진, 벽시계 초과, 사용자 인터럽트 | 변수 초기화 |
+| panic | CL_ERROR_PANIC. 스택 오버플로와 OutOfMemory 포함. 트레이스는 양 끝 20프레임 | 최상위 변수 초기화, 함수와 use는 유지 |
+| interrupted | 연료 소진, 벽시계 초과, 사용자 인터럽트 | 최상위 변수 초기화, 함수와 use는 유지 |
 | denied | 사용자가 승인을 거부 | 유지 (오류 값으로 돌아간다) |
 | capability error | 능력이 오류 값을 반환 | 유지 |
 
-- 변수가 초기화된 경우 결과 끝에 variables were reset을 붙인다. 함수와 타입 선언은 남는다. 남겨야 할 값은 memo 능력에 둔다.
-- 첫 eval의 컴파일 실패나 할당 실패 뒤에는 VM이 스스로 reset한다 (fork가 처리). 결과에 reset 사실을 적는다.
+- 최상위 변수가 초기화된 경우 결과 끝에 그 사실을 붙인다(top-level variables were reset). 함수와 타입 선언, use는 남는다. 남겨야 할 값은 memo 능력에 둔다.
+- VM의 첫 컴파일 실패, 컴파일러나 지역 이월 중의 할당 실패 뒤에는 다음 eval이나 검증이 reset된 VM에서 시작한다. 루프는 CL_SUCCESS가 아닌 eval과 검증 뒤에 cl_vm_reset_pending을 묻고, true면 머리말을 다시 돌리고 결과에 세션이 reset됐다고 적는다. 보통의 컴파일 오류 뒤에는 세션이 그대로다.
 - 빈 출력은 ok와 실행 요약(능력 호출 수, 걸린 시간)으로 채운다.
 
 ## 제공자 오류

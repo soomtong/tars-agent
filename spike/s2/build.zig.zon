@@ -5,8 +5,8 @@
     .fingerprint = 0xcd5194f6e0ab868f,
     .dependencies = .{
         .cyber = .{
-            .url = "git+https://github.com/soomtong/cyber#63e35e881ea9e03e343f59d3ce896ef25779d31f",
-            .hash = "cyber-0.4.10-AW3fkDjkjAAWfe8x-_TlW70ptkS7YbG-ma7sBFWSOHv0",
+            // cyber 로컬 저장소의 5de6c83a. 원격에 아직 없어 경로 의존으로 받는다.
+            .path = "../../../cyberscript",
         },
         .translate_c = .{
             .url = "git+https://codeberg.org/ziglang/translate-c#02ff0c523fb92a38939b04d0145c4a9602a74d56",

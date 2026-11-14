@@ -33,7 +33,7 @@
 
 ## 대상 환경 (확인된 사실)
 
-출처: soomtong/tars-linux 0.2.0, soomtong/cyber(fork) master 63e35e88 (0.4.10-DEV). 확인일 2026-11-10, cyber는 2026-11-14.
+출처: soomtong/tars-linux 0.2.0, soomtong/cyber(fork) master 5de6c83a (0.4.10-DEV). 확인일 2026-11-10, cyber는 2026-11-14.
 
 - tars-linux는 직접 빌드한 Linux 커널(6.18) 위에 Zig로 만든 init(PID 1)과 터미널(DRM/KMS + ghostty-vt)을 올리고 fish로 간다. 배포판이 아니다.
 - 대상 아키텍처는 x86_64만이다. 개발 호스트는 Apple Silicon macOS이고 빌드는 컨테이너 안에서 한다. tars-agent는 macOS에서도 빌드되고 돌아야 한다 (개발과 평가를 호스트에서 한다). 샌드박스만 Linux 전용이다.

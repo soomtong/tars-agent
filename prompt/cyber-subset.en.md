@@ -2,7 +2,7 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the lists below first.
 
-The reference version is Cyber 0.4.10-DEV at commit 63e35e88 of soomtong/cyber (`cyber version` prints `Cyber 0.4.10-DEV build-0-63e35e88` for a build of that commit). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
+The reference version is Cyber 0.4.10-DEV at commit 5de6c83a of soomtong/cyber (`cyber version` prints `Cyber 0.4.10-DEV build-0-5de6c83a` for a build of that commit). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
 
 Cyber is still gaining features. This document matches one build and can fall behind a newer one. Before you use or edit this document, check the following.
 
@@ -71,9 +71,10 @@ Semantics:
 - A function that returns a value must return on every path. Otherwise: `Missing return statement.`
 - There are no default parameter values and no keyword arguments. Use overloading.
 - `return` is not allowed at top level.
-- A one-character string `'s'` becomes a code point (115) where an integer is expected, without an error: `{1, 'a'}` is `{1, 97}`. If you doubt a variable's type, check it with `var n int = ...`.
+- A list literal without a type takes the type of its first element, and the other elements must have that type: `{1, 'a'}` and `{1.5, 2}` are errors. Write the type: `[]float{1.5, 2}`.
+- A one-character string `'s'` becomes a code point (115) where an integer is expected, without an error: `[]int{1, 'a'}` is `{1, 97}`. If you doubt a variable's type, check it with `var n int = ...`.
 - String indexing and `len()` count bytes. Use `s.count()` for the number of characters.
-- A backslash in a string must be one of `\n`, `\t`, `\r`, `\\`, `\'`, `\"` or `\xHH`. Any other (`\|`, `\d`, `\.` in a grep or regex pattern) is a compile error that also erases the variables, functions and imports of earlier runs. Write the backslash twice: `'a\\|b'`. Do not write `\0`.
+- A backslash in a string must be one of `\n`, `\t`, `\r`, `\0`, `\\`, `\'`, `\"` or `\xHH`. Any other (`\|`, `\d`, `\.` in a grep or regex pattern) is a compile error. Write the backslash twice: `'a\\|b'`.
 - Map iteration follows hash order, not insertion order. If you need an order, copy the keys or entries into a list and sort it.
 - A negative index `xs[-1]` panics. Use `xs.last()` or `xs[xs.len() - 1]` for the last element.
 - A slice can omit its start or end: `s[..3]`, `s[2..]`. `s[1..3]` excludes the end and `s[1..=3]` includes it. Negative bounds are not allowed. Python's `s[:-1]` is `s[..s.len() - 1]` (`s[..-1]` panics).
@@ -336,18 +337,15 @@ Most compile errors say how to fix the code, for example `Did you mean starts_wi
 - `Undeclared variable `x`.` inside a function: an outer local variable. Pass it as a parameter, or use `global`.
 - `Undeclared variable `abs`.` (also `sum`, `sorted`, `enumerate`, `zip`): a Python builtin. See "Missing features" and write a loop.
 - `Can not find the symbol `map` in `[]int`.` (also `filter`): write a loop.
-- `Field `len` does not exist in `[]int`.`: `xs.len`. Write `xs.len()` (ignore the suggestion `_len`).
+- `Type `str` does not have a field named `len`.`: `s.len`. Write `s.len()`.
 - `Expected `1` arguments, found `2`, when calling the function `fn print(...)``: write `print('%{a} %{b}')`.
 - `Can not find the symbol `&&` for `bool`.`: logical AND. Write `and`.
 - `Expected assignment to a variable or placeholder ...`: a call whose value is discarded. Write `_ = f()` or assign it to a variable.
-- `Can only capture variables declared with the reference types ...`: a lambda uses an outer local. Declare that variable with `^` (see "Sorting"). In an agent run, a top-level borrow `b := &x` that the message suggests fails with the next error.
 - `Cannot persist local ... of borrow type ... across evals.`: a top-level `c := &x`. Use `^T`, or borrow inside a function.
 - `Cannot copy ..., type implements `NoCopy`.`: copying an Array. Use `[]T`, or `move`.
 - `Return statement is not allowed in the main block.`: a top-level return. Wrap the code in `fn main():`.
 - `Missing return statement.`: some path has no return. Add a return at the end.
-- `Can not find the symbol `!` in `?int`.`: `not` on a `?T`. Write `if x == none:` or `if x |v|:`.
 - ``fn` declarations are not allowed here.`: a function inside a block. Declare it at the top level.
-- `Error: InvalidEscapeSeq` or `Error: InvalidCharacter` (no line number): a backslash sequence that Cyber does not have. Write `\\`. The variables, functions and imports of earlier runs are gone after this error: write `use fs` and `use proc` again and declare what you need.
 - `Import path does not exist`: `use json`, `use regex`, `use time`. These modules are missing.
 
 Runtime panics: `Out of bounds index: -1` is a negative index (use `xs.last()`), `OutOfBounds` on a slice is a negative or too large bound, and `MissingKey` is `m[k]` on a missing key (use `m.get(k)`).

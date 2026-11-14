@@ -2,25 +2,19 @@ const std = @import("std");
 const Translator = @import("translate_c").Translator;
 
 // 스파이크 2: 최소 에이전트 루프. cyber를 build.zig.zon 의존으로 받아 정적 링크한다.
-// cyber의 build.zig는 라이브러리 아티팩트를 내보내지 않는다(artifact("cyber")가 실패한다).
-// 그래서 받은 패키지 안에서 `zig build lib`를 한 번 더 돌려 libcyber.a를 얻는다.
+// 라이브러리는 의존의 아티팩트로 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다.
+// cyber.h의 Zig 바인딩은 translate-c 패키지로 만든다(본체는 손으로 쓴 extern을 추천한다).
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const cyber = b.dependency("cyber", .{});
-
-    const triple = target.result.zigTriple(b.allocator) catch @panic("OOM");
-    const lib_cmd = b.addSystemCommand(&.{
-        b.graph.zig_exe,      "build",        "lib",
-        "-Doptimize=ReleaseFast", "-Dffi=false", "-Dstatic=true",
+    const cyber = b.dependency("cyber", .{
+        .target = target,
+        .optimize = std.builtin.OptimizeMode.ReleaseFast,
+        .static = true,
+        .commit = @as([]const u8, "5de6c83a"),
     });
-    lib_cmd.addArg(b.fmt("-Dtarget={s}", .{triple}));
-    lib_cmd.setCwd(cyber.path("."));
-    lib_cmd.addArg("--prefix");
-    const lib_out = lib_cmd.addOutputDirectoryArg("cyber-out");
-    lib_cmd.addArg("--cache-dir");
-    _ = lib_cmd.addOutputDirectoryArg("cyber-cache");
+    const cyber_lib = cyber.artifact("cyber");
 
     const exe = b.addExecutable(.{
         .name = "s2",
@@ -31,7 +25,7 @@ pub fn build(b: *std.Build) void {
             .link_libc = true,
         }),
     });
-    exe.root_module.addObjectFile(lib_out.path(b, "lib/libcyber.a"));
+    exe.root_module.linkLibrary(cyber_lib);
     const cy_c: Translator = .init(b.dependency("translate_c", .{}), .{
         .c_source_file = cyber.path("src/include/cyber.h"),
         .target = target,

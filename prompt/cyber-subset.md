@@ -2,7 +2,7 @@
 
 Cyber는 Python과 아주 비슷한 문법 구조를 가진다. 들여쓰기로 블록을 만들고, 줄바꿈으로 문장을 끝내고, `for`, `while`, `if`, `fn`, `use`, `print`를 거의 같은 감각으로 쓴다. 하지만 정적 타입이고 값 소유권이 있고 예외가 없다. 이런 부분들이 다르니까 코드를 구성할 때 본 문서를 참고한다. 모르는 문법은 Python 문법으로 추측하지 말고 아래 목록을 먼저 본다.
 
-기준 버전은 soomtong/cyber의 커밋 63e35e88인 Cyber 0.4.10-DEV다 (그 커밋을 빌드하면 `cyber version`이 `Cyber 0.4.10-DEV build-0-63e35e88`을 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
+기준 버전은 soomtong/cyber의 커밋 5de6c83a인 Cyber 0.4.10-DEV다 (그 커밋을 빌드하면 `cyber version`이 `Cyber 0.4.10-DEV build-0-5de6c83a`를 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
 
 Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 한 빌드에 맞춘 것이므로 더 새 빌드와 어긋날 수 있다. 문서를 사용하거나 고치기 전에 아래를 확인한다.
 
@@ -71,9 +71,10 @@ Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 한 빌�
 - 값을 돌려주는 함수는 모든 경로에서 return해야 한다. 아니면 `Missing return statement.`
 - 기본값 매개변수와 키워드 인자가 없다. 오버로드로 대신한다.
 - 최상위에서 `return`은 쓸 수 없다.
-- 정수가 들어갈 자리에 한 글자 문자열 `'s'`는 오류 없이 코드 포인트(115)가 된다: `{1, 'a'}`는 `{1, 97}`이다. 변수 타입이 의심되면 `var n int = ...`로 확인한다.
+- 타입 없는 목록 리터럴은 첫 원소의 타입을 따르고, 나머지 원소도 그 타입이어야 한다: `{1, 'a'}`와 `{1.5, 2}`는 오류다. 타입을 쓴다: `[]float{1.5, 2}`.
+- 정수가 들어갈 자리에 한 글자 문자열 `'s'`는 오류 없이 코드 포인트(115)가 된다: `[]int{1, 'a'}`는 `{1, 97}`이다. 변수 타입이 의심되면 `var n int = ...`로 확인한다.
 - 문자열 인덱스와 `len()`은 바이트 단위다. 글자 수는 `s.count()`.
-- 문자열의 백슬래시는 `\n`, `\t`, `\r`, `\\`, `\'`, `\"`, `\xHH` 중 하나여야 한다. 그 밖의 것(grep이나 정규식 패턴의 `\|`, `\d`, `\.`)은 컴파일 오류이고, 그 오류는 앞선 실행의 변수, 함수, import까지 지운다. 백슬래시를 두 번 쓴다: `'a\\|b'`. `\0`은 쓰지 않는다.
+- 문자열의 백슬래시는 `\n`, `\t`, `\r`, `\0`, `\\`, `\'`, `\"`, `\xHH` 중 하나여야 한다. 그 밖의 것(grep이나 정규식 패턴의 `\|`, `\d`, `\.`)은 컴파일 오류다. 백슬래시를 두 번 쓴다: `'a\\|b'`.
 - Map 순회는 삽입 순서가 아니라 해시 순서다. 순서가 필요하면 키나 항목을 목록에 옮겨 정렬한다.
 - 음수 인덱스 `xs[-1]`은 panic이다. 마지막 원소는 `xs.last()`나 `xs[xs.len() - 1]`.
 - 슬라이스는 시작이나 끝을 생략할 수 있다: `s[..3]`, `s[2..]`. `s[1..3]`은 끝을 빼고 `s[1..=3]`은 끝을 넣는다. 음수 경계는 쓸 수 없다. Python의 `s[:-1]`은 `s[..s.len() - 1]`이다 (`s[..-1]`은 panic).
@@ -336,18 +337,15 @@ print('%{x} %{shared.*}')
 - 함수 안의 `Undeclared variable `x`.`: 바깥 지역 변수. 매개변수로 넘기거나 `global`을 쓴다.
 - `Undeclared variable `abs`.`(`sum`, `sorted`, `enumerate`, `zip`도 같다): Python 내장 함수. "없는 것"을 보고 반복문으로 쓴다.
 - `Can not find the symbol `map` in `[]int`.`(`filter`도 같다): 반복문으로 쓴다.
-- `Field `len` does not exist in `[]int`.`: `xs.len`. `xs.len()`으로 쓴다 (제안된 `_len`은 무시한다).
+- `Type `str` does not have a field named `len`.`: `s.len`. `s.len()`으로 쓴다.
 - `Expected `1` arguments, found `2`, when calling the function `fn print(...)``: `print('%{a} %{b}')`로 쓴다.
 - `Can not find the symbol `&&` for `bool`.`: 논리 AND. `and`로 쓴다.
 - `Expected assignment to a variable or placeholder ...`: 값을 버린 호출. `_ = f()`로 쓰거나 변수에 받는다.
-- `Can only capture variables declared with the reference types ...`: 람다가 바깥 지역 변수를 썼다. 그 변수를 `^`로 선언한다("정렬" 참고). 에이전트 실행에서는 문구가 권하는 최상위 빌림 `b := &x`가 다음 오류로 실패한다.
 - `Cannot persist local ... of borrow type ... across evals.`: 최상위 `c := &x`. `^T`를 쓰거나 함수 안에서 빌린다.
 - `Cannot copy ..., type implements `NoCopy`.`: Array를 복사했다. `[]T`를 쓰거나 `move`.
 - `Return statement is not allowed in the main block.`: 최상위 return. 코드를 `fn main():`으로 감싼다.
 - `Missing return statement.`: return이 없는 경로가 있다. 끝에 return을 더한다.
-- `Can not find the symbol `!` in `?int`.`: `?T`에 `not`을 썼다. `if x == none:`이나 `if x |v|:`로 쓴다.
 - ``fn` declarations are not allowed here.`: 블록 안의 함수. 최상위에서 선언한다.
-- `Error: InvalidEscapeSeq`나 `Error: InvalidCharacter`(줄 번호 없음): Cyber에 없는 백슬래시 조합. `\\`로 쓴다. 이 오류 뒤에는 앞선 실행의 변수, 함수, import가 사라진다: `use fs`, `use proc`를 다시 쓰고 필요한 것을 다시 선언한다.
 - `Import path does not exist`: `use json`, `use regex`, `use time`. 없는 모듈이다.
 
 실행 중 panic: `Out of bounds index: -1`은 음수 인덱스(`xs.last()`를 쓴다), 슬라이스의 `OutOfBounds`는 음수이거나 너무 큰 경계, `MissingKey`는 없는 키의 `m[k]`다(`m.get(k)`를 쓴다).

@@ -131,6 +131,7 @@ fn config() c.CLEvalConfig {
     var cfg = std.mem.zeroes(c.CLEvalConfig);
     cfg.persist_main = true;
     cfg.deny_raw_ptrs = true;
+    cfg.deny_spawn = true; // 능력은 eval 스레드에서만 불린다
     return cfg;
 }
 
@@ -142,8 +143,20 @@ pub fn init(gpa: std.mem.Allocator, io: std.Io) void {
     c.cl_vm_set_printer(g_vm, printer);
     c.cl_vm_set_stack_limit(g_vm, 8 << 20);
     // 머리말: 능력 모듈을 미리 들여 둔다. persist_main이라 다음 eval에서 그대로 보인다.
+    prelude();
+}
+
+fn prelude() void {
     var res: c.CLEvalResult = undefined;
     _ = c.cl_vm_evalx(g_vm, B("prelude"), B("use fs\nuse proc\n"), config(), &res);
+}
+
+// 실패한 eval이나 검증 뒤 VM이 reset을 기다리면(cl_vm_reset_pending) 머리말을 다시 돌리고 모델에게 알린다.
+fn resetNote() []const u8 {
+    if (!c.cl_vm_reset_pending(g_vm)) return "";
+    prelude();
+    trace("    [세션 reset]\n");
+    return "the session was reset: variables and functions of earlier runs are gone (fs and proc are imported again)\n";
 }
 
 var g_gen = std.atomic.Value(u32).init(0);
@@ -170,7 +183,7 @@ pub fn runCode(code: []const u8) RunResult {
     // 1. 검증: 세션 VM에서 실행 없이 컴파일만 한다. 세션의 변수와 함수가 보이고, 틀린 코드는 한 줄도 실행되지 않는다.
     if (c.cl_vm_validate(vm, B(code)) != c.CL_SUCCESS) {
         const msg = summary(vm, true);
-        return .{ .text = std.fmt.allocPrint(g_gpa, "compile error (nothing was executed)\n{s}", .{msg}) catch "", .is_error = true, .kind = "compile error", .calls = 0 };
+        return .{ .text = std.fmt.allocPrint(g_gpa, "compile error (nothing was executed)\n{s}{s}", .{ msg, resetNote() }) catch "", .is_error = true, .kind = "compile error", .calls = 0 };
     }
     // 2. 상한을 걸고 실행.
     c.cl_vm_set_fuel(vm, 200_000_000);
@@ -220,15 +233,15 @@ pub fn runCode(code: []const u8) RunResult {
             return .{ .text = out.items, .is_error = false, .kind = "ok", .calls = g_calls };
         },
         c.CL_ERROR_PANIC => {
-            out.print(g_gpa, "panic\n{s}\nvariables were reset\n", .{summary(vm, false)}) catch {};
+            out.print(g_gpa, "panic\n{s}\ntop-level variables were reset (functions and imports are kept)\n", .{summary(vm, false)}) catch {};
             return .{ .text = out.items, .is_error = true, .kind = "panic", .calls = g_calls };
         },
         c.CL_ERROR_INTERRUPT => {
-            out.print(g_gpa, "interrupted (fuel or time limit)\nvariables were reset\n", .{}) catch {};
+            out.print(g_gpa, "interrupted (fuel or time limit)\ntop-level variables were reset (functions and imports are kept)\n", .{}) catch {};
             return .{ .text = out.items, .is_error = true, .kind = "interrupted", .calls = g_calls };
         },
         else => {
-            out.print(g_gpa, "error code {d}\n{s}\n", .{ code_r, summary(vm, code_r == c.CL_ERROR_COMPILE) }) catch {};
+            out.print(g_gpa, "error code {d}\n{s}\n{s}", .{ code_r, summary(vm, code_r == c.CL_ERROR_COMPILE), resetNote() }) catch {};
             return .{ .text = out.items, .is_error = true, .kind = "error", .calls = g_calls };
         },
     }
