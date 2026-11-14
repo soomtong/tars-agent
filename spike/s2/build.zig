@@ -2,7 +2,7 @@ const std = @import("std");
 const Translator = @import("translate_c").Translator;
 
 // 스파이크 2: 최소 에이전트 루프. cyber를 build.zig.zon 의존으로 받아 정적 링크한다.
-// cyber 0.4.9의 build.zig는 라이브러리 아티팩트를 내보내지 않는다(artifact("cyber")가 실패).
+// cyber의 build.zig는 라이브러리 아티팩트를 내보내지 않는다(artifact("cyber")가 실패한다).
 // 그래서 받은 패키지 안에서 `zig build lib`를 한 번 더 돌려 libcyber.a를 얻는다.
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});

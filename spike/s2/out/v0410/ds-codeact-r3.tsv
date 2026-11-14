@@ -1,3 +1,0 @@
-T1	PASS	ds-anth	deepseek-chat	codeact	4	3	0	1193	29056	447	5511	compile_errors=0	compiler_crash=0
-T2	PASS	ds-anth	deepseek-chat	codeact	4	3	0	778	28416	362	5085	compile_errors=0	compiler_crash=0
-T3	PASS	ds-anth	deepseek-chat	codeact	5	4	0	1046	36096	714	8095	compile_errors=0	compiler_crash=0

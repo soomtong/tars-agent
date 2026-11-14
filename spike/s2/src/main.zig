@@ -224,7 +224,6 @@ pub fn main(init: std.process.Init) !void {
         try history.append(arena, .{ .role = .user, .blocks = results.items });
     }
     const total_ms = std.Io.Timestamp.now(io, .awake).toMilliseconds() - t_start;
-    if (mode == .codeact and vm.compiler_crashes > 0) out("\n(컴파일러가 자식 프로세스에서 {d}번 죽었다. 부모는 살아 있다)\n", .{vm.compiler_crashes});
     out("\n=== 요약: 스텝 {d}, 도구 호출 {d}(오류 {d}), 입력 {d} 토큰(캐시 {d}), 출력 {d} 토큰, {d}ms\n", .{ @min(step, 15), tool_calls, tool_errors, total_in, total_cached, total_out, total_ms });
     if (pv.raw_log) |w| w.flush() catch {};
     // 기계가 읽는 한 줄 (비교 표를 만들 때 쓴다)

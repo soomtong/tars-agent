@@ -24,7 +24,6 @@ fn printer(_: ?*c.CLThread, str: c.CLBytes) callconv(.c) void {
 const Kind = enum { read, write, exec };
 const Request = struct { kind: Kind, a: []u8, b: []u8 };
 var g_reqs: std.ArrayList(Request) = .empty;
-var g_results: std.ArrayList([]u8) = .empty;
 var g_calls: usize = 0;
 
 fn takeStr(t: ?*c.CLThread) []u8 {
@@ -47,7 +46,7 @@ fn newRequest(t: ?*c.CLThread, ret: *c.CLValue, spec: []const u8, kind: Kind, a:
 }
 fn cap_read(t: ?*c.CLThread) callconv(.c) c.CLRet {
     const ret = retSlot(t);
-    const f = newRequest(t, ret, "Future[!int]", .read, takeStr(t), &.{});
+    const f = newRequest(t, ret, "Future[!str]", .read, takeStr(t), &.{});
     complete(c.cl_thread_vm(t), f.?); // 읽기는 승인 없이 바로 한다
     return c.CL_RET_OK;
 }
@@ -60,18 +59,13 @@ fn cap_write(t: ?*c.CLThread) callconv(.c) c.CLRet {
 }
 fn cap_exec(t: ?*c.CLThread) callconv(.c) c.CLRet {
     const ret = retSlot(t);
-    _ = newRequest(t, ret, "Future[!int]", .exec, takeStr(t), &.{});
+    _ = newRequest(t, ret, "Future[!str]", .exec, takeStr(t), &.{});
     return c.CL_RET_OK;
 }
-fn cap_take(t: ?*c.CLThread) callconv(.c) c.CLRet {
-    const ret: *c.CLstr = @ptrCast(@alignCast(c.cl_thread_ret(t, @sizeOf(c.CLstr))));
-    const h: usize = @intCast(c.cl_thread_int(t));
-    ret.* = c.cl_str_init(t, B(g_results.items[h]));
-    return c.CL_RET_OK;
-}
-fn putResult(data: []const u8) i64 {
-    g_results.append(g_gpa, g_gpa.dupe(u8, data) catch unreachable) catch unreachable;
-    return @intCast(g_results.items.len - 1);
+// 문자열 결과는 Future[!str]을 str 값으로 완료한다. 값은 Future가 소유한다.
+fn completeStr(vm: ?*c.CLVM, f: *c.CLFuture, data: []const u8) void {
+    const s = c.cl_str_init(c.cl_vm_main_thread(vm), B(data));
+    _ = c.cl_future_complete(vm, f, &s);
 }
 fn fail(vm: ?*c.CLVM, f: *c.CLFuture, name: []const u8) void {
     _ = c.cl_future_complete_error(vm, f, c.cl_error(vm, B(name)));
@@ -82,8 +76,7 @@ fn complete(vm: ?*c.CLVM, f: *c.CLFuture) void {
         .read => {
             const dir = std.Io.Dir.cwd().openDir(g_io, jail.work_dir, .{}) catch return fail(vm, f, "NotFound");
             const data = dir.readFileAlloc(g_io, req.a, g_gpa, .limited(4 << 20)) catch return fail(vm, f, "NotFound");
-            var h = putResult(data);
-            _ = c.cl_future_complete(vm, f, &h);
+            completeStr(vm, f, data);
         },
         .write => {
             if (!jail.writable(req.a)) return fail(vm, f, "Denied");
@@ -94,29 +87,24 @@ fn complete(vm: ?*c.CLVM, f: *c.CLFuture) void {
         .exec => {
             const r = jail.sh(g_gpa, g_io, req.a) catch return fail(vm, f, "ExecFailed");
             const both = std.mem.concat(g_gpa, u8, &.{ r.stdout, r.stderr }) catch unreachable;
-            var h = putResult(both);
-            _ = c.cl_future_complete(vm, f, &h);
+            completeStr(vm, f, both);
         },
     }
 }
 
 const fs_src =
-    \\#[bind] fn read_async(path str) -> Future[!int]
+    \\#[bind] fn read_async(path str) -> Future[!str]
     \\#[bind] fn write_async(path str, text str) -> Future[!void]
-    \\#[bind] fn take(h int) -> str
     \\fn read(path str) -> !str:
-    \\    h := read_async(path).await()!
-    \\    return take(h)
+    \\    return read_async(path).await()
     \\fn write(path str, text str) -> !void:
     \\    return write_async(path, text).await()
     \\
 ;
 const proc_src =
-    \\#[bind] fn exec_async(cmd str) -> Future[!int]
-    \\#[bind] fn take(h int) -> str
+    \\#[bind] fn exec_async(cmd str) -> Future[!str]
     \\fn exec(cmd str) -> !str:
-    \\    h := exec_async(cmd).await()!
-    \\    return take(h)
+    \\    return exec_async(cmd).await()
     \\
 ;
 fn bind(mod: ?*c.CLSym, name: []const u8, f: *const fn (?*c.CLThread) callconv(.c) c.CLRet) void {
@@ -127,13 +115,11 @@ fn loader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResul
     if (std.mem.eql(u8, name, "fs")) {
         bind(mod, "read_async", cap_read);
         bind(mod, "write_async", cap_write);
-        bind(mod, "take", cap_take);
         res.*.src = B(fs_src);
         return true;
     }
     if (std.mem.eql(u8, name, "proc")) {
         bind(mod, "exec_async", cap_exec);
-        bind(mod, "take", cap_take);
         res.*.src = B(proc_src);
         return true;
     }
@@ -175,54 +161,16 @@ fn summary(vm: ?*c.CLVM, compile: bool) []const u8 {
     return g_gpa.dupe(u8, S(s)) catch "";
 }
 
-pub var compiler_crashes: usize = 0;
-const Validated = union(enum) { ok, compile_error: []const u8, crashed };
-fn validateInChild(code: []const u8) Validated {
-    var fds: [2]std.c.fd_t = undefined;
-    if (std.c.pipe(&fds) != 0) return .crashed;
-    const pid = std.c.fork();
-    if (pid == 0) {
-        _ = std.c.close(fds[0]);
-        const ok = c.cl_vm_validate(g_vm, B(code)) == c.CL_SUCCESS;
-        if (!ok) {
-            const s = c.cl_vm_compile_error_summary(g_vm);
-            _ = std.c.write(fds[1], s.ptr, s.len);
-        }
-        std.c._exit(if (ok) 0 else 1);
-    }
-    _ = std.c.close(fds[1]);
-    var msg: std.ArrayList(u8) = .empty;
-    var buf: [4096]u8 = undefined;
-    while (true) {
-        const n = std.c.read(fds[0], &buf, buf.len);
-        if (n <= 0) break;
-        msg.appendSlice(g_gpa, buf[0..@intCast(n)]) catch break;
-    }
-    _ = std.c.close(fds[0]);
-    var status: c_int = 0;
-    _ = std.c.waitpid(pid, &status, 0);
-    if ((status & 0x7f) != 0) {
-        compiler_crashes += 1;
-        return .crashed; // 신호로 죽었다
-    }
-    if (((status >> 8) & 0xff) == 0) return .ok;
-    return .{ .compile_error = msg.items };
-}
-
 pub fn runCode(code: []const u8) RunResult {
     const vm = g_vm;
     g_out.clearRetainingCapacity();
     g_reqs.clearRetainingCapacity();
     g_calls = 0;
 
-    // 1. 검증: 실행 없이 컴파일만. 틀린 코드는 한 줄도 실행되지 않는다.
-    // cyber 0.4.9는 실패한 컴파일 뒤에 다음 컴파일에서 죽는 경우가 있다(스파이크에서 재현).
-    // 그래서 검증은 fork한 자식에서 한다. 자식은 세션 VM의 복사본을 보므로 세션의 변수와 함수가 보이고,
-    // 실패하거나 죽어도 부모의 VM은 건드려지지 않는다. 부모는 검증을 통과한 코드만 컴파일한다.
-    switch (validateInChild(code)) {
-        .ok => {},
-        .compile_error => |msg| return .{ .text = std.fmt.allocPrint(g_gpa, "compile error (nothing was executed)\n{s}", .{msg}) catch "", .is_error = true, .kind = "compile error", .calls = 0 },
-        .crashed => return .{ .text = "compile error (nothing was executed)\nThe compiler crashed on this script. Write it in a simpler way.", .is_error = true, .kind = "compiler crash", .calls = 0 },
+    // 1. 검증: 세션 VM에서 실행 없이 컴파일만 한다. 세션의 변수와 함수가 보이고, 틀린 코드는 한 줄도 실행되지 않는다.
+    if (c.cl_vm_validate(vm, B(code)) != c.CL_SUCCESS) {
+        const msg = summary(vm, true);
+        return .{ .text = std.fmt.allocPrint(g_gpa, "compile error (nothing was executed)\n{s}", .{msg}) catch "", .is_error = true, .kind = "compile error", .calls = 0 };
     }
     // 2. 상한을 걸고 실행.
     c.cl_vm_set_fuel(vm, 200_000_000);

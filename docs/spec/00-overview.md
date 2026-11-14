@@ -33,11 +33,11 @@
 
 ## 대상 환경 (확인된 사실)
 
-출처: soomtong/tars-linux 0.2.0, soomtong/cyber(fork) 0.4.10. 확인일 2026-11-10, cyber는 2026-11-14.
+출처: soomtong/tars-linux 0.2.0, soomtong/cyber(fork) master 63e35e88 (0.4.10-DEV). 확인일 2026-11-10, cyber는 2026-11-14.
 
 - tars-linux는 직접 빌드한 Linux 커널(6.18) 위에 Zig로 만든 init(PID 1)과 터미널(DRM/KMS + ghostty-vt)을 올리고 fish로 간다. 배포판이 아니다.
 - 대상 아키텍처는 x86_64만이다. 개발 호스트는 Apple Silicon macOS이고 빌드는 컨테이너 안에서 한다. tars-agent는 macOS에서도 빌드되고 돌아야 한다 (개발과 평가를 호스트에서 한다). 샌드박스만 Linux 전용이다.
-- 바닥 라이브러리는 Debian glibc다. 개별 도구는 sha256을 고정한 미리 빌드 바이너리로 개발 도구 층(devlayer)에 들인다. devlayer에 cyber 0.4.6(CLI 번들), ripgrep, fd, jq가 이미 있다.
+- 바닥 라이브러리는 Debian glibc다. 개별 도구는 sha256을 고정한 미리 빌드 바이너리로 개발 도구 층(devlayer)에 들인다. devlayer에 cyber CLI 번들(기준 빌드보다 옛 판. tars-agent는 CLI를 쓰지 않는다), ripgrep, fd, jq가 이미 있다.
 - 터미널은 워크스페이스 아홉 × 패널 여덟을 가진다. 외부 프로세스가 패널을 조작하는 제어 채널은 없다. 에이전트는 패널 하나 안에서 도는 보통 프로그램이다.
 - 커널에 CONFIG_SECCOMP가 없다. Landlock 설정 여부는 확인이 필요하다 (TODO M5).
 - 부팅은 네트워크 유무와 무관하게 평소대로 끝나야 한다 (tars 결정). 에이전트는 부팅 경로에 없다. 사용자가 명령으로 실행한다.

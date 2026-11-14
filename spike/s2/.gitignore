@@ -1,4 +1,3 @@
 out/*.log
 out/*.trace
-out/crash-replay.txt
-out/v0410/*/
+out/*/*/

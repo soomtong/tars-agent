@@ -5,8 +5,8 @@
     .fingerprint = 0xcd5194f6e0ab868f,
     .dependencies = .{
         .cyber = .{
-            .url = "git+https://github.com/soomtong/cyber?ref=0.4.10#9490ddaf5888f406f24abeae5467a13d51e65569",
-            .hash = "cyber-0.4.10-AW3fkIoojADPaitjKIOnCljht4Rlcw7TxGW5SJVhaheh",
+            .url = "git+https://github.com/soomtong/cyber#63e35e881ea9e03e343f59d3ce896ef25779d31f",
+            .hash = "cyber-0.4.10-AW3fkDjkjAAWfe8x-_TlW70ptkS7YbG-ma7sBFWSOHv0",
         },
         .translate_c = .{
             .url = "git+https://codeberg.org/ziglang/translate-c#02ff0c523fb92a38939b04d0145c4a9602a74d56",

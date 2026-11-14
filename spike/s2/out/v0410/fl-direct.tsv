@@ -1,3 +1,0 @@
-T1	FAIL	or-oai	qwen/qwen3.8-flash	direct	6	6	0	8747	6144	746	15370	compile_errors=0	compiler_crash=0
-T2	PASS	or-oai	qwen/qwen3.8-flash	direct	6	5	0	6728	4608	797	15330	compile_errors=0	compiler_crash=0
-T3	PASS	or-oai	qwen/qwen3.8-flash	direct	7	6	2	8739	5888	1478	24362	compile_errors=0	compiler_crash=0

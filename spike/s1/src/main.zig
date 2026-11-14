@@ -38,20 +38,10 @@ const Request = struct {
 var g_reqs: std.ArrayList(Request) = .empty;
 var g_calls: usize = 0; // 능력이 불린 횟수
 
-// cyber 0.4.9는 !str 값을 복사하지 못한다(core:2918 컴파일 오류). 그래서 Future[!str]을 쓸 수 없다.
-// 우회: 능력은 Future[!int]로 손잡이(handle)를 돌려주고, 래퍼가 take(h)로 문자열을 꺼낸다.
-var g_results: std.ArrayList([]u8) = .empty;
-fn putResult(data: []const u8) i64 {
-    g_results.append(g_gpa, g_gpa.dupe(u8, data) catch unreachable) catch unreachable;
-    return @intCast(g_results.items.len - 1);
-}
-fn cap_take(t: ?*c.CLThread) callconv(.c) c.CLRet {
-    const ret: *c.CLstr = @ptrCast(@alignCast(c.cl_thread_ret(t, @sizeOf(c.CLstr))));
-    const h: usize = @intCast(c.cl_thread_int(t));
-    ret.* = c.cl_str_init(t, B(g_results.items[h]));
-    g_gpa.free(g_results.items[h]);
-    g_results.items[h] = &.{};
-    return c.CL_RET_OK;
+// 문자열 결과는 Future[!str]을 str 값으로 완료한다. 값은 Future가 소유한다.
+fn completeStr(vm: ?*c.CLVM, f: *c.CLFuture, data: []const u8) void {
+    const s = c.cl_str_init(c.cl_vm_main_thread(vm), B(data));
+    _ = c.cl_future_complete(vm, f, &s);
 }
 
 fn clearRequests() void {
@@ -84,7 +74,7 @@ fn newRequest(t: ?*c.CLThread, ret: *c.CLValue, future_spec: []const u8, kind: K
 fn cap_read(t: ?*c.CLThread) callconv(.c) c.CLRet {
     const ret: *c.CLValue = @ptrCast(@alignCast(c.cl_thread_ret(t, @sizeOf(c.CLValue))));
     const path = takeStr(t);
-    const f = newRequest(t, ret, "Future[!int]", .read, path, g_gpa.dupe(u8, "") catch unreachable);
+    const f = newRequest(t, ret, "Future[!str]", .read, path, g_gpa.dupe(u8, "") catch unreachable);
     completeRequest(c.cl_thread_vm(t), f.?, true);
     return c.CL_RET_OK;
 }
@@ -102,7 +92,7 @@ fn cap_write(t: ?*c.CLThread) callconv(.c) c.CLRet {
 fn cap_exec(t: ?*c.CLThread) callconv(.c) c.CLRet {
     const ret: *c.CLValue = @ptrCast(@alignCast(c.cl_thread_ret(t, @sizeOf(c.CLValue))));
     const cmd = takeStr(t);
-    _ = newRequest(t, ret, "Future[!int]", .exec, cmd, g_gpa.dupe(u8, "") catch unreachable);
+    _ = newRequest(t, ret, "Future[!str]", .exec, cmd, g_gpa.dupe(u8, "") catch unreachable);
     return c.CL_RET_OK;
 }
 
@@ -131,8 +121,7 @@ fn completeRequest(vm: ?*c.CLVM, f: *c.CLFuture, approved: bool) void {
                 return;
             };
             defer g_gpa.free(data);
-            var h = putResult(data);
-            _ = c.cl_future_complete(vm, f, &h);
+            completeStr(vm, f, data);
         },
         .write => {
             std.Io.Dir.cwd().writeFile(g_io, .{ .sub_path = req.a, .data = req.b }) catch {
@@ -148,8 +137,7 @@ fn completeRequest(vm: ?*c.CLVM, f: *c.CLFuture, approved: bool) void {
             };
             defer g_gpa.free(r.stdout);
             defer g_gpa.free(r.stderr);
-            var h = putResult(r.stdout);
-            _ = c.cl_future_complete(vm, f, &h);
+            completeStr(vm, f, r.stdout);
         },
     }
 }
@@ -159,34 +147,28 @@ fn completeRequest(vm: ?*c.CLVM, f: *c.CLFuture, approved: bool) void {
 // 모델에게는 래퍼(fs.read, fs.write)만 보이고, 멈췄다 재개되는 것은 모른다.
 
 const fs_src =
-    \\#[bind] fn read_async(path str) -> Future[!int]
-    \\#[bind] fn take(h int) -> str
+    \\#[bind] fn read_async(path str) -> Future[!str]
     \\#[bind] fn write_async(path str, text str) -> Future[!void]
     \\#[bind] fn peek(path str, limit int = 100) -> int
     \\fn read(path str) -> !str:
-    \\    h := read_async(path).await()!
-    \\    return take(h)
+    \\    return read_async(path).await()
     \\fn write(path str, text str) -> !void:
     \\    return write_async(path, text).await()
     \\
 ;
 const fs_src_nodefault =
-    \\#[bind] fn read_async(path str) -> Future[!int]
-    \\#[bind] fn take(h int) -> str
+    \\#[bind] fn read_async(path str) -> Future[!str]
     \\#[bind] fn write_async(path str, text str) -> Future[!void]
     \\fn read(path str) -> !str:
-    \\    h := read_async(path).await()!
-    \\    return take(h)
+    \\    return read_async(path).await()
     \\fn write(path str, text str) -> !void:
     \\    return write_async(path, text).await()
     \\
 ;
 const proc_src =
-    \\#[bind] fn exec_async(cmd str) -> Future[!int]
-    \\#[bind] fn take(h int) -> str
+    \\#[bind] fn exec_async(cmd str) -> Future[!str]
     \\fn exec(cmd str) -> !str:
-    \\    h := exec_async(cmd).await()!
-    \\    return take(h)
+    \\    return exec_async(cmd).await()
     \\
 ;
 
@@ -197,7 +179,6 @@ fn loader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResul
     const name = S(uri);
     if (std.mem.eql(u8, name, "fs")) {
         c.cl_mod_add_func(mod, B("read_async"), .{ .ptr = @ptrCast(&cap_read), .kind = c.CL_BIND_FUNC_VM });
-        c.cl_mod_add_func(mod, B("take"), .{ .ptr = @ptrCast(&cap_take), .kind = c.CL_BIND_FUNC_VM });
         c.cl_mod_add_func(mod, B("write_async"), .{ .ptr = @ptrCast(&cap_write), .kind = c.CL_BIND_FUNC_VM });
         if (g_fs_default_param) {
             c.cl_mod_add_func(mod, B("peek"), .{ .ptr = @ptrCast(&cap_peek), .kind = c.CL_BIND_FUNC_VM });
@@ -209,7 +190,6 @@ fn loader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResul
         return true;
     }
     if (std.mem.eql(u8, name, "proc")) {
-        c.cl_mod_add_func(mod, B("take"), .{ .ptr = @ptrCast(&cap_take), .kind = c.CL_BIND_FUNC_VM });
         c.cl_mod_add_func(mod, B("exec_async"), .{ .ptr = @ptrCast(&cap_exec), .kind = c.CL_BIND_FUNC_VM });
         res.*.src = B(proc_src);
         res.*.manage_src = false;
@@ -339,47 +319,20 @@ fn nowMs() i64 {
     return std.Io.Timestamp.now(g_io, .awake).toMilliseconds();
 }
 
-// 재현: 호스트 모듈의 소스가 컴파일에 실패한 뒤 같은 VM에서 eval을 되풀이한다.
-const bad_mod_src =
-    \\#[bind] fn read_async(path str) -> Future[!str]
-    \\fn read(path str) -> !str:
-    \\    return read_async(path).await()
-    \\
-;
-const bad_mod_src2 =
-    \\fn read(path str) -> !str:
-    \\    return undefined_thing
-    \\
-;
-var g_bad_variant: u8 = 1;
-fn badLoader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResult) callconv(.c) bool {
-    if (std.mem.eql(u8, S(uri), "fs")) {
-        if (g_bad_variant == 1) c.cl_mod_add_func(mod, B("read_async"), .{ .ptr = @ptrCast(&cap_read), .kind = c.CL_BIND_FUNC_VM });
-        res.*.src = B(if (g_bad_variant == 1) bad_mod_src else bad_mod_src2);
+// 모듈 소스가 처음에는 컴파일에 실패하고 그 뒤에는 맞게 오는 로더. 실패한 모듈을 다음 use에서 다시 불러오는지 본다.
+var g_flaky_calls: usize = 0;
+fn flakyLoader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResult) callconv(.c) bool {
+    if (std.mem.eql(u8, S(uri), "flaky")) {
+        g_flaky_calls += 1;
+        res.*.src = B(if (g_flaky_calls == 1) "fn get() -> int:\n    return undefined_thing\n" else "fn get() -> int:\n    return 7\n");
         res.*.manage_src = false;
         return true;
     }
-    return c.cl_default_loader(vm, mod, uri, res);
-}
-fn crashRepro(variant: u8, persist: bool) void {
-    g_bad_variant = variant;
-    const vm = c.cl_vm_init();
-    c.cl_vm_set_loader(vm, badLoader);
-    c.cl_vm_set_printer(vm, printer);
-    var i: usize = 0;
-    while (i < 12) : (i += 1) {
-        var res: c.CLEvalResult = undefined;
-        const src = if (i % 2 == 0) "use fs\nprint(fs.read('x')!)\n" else "print('plain')\n";
-        var cfg = evalConfig();
-        cfg.persist_main = persist;
-        const code = c.cl_vm_evalx(vm, B("main"), B(src), cfg, &res);
-        std.debug.print("eval {d}: {s}\n", .{ i, codeName(code) });
-    }
-    std.debug.print("no crash\n", .{});
+    return loader(vm, mod, uri, res);
 }
 
-// 재현: 파일에 든 스크립트들을 "\n=====\n"로 나눠 한 VM에서 차례로 validate, eval한다.
-// 스파이크 2의 세션에서 죽은 순서를 그대로 다시 돌리는 데 쓴다.
+// 재생: 파일에 든 스크립트들을 "\n=====\n"로 나눠 한 VM에서 차례로 validate, eval한다.
+// 에이전트 세션과 같은 조건(persist_main, 검증 뒤 실행)에서 안내의 예제를 확인하는 데 쓴다.
 fn replay(path: []const u8, no_validate: bool) void {
     const data = std.Io.Dir.cwd().readFileAlloc(g_io, path, g_gpa, .limited(1 << 20)) catch return;
     const vm = newVm();
@@ -402,7 +355,33 @@ fn replay(path: []const u8, no_validate: bool) void {
         if (r.code != c.CL_SUCCESS) std.debug.print(" | {s}", .{firstLine(errorSummary(vm))});
         std.debug.print("\n", .{});
     }
-    std.debug.print("no crash\n", .{});
+    std.debug.print("done\n", .{});
+}
+
+// 인자 읽기 순서 관찰: 매개변수를 반환 슬롯보다 먼저 읽는 호스트 함수. 순서를 어기면 어떻게 되는지 본다.
+fn cap_wrong_order(t: ?*c.CLThread) callconv(.c) c.CLRet {
+    var s = c.cl_thread_str(t);
+    const ret: *i64 = @ptrCast(@alignCast(c.cl_thread_ret(t, @sizeOf(i64))));
+    ret.* = @intCast(S(c.cl_str_bytes(s)).len);
+    c.cl_str_deinit(t, &s);
+    return c.CL_RET_OK;
+}
+fn orderLoader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResult) callconv(.c) bool {
+    if (std.mem.eql(u8, S(uri), "order")) {
+        c.cl_mod_add_func(mod, B("wrong"), .{ .ptr = @ptrCast(&cap_wrong_order), .kind = c.CL_BIND_FUNC_VM });
+        res.*.src = B("#[bind] fn wrong(s str) -> int\n");
+        res.*.manage_src = false;
+        return true;
+    }
+    return c.cl_default_loader(vm, mod, uri, res);
+}
+fn orderProbe() void {
+    const vm = c.cl_vm_init();
+    c.cl_vm_set_loader(vm, orderLoader);
+    c.cl_vm_set_printer(vm, printer);
+    std.debug.print("매개변수를 반환 슬롯보다 먼저 읽는다...\n", .{});
+    const r = run(vm, "use order\nprint(order.wrong('hello'))\n", .{});
+    std.debug.print("code={s} 출력={s}\n", .{ codeName(r.code), std.mem.trim(u8, g_out.items, "\n") });
 }
 
 // spawn 관찰: 스레드 안의 능력 호출, 스레드 안의 무한 루프와 상한.
@@ -449,7 +428,7 @@ pub fn main(init: std.process.Init) !void {
     const args = try init.minimal.args.toSlice(init.arena.allocator());
     if (args.len > 1 and std.mem.eql(u8, args[1], "replay")) return replay(args[2], args.len > 3);
     if (args.len > 1 and std.mem.eql(u8, args[1], "spawn")) return spawnProbe();
-    if (args.len > 1 and std.mem.eql(u8, args[1], "crash")) return crashRepro(if (args.len > 2 and args[2][0] == '2') 2 else 1, !(args.len > 3));
+    if (args.len > 1 and std.mem.eql(u8, args[1], "order")) return orderProbe();
 
     // 앞선 실행이 남긴 파일이 검사를 속이지 않게 임시 폴더를 비우고 시작한다.
     std.Io.Dir.cwd().deleteTree(g_io, scratch) catch {};
@@ -623,7 +602,7 @@ pub fn main(init: std.process.Init) !void {
             \\    print('failed %{e}')
             \\
         , .{});
-        check("4c. 중첩 scope 블록 (cyber F-111): 번호 순 완료로 끝까지 간다", r3.code == c.CL_SUCCESS and std.mem.indexOf(u8, g_out.items, "nested done") != null and g_asked.items.len == 3, "code={s} awaits={d} 물은 순서={any} | {s}", .{ codeName(r3.code), r3.awaits, g_asked.items, if (r3.code != c.CL_SUCCESS) firstLine(errorSummary(vm)) else "" });
+        check("4c. 중첩 scope 블록: 번호 순 완료로 끝까지 간다", r3.code == c.CL_SUCCESS and std.mem.indexOf(u8, g_out.items, "nested done") != null and g_asked.items.len == 3, "code={s} awaits={d} 물은 순서={any} | {s}", .{ codeName(r3.code), r3.awaits, g_asked.items, if (r3.code != c.CL_SUCCESS) firstLine(errorSummary(vm)) else "" });
     }
 
     // 5. 상한 넷
@@ -694,6 +673,44 @@ pub fn main(init: std.process.Init) !void {
         i = 0;
         while (i < 200) : (i += 1) _ = run(vm, "print(twice(count))\n", .{});
         check("6e. 비용: validate와 eval 각 200회", true, "validate {d}ms, eval {d}ms (200회 합)", .{ tv, nowMs() - t1 });
+    }
+
+    // 6f~6h. 실패한 컴파일 뒤에도 같은 VM이 계속 된다. 에이전트에서 컴파일 실패는 정상 경로다.
+    {
+        const vm = newVm();
+        defer c.cl_vm_deinit(vm);
+        const v1 = c.cl_vm_validate(vm, B("names := []str{'a', 'b'}\ncounts := Map[str, int]{}\nnames.sort(|a, b| counts[a] > counts[b])\n"));
+        const msg1 = firstLine(errorSummary(vm));
+        const v2 = c.cl_vm_validate(vm, B("counts := Map[str, int]{}\ncounts['a'] = 1\nprint(counts['a'])\n"));
+        const r2 = run(vm, "counts := Map[str, int]{}\ncounts['a'] = 1\nprint(counts['a'])\n", .{});
+        check("6f. 검증 실패 뒤 같은 VM의 다음 검증과 실행", v1 == c.CL_ERROR_COMPILE and v2 == c.CL_SUCCESS and r2.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "1\n"), "첫 검증={s} ({s}) 다음 검증={s} 실행={s} 출력={s}", .{ codeName(v1), msg1, codeName(v2), codeName(r2.code), std.mem.trim(u8, g_out.items, "\n") });
+
+        const vm2 = c.cl_vm_init();
+        defer c.cl_vm_deinit(vm2);
+        c.cl_vm_set_loader(vm2, flakyLoader);
+        c.cl_vm_set_printer(vm2, printer);
+        g_flaky_calls = 0;
+        const f1 = run(vm2, "use flaky\nprint(flaky.get())\n", .{});
+        const f2 = run(vm2, "print('plain')\n", .{});
+        const f3 = run(vm2, "use flaky\nprint(flaky.get())\n", .{});
+        check("6g. 모듈 소스가 컴파일에 실패한 뒤 다음 use에서 다시 불러온다", f1.code == c.CL_ERROR_COMPILE and f2.code == c.CL_SUCCESS and f3.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "7\n") and g_flaky_calls == 2, "첫 use={s} 그다음={s} 다시 use={s} 출력={s} 로더 호출={d}", .{ codeName(f1.code), codeName(f2.code), codeName(f3.code), std.mem.trim(u8, g_out.items, "\n"), g_flaky_calls });
+
+        const v3 = c.cl_vm_validate(vm, B("out := ^[]str{}\nout += 'x'\n"));
+        const msg3 = firstLine(errorSummary(vm));
+        const r3 = run(vm, "out := ^[]str{}\nout.* += 'x'\nout.* += 'y'\nprint(out.len())\n", .{});
+        check("6h. 목록 참조에 +=는 검증이 잡고, out.* +=는 붙인다", v3 == c.CL_ERROR_COMPILE and r3.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "2\n"), "검증={s} ({s}) out.* += 실행={s} 출력={s}", .{ codeName(v3), msg3, codeName(r3.code), std.mem.trim(u8, g_out.items, "\n") });
+    }
+
+    // 6i. 문자열 이스케이프 오류 뒤에도 세션이 남는가 (요청서 1절. 지금은 세션이 지워져 FAIL이다)
+    {
+        const vm = newVm();
+        defer c.cl_vm_deinit(vm);
+        _ = run(vm, "use proc\nkeep := 7\n", .{});
+        const v1 = c.cl_vm_validate(vm, B("s := \"a\\|b\"\n"));
+        const msg1 = firstLine(errorSummary(vm));
+        const r2 = run(vm, "print(keep)\nprint(proc.exec('echo p')!.trim())\n", .{});
+        const msg2 = if (r2.code != c.CL_SUCCESS) firstLine(errorSummary(vm)) else "";
+        check("6i. 이스케이프 오류 뒤에도 세션의 변수와 use가 남는다", v1 == c.CL_ERROR_COMPILE and r2.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "7\np\n"), "검증={s} ({s}) 다음 실행={s} 출력={s} | {s}", .{ codeName(v1), msg1, codeName(r2.code), std.mem.trim(u8, g_out.items, "\n"), msg2 });
     }
 
     // 7. 샌드박스 경계

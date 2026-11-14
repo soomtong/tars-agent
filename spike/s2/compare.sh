@@ -45,8 +45,7 @@ for mode in ${3:-direct codeact}; do
     eval "Q=\$T$t"
     line=$(./zig-out/bin/s2 --provider $P ${M:+--model $M} --mode $mode --log out/cmp-$P-$mode-t$t.log "$Q" 2> out/cmp-$P-$mode-t$t.trace)
     if check $t; then ok=PASS; else ok=FAIL; fi
-    crashes=$(grep -c "컴파일러가 자식" out/cmp-$P-$mode-t$t.trace)
     cerr=$(grep -c "종류=compile error" out/cmp-$P-$mode-t$t.trace)
-    printf 'T%s\t%s\t%s\tcompile_errors=%s\tcompiler_crash=%s\n' "$t" "$ok" "$line" "$cerr" "$crashes"
+    printf 'T%s\t%s\t%s\tcompile_errors=%s\n' "$t" "$ok" "$line" "$cerr"
   done
 done

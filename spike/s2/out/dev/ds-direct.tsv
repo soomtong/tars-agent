@@ -1,0 +1,3 @@
+T1	PASS	ds-anth	deepseek-chat	direct	3	2	0	624	896	198	3396	compile_errors=0
+T2	PASS	ds-anth	deepseek-chat	direct	6	5	0	1129	3072	489	6997	compile_errors=0
+T3	PASS	ds-anth	deepseek-chat	direct	4	3	0	802	1408	242	3942	compile_errors=0
