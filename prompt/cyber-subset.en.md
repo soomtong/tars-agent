@@ -2,7 +2,7 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the lists below first.
 
-The reference version is Cyber 0.4.10-DEV at commit 5de6c83a of soomtong/cyber (`cyber version` prints `Cyber 0.4.10-DEV build-0-5de6c83a` for a build of that commit). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
+The reference version is Cyber 0.4.10-DEV at commit 6a155275 of soomtong/cyber (`cyber version` prints `Cyber 0.4.10-DEV build-0-6a155275` for a build of that commit). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
 
 Cyber is still gaining features. This document matches one build and can fall behind a newer one. Before you use or edit this document, check the following.
 
@@ -93,6 +93,7 @@ str (strings do not change; every method returns a new value):
 - `s.contains(sub)`, `s.starts_with(p)`, `s.ends_with(p)`, `s.index(sub)` and `s.lastIndexOf(sub)` give `?int`
 - `s.split(sep)` gives `[]str`, `s.replace(old, new)`, `s.upper()`, `s.lower()`, `s.repeat(n)`, `s.concat(t)`
 - `s.trim()` cuts spaces, tabs and newlines at both ends. `s.trim({'-', '_'})` cuts the given characters.
+- `s.trimLeft()` and `s.trimRight()` cut only the start or only the end, by the same rule.
 - `s.last()` the last byte
 
 []T:
@@ -114,7 +115,7 @@ Python name to Cyber name:
 - `xs.find(x)` is `xs.index(x)`, which gives `?int`: `xs.index(x) ?else -1`
 - `xs.pop()` is `v := xs.last()` then `xs = xs.remove(xs.len() - 1)`
 - `s.startswith(p)` and `s.endswith(p)` are `s.starts_with(p)` and `s.ends_with(p)`
-- `s.strip()` is `s.trim()`
+- `s.strip()` is `s.trim()`, `s.lstrip()` is `s.trimLeft()` and `s.rstrip()` is `s.trimRight()`
 - `s.find(sub)` is `s.index(sub)` and `s.rfind(sub)` is `s.lastIndexOf(sub)`. Both give `?int`. For the last part of a path use `p.split('/').last()`
 - `len(m)` is `m.size()`. `m.items()` is `for m |e|:`. `list(m)` is `m.keys()`
 - `sorted(xs)` is `xs.sort()`, which changes `xs`. `sorted(xs, reverse=True)` is `xs.sort(|a, b| a > b)`
@@ -330,14 +331,12 @@ Most compile errors say how to fix the code, for example `Did you mean starts_wi
 - `Expected `,`.` in a function declaration: a default parameter value. Remove it and add an overload.
 - `Expected closing parenthesis.` in a call: a keyword argument `f(a=1)`. Pass it by position.
 - `Expected a target type or at least one element.`: an empty `{}`. Write `[]int{}` or `Map[str, int]{}`.
-- `Expected type `str`, got `int`.` (or another pair of types) in a list literal: the elements have different types. A list has the element type of its first element.
 - `Expected type `bool`, got `int`.`: a truthy condition. Use a comparison.
 - `Expected `int`, found `float`.`: int and float mixed. Match them with `float(i)`.
 - `Variable `x` is already declared in the block.`: repeated `:=`. Write `x = ...`.
 - `Undeclared variable `x`.` inside a function: an outer local variable. Pass it as a parameter, or use `global`.
 - `Undeclared variable `abs`.` (also `sum`, `sorted`, `enumerate`, `zip`): a Python builtin. See "Missing features" and write a loop.
 - `Can not find the symbol `map` in `[]int`.` (also `filter`): write a loop.
-- `Type `str` does not have a field named `len`.`: `s.len`. Write `s.len()`.
 - `Expected `1` arguments, found `2`, when calling the function `fn print(...)``: write `print('%{a} %{b}')`.
 - `Can not find the symbol `&&` for `bool`.`: logical AND. Write `and`.
 - `Expected assignment to a variable or placeholder ...`: a call whose value is discarded. Write `_ = f()` or assign it to a variable.

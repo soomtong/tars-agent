@@ -2,7 +2,7 @@
 
 Cyber는 Python과 아주 비슷한 문법 구조를 가진다. 들여쓰기로 블록을 만들고, 줄바꿈으로 문장을 끝내고, `for`, `while`, `if`, `fn`, `use`, `print`를 거의 같은 감각으로 쓴다. 하지만 정적 타입이고 값 소유권이 있고 예외가 없다. 이런 부분들이 다르니까 코드를 구성할 때 본 문서를 참고한다. 모르는 문법은 Python 문법으로 추측하지 말고 아래 목록을 먼저 본다.
 
-기준 버전은 soomtong/cyber의 커밋 5de6c83a인 Cyber 0.4.10-DEV다 (그 커밋을 빌드하면 `cyber version`이 `Cyber 0.4.10-DEV build-0-5de6c83a`를 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
+기준 버전은 soomtong/cyber의 커밋 6a155275인 Cyber 0.4.10-DEV다 (그 커밋을 빌드하면 `cyber version`이 `Cyber 0.4.10-DEV build-0-6a155275`를 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
 
 Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 한 빌드에 맞춘 것이므로 더 새 빌드와 어긋날 수 있다. 문서를 사용하거나 고치기 전에 아래를 확인한다.
 
@@ -93,6 +93,7 @@ str (문자열은 바뀌지 않고 모든 메서드가 새 값을 돌려준다):
 - `s.contains(sub)`, `s.starts_with(p)`, `s.ends_with(p)`, `s.index(sub)`와 `s.lastIndexOf(sub)`는 `?int`
 - `s.split(sep)`은 `[]str`, `s.replace(old, new)`, `s.upper()`, `s.lower()`, `s.repeat(n)`, `s.concat(t)`
 - `s.trim()`은 양 끝의 공백, 탭, 줄바꿈을 자른다. `s.trim({'-', '_'})`는 준 문자를 자른다.
+- `s.trimLeft()`와 `s.trimRight()`는 같은 규칙으로 앞이나 뒤만 자른다.
 - `s.last()` 마지막 바이트
 
 []T:
@@ -114,7 +115,7 @@ Python 이름과 Cyber 이름:
 - `xs.find(x)`는 `xs.index(x)`이고 `?int`를 돌려준다: `xs.index(x) ?else -1`
 - `xs.pop()`은 `v := xs.last()` 뒤 `xs = xs.remove(xs.len() - 1)`
 - `s.startswith(p)`, `s.endswith(p)`는 `s.starts_with(p)`, `s.ends_with(p)`
-- `s.strip()`은 `s.trim()`
+- `s.strip()`은 `s.trim()`, `s.lstrip()`은 `s.trimLeft()`, `s.rstrip()`은 `s.trimRight()`
 - `s.find(sub)`는 `s.index(sub)`, `s.rfind(sub)`는 `s.lastIndexOf(sub)`. 둘 다 `?int`다. 경로의 마지막 부분은 `p.split('/').last()`
 - `len(m)`은 `m.size()`. `m.items()`는 `for m |e|:`. `list(m)`은 `m.keys()`
 - `sorted(xs)`는 `xs.sort()`이고 `xs`를 바꾼다. `sorted(xs, reverse=True)`는 `xs.sort(|a, b| a > b)`
@@ -330,14 +331,12 @@ print('%{x} %{shared.*}')
 - 함수 선언의 `Expected `,`.`: 기본값 매개변수. 빼고 오버로드를 더한다.
 - 호출의 `Expected closing parenthesis.`: 키워드 인자 `f(a=1)`. 위치로 넘긴다.
 - `Expected a target type or at least one element.`: 빈 `{}`. `[]int{}`나 `Map[str, int]{}`로 쓴다.
-- 목록 리터럴의 `Expected type `str`, got `int`.`(다른 타입 쌍도 같다): 원소의 타입이 다르다. 목록은 첫 원소의 타입을 따른다.
 - `Expected type `bool`, got `int`.`: truthy 조건. 비교식으로 쓴다.
 - `Expected `int`, found `float`.`: int와 float를 섞었다. `float(i)`로 맞춘다.
 - `Variable `x` is already declared in the block.`: `:=`를 되풀이했다. `x = ...`로 쓴다.
 - 함수 안의 `Undeclared variable `x`.`: 바깥 지역 변수. 매개변수로 넘기거나 `global`을 쓴다.
 - `Undeclared variable `abs`.`(`sum`, `sorted`, `enumerate`, `zip`도 같다): Python 내장 함수. "없는 것"을 보고 반복문으로 쓴다.
 - `Can not find the symbol `map` in `[]int`.`(`filter`도 같다): 반복문으로 쓴다.
-- `Type `str` does not have a field named `len`.`: `s.len`. `s.len()`으로 쓴다.
 - `Expected `1` arguments, found `2`, when calling the function `fn print(...)``: `print('%{a} %{b}')`로 쓴다.
 - `Can not find the symbol `&&` for `bool`.`: 논리 AND. `and`로 쓴다.
 - `Expected assignment to a variable or placeholder ...`: 값을 버린 호출. `_ = f()`로 쓰거나 변수에 받는다.

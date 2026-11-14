@@ -273,9 +273,12 @@ fn run(vm: ?*c.CLVM, src: []const u8, policy: Policy) Outcome {
     return .{ .code = code, .awaits = awaits };
 }
 
+// 오류 요약은 검사 문구에 여러 번 쓰이고 언제 버려도 되는지 정하기 어렵다.
+// 프로세스가 끝날 때 한꺼번에 놓는 arena에 복사한다.
+var g_err_arena: std.heap.ArenaAllocator = .init(std.heap.page_allocator);
 fn errorSummary(vm: ?*c.CLVM) []const u8 {
     const s = c.cl_vm_error_summary(vm);
-    const copy = g_gpa.dupe(u8, S(s)) catch "";
+    const copy = g_err_arena.allocator().dupe(u8, S(s)) catch "";
     c.cl_vm_freeb(vm, s);
     return copy;
 }
@@ -341,7 +344,10 @@ fn flakyLoader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoader
 // 에이전트 세션과 같은 조건(persist_main, 검증 뒤 실행)에서 안내의 예제를 확인하는 데 쓴다.
 fn replay(path: []const u8, no_validate: bool) void {
     const data = std.Io.Dir.cwd().readFileAlloc(g_io, path, g_gpa, .limited(1 << 20)) catch return;
+    defer g_gpa.free(data);
+    defer g_out.deinit(g_gpa);
     const vm = newVm();
+    defer c.cl_vm_deinit(vm);
     var res: c.CLEvalResult = undefined;
     _ = c.cl_vm_evalx(vm, B("prelude"), B("use fs\nuse proc\n"), evalConfig(), &res);
     var it = std.mem.splitSequence(u8, data, "\n=====\n");
@@ -364,8 +370,8 @@ fn replay(path: []const u8, no_validate: bool) void {
     std.debug.print("done\n", .{});
 }
 
-// 인자 읽기 순서: 매개변수를 반환 슬롯보다 먼저 읽는 호스트 함수를 호출 경로마다 부른다.
-// 순서를 어겨 죽으면 프로세스가 끝나므로 경로 하나를 프로세스 하나에서 돈다(`s1 order <n>`).
+// 매개변수 먼저 읽기: cyber.h는 반환 슬롯(cl_thread_ret)을 매개변수 앞이나 뒤에 받아도 된다고 적는다.
+// 매개변수를 먼저 읽는 호스트 함수를 호출 경로마다 불러 같은 값이 나오는지 본다(검사 6m).
 fn cap_params_first(t: ?*c.CLThread) callconv(.c) c.CLRet {
     var s = c.cl_thread_str(t);
     const ret: *i64 = @ptrCast(@alignCast(c.cl_thread_ret(t, @sizeOf(i64))));
@@ -382,59 +388,22 @@ fn cap_less_params_first(t: ?*c.CLThread) callconv(.c) c.CLRet {
     c.cl_str_deinit(t, &b);
     return c.CL_RET_OK;
 }
-fn cap_ret_first(t: ?*c.CLThread) callconv(.c) c.CLRet {
-    const ret: *i64 = @ptrCast(@alignCast(c.cl_thread_ret(t, @sizeOf(i64))));
-    var s = c.cl_thread_str(t);
-    ret.* = @intCast(S(c.cl_str_bytes(s)).len);
-    c.cl_str_deinit(t, &s);
-    return c.CL_RET_OK;
-}
-fn cap_less_ret_first(t: ?*c.CLThread) callconv(.c) c.CLRet {
-    const ret: *bool = @ptrCast(@alignCast(c.cl_thread_ret(t, @sizeOf(bool))));
-    var a = c.cl_thread_str(t);
-    var b = c.cl_thread_str(t);
-    ret.* = std.mem.order(u8, S(c.cl_str_bytes(a)), S(c.cl_str_bytes(b))) == .lt;
-    c.cl_str_deinit(t, &a);
-    c.cl_str_deinit(t, &b);
-    return c.CL_RET_OK;
-}
 fn orderLoader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResult) callconv(.c) bool {
     if (std.mem.eql(u8, S(uri), "order")) {
         c.cl_mod_add_func(mod, B("first"), .{ .ptr = @ptrCast(&cap_params_first), .kind = c.CL_BIND_FUNC_VM });
         c.cl_mod_add_func(mod, B("less"), .{ .ptr = @ptrCast(&cap_less_params_first), .kind = c.CL_BIND_FUNC_VM });
-        c.cl_mod_add_func(mod, B("first_r"), .{ .ptr = @ptrCast(&cap_ret_first), .kind = c.CL_BIND_FUNC_VM });
-        c.cl_mod_add_func(mod, B("less_r"), .{ .ptr = @ptrCast(&cap_less_ret_first), .kind = c.CL_BIND_FUNC_VM });
-        res.*.src = B("#[bind] fn first(s str) -> int\n#[bind] fn less(a str, b str) -> bool\n#[bind] fn first_r(s str) -> int\n#[bind] fn less_r(a str, b str) -> bool\n");
+        res.*.src = B("#[bind] fn first(s str) -> int\n#[bind] fn less(a str, b str) -> bool\n");
         res.*.manage_src = false;
         return true;
     }
     return c.cl_default_loader(vm, mod, uri, res);
 }
 const order_forms = [_]struct { name: []const u8, src: []const u8, want: []const u8 }{
-    .{ .name = "직접 호출", .src = "use order\nprint(order.first('hello'))\n", .want = "5" },
+    .{ .name = "직접", .src = "use order\nprint(order.first('hello'))\n", .want = "5" },
     .{ .name = "함수 포인터 값", .src = "use order\ntype F = fn(str) -> int\nvar f F = order.first\nprint(f('hello'))\n", .want = "5" },
     .{ .name = "함수 union 값", .src = "use order\ntype F = fn(str) -> int\nvar g Func[F] = order.first\nprint(g('hello'))\n", .want = "5" },
-    .{ .name = "표준 메서드가 부르는 함수(sort)", .src = "use order\nxs := {'b', 'c', 'a'}\nxs.sort(order.less)\nprint(xs)\n", .want = "{'a', 'b', 'c'}" },
-    // 대조군: 반환 슬롯을 먼저 받는 같은 함수
-    .{ .name = "대조군, 반환 먼저: 함수 포인터 값", .src = "use order\ntype F = fn(str) -> int\nvar f F = order.first_r\nprint(f('hello'))\n", .want = "5" },
-    .{ .name = "대조군, 반환 먼저: 함수 union 값", .src = "use order\ntype F = fn(str) -> int\nvar g Func[F] = order.first_r\nprint(g('hello'))\n", .want = "5" },
-    .{ .name = "대조군, 반환 먼저: sort", .src = "use order\nxs := {'b', 'c', 'a'}\nxs.sort(order.less_r)\nprint(xs)\n", .want = "{'a', 'b', 'c'}" },
+    .{ .name = "sort", .src = "use order\nxs := {'b', 'c', 'a'}\nxs.sort(order.less)\nprint(xs)\n", .want = "{'a', 'b', 'c'}" },
 };
-fn orderProbe(arg: ?[]const u8) void {
-    if (arg == null) {
-        for (order_forms, 0..) |f, i| std.debug.print("{d}: {s}\n", .{ i, f.name });
-        return;
-    }
-    const i = std.fmt.parseInt(usize, arg.?, 10) catch return;
-    const f = order_forms[i];
-    const vm = c.cl_vm_init();
-    c.cl_vm_set_loader(vm, orderLoader);
-    c.cl_vm_set_printer(vm, printer);
-    const r = run(vm, f.src, .{});
-    const out = std.mem.trim(u8, g_out.items, "\n");
-    const ok = r.code == c.CL_SUCCESS and std.mem.eql(u8, out, f.want);
-    std.debug.print("[{s}] {s}: code={s} 출력={s} | {s}\n", .{ if (ok) "PASS" else "FAIL", f.name, codeName(r.code), out, if (r.code != c.CL_SUCCESS) firstLine(errorSummary(vm)) else "" });
-}
 
 // spawn 관찰: 스레드 안의 능력 호출, 스레드 안의 무한 루프와 상한.
 fn spawnProbe() void {
@@ -481,7 +450,6 @@ pub fn main(init: std.process.Init) !void {
     const args = try init.minimal.args.toSlice(init.arena.allocator());
     if (args.len > 1 and std.mem.eql(u8, args[1], "replay")) return replay(args[2], args.len > 3);
     if (args.len > 1 and std.mem.eql(u8, args[1], "spawn")) return spawnProbe();
-    if (args.len > 1 and std.mem.eql(u8, args[1], "order")) return orderProbe(if (args.len > 2) args[2] else null);
 
     // 앞선 실행이 남긴 파일이 검사를 속이지 않게 임시 폴더를 비우고 시작한다.
     std.Io.Dir.cwd().deleteTree(g_io, scratch) catch {};
@@ -491,7 +459,7 @@ pub fn main(init: std.process.Init) !void {
     std.debug.print("libcyber: {s}\n\n", .{S(ver)});
 
     // 0. 빌드: 의존의 아티팩트로 링크하고, C 쪽은 그 include 경로로 cyber.h를 받는다
-    check("0. 아티팩트 링크, 버전 문자열의 커밋, #include \"cyber.h\"의 구조체 크기", std.mem.indexOf(u8, S(ver), "5de6c83a") != null and inc_eval_config_size() == @sizeOf(c.CLEvalConfig) and inc_compile_config_size() == @sizeOf(c.CLCompileConfig), "version={s} CLEvalConfig C={d} Zig={d}, CLCompileConfig C={d} Zig={d}", .{ S(ver), inc_eval_config_size(), @sizeOf(c.CLEvalConfig), inc_compile_config_size(), @sizeOf(c.CLCompileConfig) });
+    check("0. 아티팩트 링크, 버전 문자열의 커밋, #include \"cyber.h\"의 구조체 크기", std.mem.indexOf(u8, S(ver), "6a155275") != null and inc_eval_config_size() == @sizeOf(c.CLEvalConfig) and inc_compile_config_size() == @sizeOf(c.CLCompileConfig), "version={s} CLEvalConfig C={d} Zig={d}, CLCompileConfig C={d} Zig={d}", .{ S(ver), inc_eval_config_size(), @sizeOf(c.CLEvalConfig), inc_compile_config_size(), @sizeOf(c.CLCompileConfig) });
 
     // 1. 기본: eval, print 가로채기, 결과 값
     {
@@ -795,6 +763,25 @@ pub fn main(init: std.process.Init) !void {
         const pend2 = c.cl_vm_reset_pending(vm);
         const r3 = run(vm, "print(keep)\n", .{});
         check("6l. 첫 컴파일 실패 뒤 reset_pending이 true, 다음 eval부터 세션이 이어진다", r1.code == c.CL_ERROR_COMPILE and pend1 and r2.code == c.CL_SUCCESS and !pend2 and r3.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "1\n"), "첫 eval={s} reset_pending={} 다음={s} reset_pending={} keep={s}", .{ codeName(r1.code), pend1, codeName(r2.code), pend2, std.mem.trim(u8, g_out.items, "\n") });
+    }
+
+    // 6m. 호스트 함수를 값으로 부르는 경로에서도 매개변수를 반환 슬롯보다 먼저 읽어도 된다
+    {
+        var got: std.ArrayList(u8) = .empty;
+        defer got.deinit(g_gpa);
+        var all = true;
+        for (order_forms) |f| {
+            const vm = c.cl_vm_init();
+            defer c.cl_vm_deinit(vm);
+            c.cl_vm_set_loader(vm, orderLoader);
+            c.cl_vm_set_printer(vm, printer);
+            const r = run(vm, f.src, .{});
+            const out = std.mem.trim(u8, g_out.items, "\n");
+            const ok = r.code == c.CL_SUCCESS and std.mem.eql(u8, out, f.want);
+            all = all and ok;
+            got.print(g_gpa, "{s}={s} ", .{ f.name, if (ok) out else codeName(r.code) }) catch {};
+        }
+        check("6m. 매개변수를 먼저 읽는 호스트 함수: 직접, 함수 포인터 값, 함수 union 값, sort가 부르는 함수", all, "{s}", .{got.items});
     }
 
     // 7. 샌드박스 경계

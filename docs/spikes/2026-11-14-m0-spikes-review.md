@@ -2,7 +2,7 @@
 
 스파이크를 Claude가 혼자 구현하고 검토했다 (ADR 0012의 덧붙임). 이 문서는 무엇을 만들었고, 기준 빌드에서 무엇이 확인됐고, 무엇이 남았고, 본체의 아키텍처에 어떤 뜻이 있는지를 적는다. 코드는 spike/에 있고 버릴 것이다.
 
-기준 빌드: soomtong/cyber 로컬 master 5de6c83a (`Cyber 0.4.10-DEV`, 원격에는 아직 없다). cyber에 관한 숫자와 판정은 모두 이 빌드로 이 날 돌려서 얻은 것이다. 측정 환경은 macOS arm64.
+기준 빌드: soomtong/cyber 로컬 master 6a155275 (`Cyber 0.4.10-DEV`, 원격에는 아직 없다). 스파이크 1의 검사, 안내 확인, 교차 빌드는 이 빌드로 이 날 돌린 것이다. 5절의 CodeAct 비교만 그 앞의 5de6c83a와 그때의 안내로 잰 것이다(5절 머리). 측정 환경은 macOS arm64.
 
 읽는 순서: 1절(한 장 요약), 2절(에이전트는 어떻게 도는가), 그 뒤는 필요한 절만.
 
@@ -10,7 +10,7 @@
 
 | 질문 | 답 | 근거 |
 |---|---|---|
-| Zig 호스트가 libcyber를 링크해 VM을 돌릴 수 있는가 | 된다 | 스파이크 1, 검사 39개 모두 통과 |
+| Zig 호스트가 libcyber를 링크해 VM을 돌릴 수 있는가 | 된다 | 스파이크 1, 검사 40개 모두 통과 |
 | cyber를 build.zig.zon 의존으로 쓸 수 있는가 | 된다. 의존의 `artifact("cyber")`로 받고 cyber.h가 따라온다. 기준 커밋이 원격에 없어 지금은 로컬 경로 의존이다 | 3.1 |
 | 능력이 `Future[!str]`을 돌려줄 수 있는가 (ADR 0011의 모양) | 된다. str 값이나 오류로 완료한다 | 3.2 |
 | 승인 대기를 VM 밖에서 하는 설계(ADR 0011, 0016)가 실제로 도는가 | 돈다. 승인, 거부, 취소, 동시 요청 모두 | 3.3 |
@@ -23,8 +23,8 @@
 
 가장 무거운 발견 셋:
 
-1. 호스트 함수가 매개변수를 반환 슬롯보다 먼저 읽으면, 직접 호출이 아닌 경로(함수 포인터 값, 함수 union 값, 표준 메서드가 부르는 함수)에서 오류 없이 다른 값을 읽는다 (7.1). cyber.h는 그 순서를 허용한다고 적는다. 스파이크의 능력은 반환 슬롯을 먼저 받아 맞게 돌지만, 결함이라 본체 첫 단계의 선행 조건이다.
-2. 안내 문서가 CodeAct의 성패를 가른다. 모델이 틀린 곳의 대부분은 오류 문구가 고치는 법을 말해 다음 스텝에 고쳐졌다. 문구가 말하지 않는 것(`and`로 묶은 옵션 풀기, `elif`, 보간 안의 보간과 `\"`, 최상위 `!else` 블록의 끝, `trimStart`)은 cyber에 요청했다 (5, 7.3).
+1. 기준 커밋이 cyber 원격에 없다. 스파이크는 로컬 경로 의존으로 받는다. 이것이 본체 첫 단계의 남은 선행 조건이다 (7).
+2. 안내 문서가 CodeAct의 성패를 가른다. 모델이 틀린 곳의 대부분은 오류 문구가 고치는 법을 말해 다음 스텝에 고쳐졌다. 회차에서 문구가 고치는 법을 말하지 않던 것(`and`로 묶은 옵션 풀기, `elif`, 보간 안의 보간과 `\"`, 최상위 `!else` 블록의 끝, `trimStart`)은 기준 빌드의 문구가 원인과 고치는 법을 말한다. 그것이 모델의 수정 횟수를 줄이는지는 비교를 다시 돌려야 안다 (5).
 3. 능력의 모양(`Future[!T]`와 머리말 래퍼), 세션 VM에서의 검증, VM 밖의 승인 대기가 우회 없이 본래 모양으로 돈다. 본체 설계를 바꿀 것은 없다 (3).
 
 ## 2. 에이전트는 어떻게 도는가
@@ -76,20 +76,20 @@ total=38
 
 ## 3. 스파이크 1: 호스트 경계
 
-코드: spike/s1. 실행: `zig build && ./zig-out/bin/s1`. 검사 39개가 PASS/FAIL로 찍히고 모두 통과한다. 호출 경로별 인자 읽기 순서는 `s1 order <n>`이 경로 하나를 프로세스 하나에서 따로 본다(7.1).
+코드: spike/s1. 실행: `zig build && ./zig-out/bin/s1`. 검사 40개가 PASS/FAIL로 찍히고 모두 통과한다.
 
 ### 3.1 링크
 
-- 기준 커밋 5de6c83a가 원격에 없어 build.zig.zon에 로컬 경로 의존(`.path = "../../../cyberscript"`)으로 둔다. 원격에 오르면 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#<커밋>"`로 커밋과 해시를 고정한다(요청서 2절).
-- `b.dependency("cyber", .{ .target = target, .optimize = .ReleaseFast, .static = true, .commit = "5de6c83a" }).artifact("cyber")`를 `linkLibrary`로 링크한다(spike/s1/build.zig). ffi는 기본 false다.
+- 기준 커밋 6a155275가 원격에 없어 build.zig.zon에 로컬 경로 의존(`.path = "../../../cyberscript"`)으로 둔다. 원격에 오르면 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#<커밋>"`로 커밋과 해시를 고정한다(요청서 2절).
+- `b.dependency("cyber", .{ .target = target, .optimize = .ReleaseFast, .static = true, .commit = "6a155275" }).artifact("cyber")`를 `linkLibrary`로 링크한다(spike/s1/build.zig). ffi는 기본 false다.
 - cyber.h는 아티팩트의 include 경로로 따라온다. s1의 C 파일(src/inc_check.c)이 `#include "cyber.h"`로 컴파일되고, `CLEvalConfig`와 `CLCompileConfig`의 크기(12)가 translate-c 쪽과 같다(검사 0).
-- 버전 문자열은 `Cyber 0.4.10-DEV build-0-5de6c83a`다. commit 인자가 찍힌다.
+- 버전 문자열은 `Cyber 0.4.10-DEV build-0-6a155275`다. 소스에서 읽은 값이 아니라 build.zig가 넘긴 commit 인자가 찍힌다. 경로 의존은 작업 트리를 빌드하므로, 인자를 올리지 않으면 다른 소스에 옛 커밋이 찍힌다.
 - Zig 0.17.1에는 `@cImport`가 없다. cyber.h를 Zig에서 쓰는 길은 둘이다: translate-c 패키지로 모듈을 만들거나, 쓰는 함수의 extern 선언을 손으로 쓴다. 스파이크는 앞의 것을 썼다. 본체의 추천은 9절.
 - libcyber.a(arm64, ReleaseFast)는 2.53 MB, 공개 `cl_` 함수는 135개다. mimalloc 심볼은 없다(FFI를 끈 라이브러리 빌드에는 들어가지 않는다).
 
 ### 3.2 능력 바인딩
 
-- 호스트 함수는 `fn (t: *CLThread) callconv(.c) CLRet` 하나의 모양이다. 매개변수는 커서처럼 선언 순서대로 읽는다(cl_thread_str, cl_thread_int). 반환 슬롯(cl_thread_ret)은 먼저 받는다. cyber.h는 매개변수 뒤에 받아도 된다고 적지만 직접 호출에서만 맞다. 함수 포인터 값, 함수 union 값, 표준 메서드(sort)가 부르는 경로에서 매개변수를 먼저 읽으면 오류 없이 다른 값을 읽는다(`s1 order`, 7.1).
+- 호스트 함수는 `fn (t: *CLThread) callconv(.c) CLRet` 하나의 모양이다. 매개변수는 커서처럼 선언 순서대로 읽는다(cl_thread_str, cl_thread_int). 반환 슬롯(cl_thread_ret)은 매개변수 앞이나 뒤에 받는다. 직접 호출, 함수 포인터 값, 함수 union 값, 표준 메서드(sort)가 부르는 경로 모두에서 매개변수를 먼저 읽어도 같은 값이다(검사 6m). 스파이크의 능력은 반환 슬롯을 먼저 받는다.
 - 값 매개변수(str)는 호스트가 소유하므로 cl_str_deinit으로 놓는다.
 - 뜻: ADR 0006의 "Cyber 값 변환과 소유권 해제는 생성된 바인딩 층 한 곳에서만 한다"가 편의가 아니라 안전 장치다.
 - 문자열 결과: 능력은 `Future[!str]`을 돌려주고, 일을 마치면 `CLstr s = cl_str_init(main_thread, bytes)` 뒤 `cl_future_complete(vm, f, &s)`로 완료한다. 값은 Future가 소유한다. 실패는 `cl_future_complete_error(vm, f, cl_error(vm, "NotFound"))`. 모델이 보는 것은 머리말 래퍼의 `fs.read(path) -> !str` 하나다.
@@ -138,7 +138,7 @@ ADR 0011과 0016의 설계는 고칠 것 없이 돈다.
 
 - persist_main: 변수, 함수, use가 다음 eval로 이어진다.
 - validate: 세션의 변수를 보면서 컴파일만 한다. 구조화된 오류가 온다(kind=2, line=1, col=6, len=4, "Undeclared variable `totl`."). validate한 선언은 넘어가지 않는다.
-- validate에는 설정 인자가 없고 마지막 eval의 설정(persist_main, deny_raw_ptrs, deny_spawn)을 쓴다. eval 전의 새 VM에서는 spawn이 든 스크립트가 검증을 통과한다(검사 7f). 그래서 머리말을 eval한 뒤에 검증한다(요청서 4절).
+- validate에는 설정 인자가 없고 마지막 eval의 설정(persist_main, deny_raw_ptrs, deny_spawn)을 쓴다. eval 전의 새 VM에서는 spawn이 든 스크립트가 검증을 통과한다(검사 7f). 그래서 머리말을 eval한 뒤에 검증한다. cyber.h의 `cl_vm_validate` 설명에 이 동작이 적혀 있다.
 - 실패한 컴파일 뒤: 같은 VM의 다음 검증과 실행이 그대로 된다(6f: 캡처 오류로 실패한 정렬 스크립트 뒤 Map 스크립트가 검증과 실행을 통과). 모듈 소스가 컴파일에 실패하면 다음 use에서 로더를 다시 불러 맞는 소스를 받는다(6g). 그래서 검증은 세션 VM에서 `cl_vm_validate` 한 줄로 한다. 문자열 이스케이프 오류(`\|`, `\xZZ`)도 위치 있는 보통 컴파일 오류이고 세션이 남는다(6i). `'\0'`은 NUL이다(6j).
 - reset: VM의 첫 컴파일이 실패하면 `cl_vm_reset_pending`이 true이고 다음 eval부터 세션이 이어진다(6l). 컴파일러나 지역 이월 중의 할당 실패 뒤도 같다(cyber.h). 호스트는 CL_SUCCESS가 아닌 eval과 검증 뒤에 이것을 묻는다. s2는 true면 머리말을 다시 돌리고 모델에게 "the session was reset"을 알린다.
 - 목록 참조의 `+=`(`out := ^[]str{}` 뒤 `out += 'x'`)는 검증이 잡는 컴파일 오류이고, 문구가 `out.* += ...`를 알려 준다(6h).
@@ -218,7 +218,7 @@ Provider(데이터) = {name, format, url, auth, key_env, model}
 
 ## 5. direct 대 CodeAct: 작은 비교
 
-과제 셋. 평가가 아니라 감을 잡기 위한 것이다. 판정(ADR 0006)은 과제 20개를 3회씩 돌린 뒤에 한다. 원자료는 spike/s2/out/dev/*.tsv(열: 과제, 판정, 제공자, 모델, 모드, 스텝, 도구 호출, 도구 오류, 입력 토큰, 캐시된 입력, 출력 토큰, 밀리초, 컴파일 오류). 안내는 8절의 판이다. s2는 본래 모양(능력은 `Future[!str]`, 검증은 세션 VM의 `cl_vm_validate`, deny_spawn, 실패 뒤 `cl_vm_reset_pending` 확인)으로 돌았다. 모델이 쓴 명령은 샌드박스(spike/s2/src/jail.zig) 안에서만 돌았다.
+과제 셋. 평가가 아니라 감을 잡기 위한 것이다. 이 절의 회차는 cyber 5de6c83a와 그 빌드에 맞춘 안내로 돌렸다. 기준 빌드(6a155275)는 그 뒤 5.1의 문구를 고쳤고 안내도 조금 바뀌었다(8절). 다시 돌리지 않았다. 판정(ADR 0006)은 과제 20개를 3회씩 돌린 뒤에 한다. 원자료는 spike/s2/out/dev/*.tsv(열: 과제, 판정, 제공자, 모델, 모드, 스텝, 도구 호출, 도구 오류, 입력 토큰, 캐시된 입력, 출력 토큰, 밀리초, 컴파일 오류). 안내는 8절의 판이다. s2는 본래 모양(능력은 `Future[!str]`, 검증은 세션 VM의 `cl_vm_validate`, deny_spawn, 실패 뒤 `cl_vm_reset_pending` 확인)으로 돌았다. 모델이 쓴 명령은 샌드박스(spike/s2/src/jail.zig) 안에서만 돌았다.
 
 - T1: 로그 파일 셋에서 ERROR 줄을 세어 정렬해 보고서 파일로 쓰기
 - T2: .py 파일들에서 대문자 TODO를 찾아 파일별 개수를 쓰기
@@ -246,16 +246,16 @@ Provider(데이터) = {name, format, url, auth, key_env, model}
 
 컴파일 오류 26건(deepseek-chat 4, qwen3.8-flash 22, qwen3.8-max 0):
 
-| 오류 | 건수 | 문구가 고치는 법을 말하는가 |
+| 오류 | 건수 | 기준 빌드의 문구가 고치는 법을 말하는가 |
 |---|---|---|
 | ``Can not print `!str`. Unwrap it with `!` first ...`` (`print(proc.exec(...))`) | 9 | 말한다 |
 | Python 모양: `for x in xs:` 2, `{key: value}` 1, `[a, b]` 1 | 4 | 말한다 |
-| `if cond and t.index('=') \|k\|:` (``Expected type `bool`, got `?int`.``) | 3 | 말하지 않는다(7.3) |
-| 그 밖의 구문: `elif` 1, 보간 안의 `\"` 1, 삼항 모양(`.??`, `?and ... :`) 2, `for f \|{...}\|:` 1, `!else pass` 1, 오타 1 | 7 | `elif`와 보간 안의 `\"`는 원인과 다른 것을 말한다(7.3). 나머지는 위치만 준다 |
+| `if cond and t.index('=') \|k\|:` (``Expected type `bool`, got `?int`.``) | 3 | 말한다(안쪽 `if`로 풀라고 한다) |
+| 그 밖의 구문: `elif` 1, 보간 안의 `\"` 1, 삼항 모양(`.??`, `?and ... :`) 2, `for f \|{...}\|:` 1, `!else pass` 1, 오타 1 | 7 | `elif`와 보간 안의 `\"`는 말한다. 나머지는 위치만 준다 |
 | `repr`, `str`과 `none` 비교, 없는 타입 이름 | 3 | 앞의 둘은 말하지 않는다 |
 
 - 가장 흔한 실수는 `!T`를 풀지 않고 출력하는 것이다. 안내의 원칙 첫머리에 있는데도 작은 모델이 되풀이한다. 문구가 정확해서 한 스텝으로 끝난다.
-- `if s.index(x) |i|:`를 안내에서 배운 모델이 그것을 `and`로 다른 조건과 묶었다. 옵션 풀기는 조건 전체에만 붙는다. 문구가 원인을 말하지 않는다. cyber의 문구를 본 뒤 안내에 넣을지 정한다.
+- `if s.index(x) |i|:`를 안내에서 배운 모델이 그것을 `and`로 다른 조건과 묶었다. 옵션 풀기는 조건 전체에만 붙는다. 기준 빌드의 문구가 이것을 말하므로 안내에는 넣지 않았다.
 - `elif`는 안내의 "Python과 다른 것"에 있는데도 나왔다.
 - 안내의 `?int` 줄 가운데 `not idx`와 `idx >= 0`, 이스케이프 줄, "함수는 최상위에서만" 줄이 다루는 실수는 이 회차에서 나오지 않았다.
 
@@ -280,46 +280,20 @@ run 호출을 셋으로 나눴다(규칙은 단순한 정규식).
 
 ## 6. 스파이크 3: 교차 빌드
 
-- `zig build -Dtarget=x86_64-linux-gnu -Doptimize=ReleaseFast`가 macOS arm64에서 빈 캐시로 s1 46초, s2 71초에 끝난다. cyber는 의존의 아티팩트로 같은 대상에 맞춰 빌드된다(libcyber.a 3.07 MB). 산출물은 glibc 동적 링크 ELF다.
+- `zig build -Dtarget=x86_64-linux-gnu`가 macOS arm64에서 s1, s2 모두 된다(빈 캐시로 s1 46초, s2 71초). cyber는 의존의 아티팩트로 같은 대상에 맞춰 빌드된다(libcyber.a 3.07 MB). 산출물은 glibc 동적 링크 ELF다.
 - tars 게스트(QEMU)에서의 실행은 이 빌드로 하지 않았다. tars-linux의 산출물(커널, initrd)이 필요하다. 게스트를 모는 스크립트는 spike/s3/guest.py에 있다: initrd 사본 뒤에 바이너리를 담은 gzip cpio를 이어 붙여 부팅하고, 시리얼을 유닉스 소켓으로 열어 명령을 보낸다(셸이 fish라 Enter는 CR).
 
 보지 못한 것: tars 게스트에서의 실행, 실기 노트북, tars 터미널 패널 안에서의 화면 출력, Landlock(M5).
 
 ## 7. cyber에 남은 것
 
-요청서: docs/requests/cyber-m0-spike-requests.md. 1, 2절이 본체 첫 단계의 선행 조건이다 (ADR 0019).
+요청서: docs/requests/cyber-m0-spike-requests.md. 남은 것은 하나이고 본체 첫 단계의 선행 조건이다 (ADR 0019).
 
-### 7.1 직접 호출이 아닌 경로의 인자 읽기 순서
-
-호스트 함수가 매개변수를 반환 슬롯보다 먼저 읽을 때(`s1 order <n>`):
-
-| 경로 | 매개변수 먼저 | 반환 슬롯 먼저 |
-|---|---|---|
-| 직접 호출 `order.first('hello')` | 5 | 5 |
-| 함수 포인터 값 `var f F = order.first` | 0 | 5 |
-| 함수 union 값 `var g Func[F] = order.first` | 0 | 5 |
-| sort가 부르는 함수 `xs.sort(order.less)` | `{'a', 'c', 'b'}` | `{'a', 'b', 'c'}` |
-
-모두 CL_SUCCESS로 끝난다. 오류 없이 틀린 값이다. cyber.h는 반환 슬롯을 매개변수 앞이나 뒤에 받아도 된다고 적는다.
-
-원인으로 보이는 곳: 바이트코드의 직접 호출(src/vm.c `CALL_HOST`)은 호스트 함수를 부르기 전에 매개변수의 시작(`fp_end`)을 두고, 함수 값을 부르는 경로(src/thread.zig `callPtrInst`, `callUnionInst`, `callFunc2`, 코드로 보아 `callTraitSymInst`도)는 두지 않는다.
-
-능력은 반환 슬롯을 먼저 받으므로 스파이크는 맞게 돈다. 그래도 문서가 허용하는 순서가 경로에 따라 틀린 값을 주므로 고쳐진 뒤에 본체로 간다.
-
-### 7.2 원격에 없는 기준 커밋
-
-5de6c83a(와 그 앞의 bf5967db)가 soomtong/cyber 원격에 없다. 스파이크는 로컬 경로 의존으로 받는다. 본체와 deps.md는 URL과 해시로 고정한다.
-
-### 7.3 오류 문구와 문서
-
-- `str`의 `s.len`에 메서드 제안이 없다(`[]T`의 `xs.len`은 `len()`을 제안한다).
-- `cl_vm_validate`가 마지막 eval의 설정을 쓰는 것이 cyber.h에 없다.
-- `{'a', 1}`의 문구에는 `{1, 'a'}`에 붙는 설명이 없다.
-- 회차에서 모델이 만난 것(버린 첫 회차 포함): `if ok and t.index('=') |i|:`가 ``Expected type `bool`, got `?int`.``다. `elif`가 ``Expected end of line or file. Got ident.``다. 보간 안의 보간이 ``Encountered new line in single line literal.``이고, 보간 안의 `\"`가 ``unknown character: \\ (92) at 37``이다. 최상위 `!else |e|:` 블록의 끝이 ``Expected unreachable block end.``다. `trimStart`, `trimEnd`, `trim_start`, `trim_end`에 제안이 없다.
+기준 커밋 6a155275(와 그 앞의 커밋들)가 soomtong/cyber 원격에 없다. 스파이크는 로컬 경로 의존으로 받는다. 본체와 deps.md는 URL과 해시로 고정한다. cyber는 push와 릴리스 시점을 그쪽 사용자 결정으로 기다리고 있다.
 
 ## 8. 안내 문서 (prompt/cyber-subset*.md)
 
-영문판과 한국어판을 기준 빌드로 다시 썼다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.10-DEV build-0-5de6c83a`(커밋 5de6c83a)이다.
+영문판과 한국어판을 기준 빌드로 다시 썼다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.10-DEV build-0-6a155275`(커밋 6a155275)이다.
 
 확인 방법: 안내의 항목마다 탐침 스크립트를 만들어 기준 빌드의 CLI로 돌리고 결과(출력이나 오류 첫 줄)를 받아 적었다. 세션에서만 다른 것(최상위 빌림)은 s1의 `replay`(같은 VM, persist_main, 검증 뒤 실행)로 따로 확인했다. 코드 블록 11개는 CLI와 `replay` 양쪽에서 통과했다.
 
@@ -336,11 +310,11 @@ run 호출을 셋으로 나눴다(규칙은 단순한 정규식).
 | 참조의 연산자 | `n.* += 2`, `out.* += 'x'` |
 | 문자열 이스케이프 | `\n \t \r \0 \\ \' \" \xHH`. 그 밖은 컴파일 오류이고 백슬래시는 두 번 쓴다 |
 | 함수 선언 | 최상위에서만 |
-| 메서드 | str, []T, Map의 있는 메서드 전부(`trim()`, `lastIndexOf` 포함)와 Python 이름의 대응 |
+| 메서드 | str, []T, Map의 있는 메서드 전부(`trim()`, `trimLeft()`, `trimRight()`, `lastIndexOf` 포함)와 Python 이름의 대응 |
 | 없는 것 | `abs`, `sum`, `sorted`, `enumerate`, `zip`, `xs.map`, `xs.filter`, json, regex, time |
-| 오류 목록 | 문구가 고치는 법을 말하지 않는 오류만 (23줄). 나머지는 "문구대로 고친다" 한 줄 |
+| 오류 목록 | 문구가 고치는 법을 말하지 않는 오류만 (21줄). 나머지는 "문구대로 고친다" 한 줄 |
 
-크기: 영문판 19.9KB, 시스템 프롬프트 전체 20,989바이트(첫 요청 입력 약 6,600~6,800토큰, 5절). TODO의 "4,000토큰 이하" 목표를 넘는다. 목표를 바꿀지 안내를 줄일지는 사용자가 정한다. 줄일 자리는 오류 목록(cyber가 문구를 보강하면 줄이 빠진다)과 "Python과 다른 것"의 문법 줄이다.
+크기: 영문판 19.8KB(19,814바이트). 5절 회차의 판(19,899바이트)으로 시스템 프롬프트 전체가 20,989바이트, 첫 요청 입력이 약 6,600~6,800토큰이었다. TODO의 "4,000토큰 이하" 목표를 넘는다. 목표를 바꿀지 안내를 줄일지는 사용자가 정한다. 줄일 자리는 오류 목록(cyber가 문구를 보강할 때마다 줄이 빠진다)과 "Python과 다른 것"의 문법 줄이다.
 
 ## 9. 본체 아키텍처에 주는 뜻 (추천, 확정은 본체를 만들 때 사용자가)
 
@@ -348,10 +322,10 @@ run 호출을 셋으로 나눴다(규칙은 단순한 정규식).
 |---|---|---|
 | 1 | 구성요소와 경계(명세 01)는 그대로 간다 | 스파이크 2의 세 파일(provider, vm, main)이 명세의 provider, runtime+caps, loop와 같은 선으로 자연히 갈렸다 |
 | 2 | 능력은 모두 `Future[!T]`를 돌려주고 머리말 래퍼가 await한다. 승인이 필요 없으면 호스트 함수 안에서 바로 완료한다 | 3.2, 3.3. 능력의 모양이 하나가 되고, 등급이 바뀌어도 선언이 바뀌지 않는다 |
-| 3 | 검증은 세션 VM에서 `cl_vm_validate`로 바로 한다. 머리말을 eval한 뒤에 검증한다 | 3.5. 검증은 마지막 eval의 설정을 쓴다 |
+| 3 | 검증은 세션 VM에서 `cl_vm_validate`로 바로 한다. 머리말을 eval한 뒤에 검증한다 | 3.5. 검증은 마지막 eval의 설정을 쓴다(cyber.h에 적혀 있다) |
 | 4 | CL_SUCCESS가 아닌 eval과 검증 뒤 `cl_vm_reset_pending`을 묻고, reset이면 머리말을 다시 돌려 모델에게 알린다. panic과 interrupt 뒤에는 최상위 변수가 사라졌다고 알린다 | 3.4, 3.5. s2가 그렇게 돈다 |
 | 5 | 호스트 로더는 허용 목록으로 쓴다 | 3.6 |
-| 6 | deny_raw_ptrs와 deny_spawn을 켠다. 능력 함수는 반환 슬롯을 먼저 받는다 | 3.2, 3.6 |
+| 6 | deny_raw_ptrs와 deny_spawn을 켠다 | 3.6 |
 | 7 | 프로세스 실행 능력은 자체 시간 상한, 표준 입력 차단, 출력 크기 상한, 취소를 가진다 | VM의 타이머는 승인 뒤 루프가 돌리는 프로세스에 닿지 않는다 |
 | 8 | 읽기 능력도 권한 프로파일의 대상으로 둔다 (작업 폴더 밖 읽기는 승인) | 읽은 것은 모두 모델 제공자에게 간다 |
 | 9 | cyber.h는 손으로 쓴 extern 선언으로 감싼다 (runtime/cy.zig 한 파일) | 3.1. 빌드 의존이 줄고, 쓰는 표면이 한눈에 보인다. 대가는 cyber가 구조체 배치를 바꾸면 손으로 따라가야 하는 것이다 |
@@ -377,14 +351,14 @@ run 호출을 셋으로 나눴다(규칙은 단순한 정규식).
 
 | 경로 | 내용 | 실행 |
 |---|---|---|
-| spike/s1 | 호스트 경계 검사 39개, 세션 재생, 관찰 둘 | `zig build && ./zig-out/bin/s1`, `s1 replay <파일> [nv]` (스크립트를 `=====` 줄로 나눈다, 검증과 실행 결과, 출력, 오류 첫 줄을 찍는다. `nv`면 검증 없이 실행), `s1 spawn` (deny_spawn 없이), `s1 order [n]` (n 없이 부르면 경로 목록, 경로마다 매개변수를 먼저 읽는 함수와 대조군) |
+| spike/s1 | 호스트 경계 검사 40개, 세션 재생, 관찰 하나 | `zig build && ./zig-out/bin/s1`, `s1 replay <파일> [nv]` (스크립트를 `=====` 줄로 나눈다, 검증과 실행 결과, 출력, 오류 첫 줄을 찍는다. `nv`면 검증 없이 실행), `s1 spawn` (deny_spawn 없이) |
 | spike/s2a | 두 형식의 원문 응답 받기 | `./run.sh`, 결과는 out/*.sse |
 | spike/s2 | 최소 에이전트 루프 (direct, codeact), 제공자 넷 | `./zig-out/bin/s2 --provider ds-anth --mode codeact "질문"`, `./compare.sh <제공자> [모델] [모드] [과제]` |
 | spike/s3 | tars 게스트 구동 스크립트 | 6절 |
 
-- 두 스파이크의 cyber 의존은 로컬 cyber 저장소 경로다(build.zig.zon). 경로 의존은 작업 트리를 그대로 빌드한다. cyber 저장소에서 다른 작업이 진행 중이면(커밋하지 않은 변경, 다른 커밋) 기준 빌드가 아니게 되므로, 돌리기 전에 `git -C ../../../cyberscript status`와 `log -1`을 확인한다. 깨끗하지 않으면 `git archive 5de6c83a`로 스크래치 폴더에 풀어 그 경로를 잠시 의존으로 쓴다. 이 문서의 숫자는 그렇게 푼 5de6c83a로 잰 것이다.
+- 두 스파이크의 cyber 의존은 로컬 cyber 저장소 경로다(build.zig.zon). 경로 의존은 작업 트리를 그대로 빌드한다. cyber 저장소에서 다른 작업이 진행 중이면(커밋하지 않은 변경, 다른 커밋) 기준 빌드가 아니게 되므로, 돌리기 전에 `git -C ../../../cyberscript status`와 `log -1`을 확인한다. 깨끗하지 않으면 `git archive <커밋>`으로 스크래치 폴더에 풀어 그 경로를 잠시 의존으로 쓴다. 6a155275의 확인은 깨끗한 작업 트리에서 했고, 5절의 회차는 `git archive 5de6c83a`로 푼 소스로 돌렸다.
 - 키는 환경 변수 DEEPSEEK_API_KEY, OPENROUTER_API_KEY. 모델이 쓴 명령은 jail.zig의 샌드박스 안에서만 돈다. 이 가두기를 풀지 않는다.
 - compare.sh는 결과를 out/cmp-*에 덮어쓴다. 회차를 여럿 돌리면 회차마다 다른 폴더로 옮긴다(out/dev/<회차>/). 회차는 차례로 돌린다(같은 작업 폴더 /tmp/tars-agent-s2를 쓰므로 겹치면 결과가 섞인다). s2는 실행마다 안내 파일을 읽으므로 회차 도중에 안내를 고치지 않는다.
-- cyber의 기준 빌드를 올리면: 의존을 올리고(build.zig의 commit 인자 포함), s1과 `s1 order 0~6`, 안내의 탐침, 코드 블록 11개를 CLI와 `replay`로 다시 돌리고, s2 비교를 다시 돌리고, 문서를 새 빌드의 사실로 고쳐 쓴다.
+- cyber의 기준 빌드를 올리면: 의존을 올리고(build.zig의 commit 인자 포함), s1, 안내의 탐침, 코드 블록 11개를 CLI와 `replay`로 다시 돌리고, s2 비교를 다시 돌리고, 문서를 새 빌드의 사실로 고쳐 쓴다.
 
 읽을 가치가 있는 순서: s2/src/main.zig(루프), s2/src/provider.zig(메시지 모델과 어댑터), s2/src/vm.zig(검증, 실행, 승인), s1/src/main.zig(검사 목록).
