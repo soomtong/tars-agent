@@ -6,6 +6,8 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 이번 세션: cyber가 0.4.11을 릴리스했다(태그 0.4.11 = 097b831f, 설치된 CLI `Cyber 0.4.11 build-883-097b831`). 스파이크를 태그 URL과 해시로 고정하고, s1, 안내, 회신 문구를 설치된 CLI와 세션에서 확인하고, 옛 회차 폴더(out/dev, out/dev-5de6c83a)를 지운 뒤 CodeAct 비교를 0.4.11로 모두 다시 돌렸다. 문서를 스파이크의 마지막 판(0.4.11)으로 고쳤다. 회차에서 문구가 고치는 법을 말하지 않은 여섯을 새 요청서로 냈다(선행 조건 아님).
 
+그다음 세션(2026-11-15): pi 하네스(badlogic/pi-mono c3cc916)를 검토해 가져올 것을 골랐고 사용자가 추천안을 받았다. ADR 0021과 명세 02, 03, 04, 05, 06, 07, TODO에 반영했다. 코드는 없다.
+
 ## 현재 브랜치
 
 `main`. 커밋과 push는 Claude에게 위임돼 있다 (ADR 0018).
@@ -21,6 +23,8 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - [x] 문서: 검토 문서(기준 줄, 1, 2의 예시, 3절 실측, 5절 전체, 7, 8, 11절), 08, 00, deps, ADR 0017, 0019, TODO, MEMORY
 - [x] 모델 이름: s2는 `deepseek-flash`(기본 effort high로 사고), OpenRouter는 `deepseek/deepseek-v4.1-flash-1017`. 옛 별칭 `deepseek-chat`은 사고하지 않는다. `output_config.effort`가 받아들여지는지는 미확인
 - [x] 결정(스파이크 안, 위임): 능력이 반환 슬롯을 먼저 받는 규칙은 본체 추천에서 뺐다. 컴파일러 문구가 고치는 법을 말하는 실수는 안내에 넣지 않는다
+
+- [x] pi 하네스 검토 (ADR 0021): 결과 상한은 모델로 가는 쪽(스크립트 결과 20,000자, 능력 반환 1 MiB), 실행 중 입력(steering) 큐, 벽시계는 VM 안의 시간만, 크래시 뒤 재개 때 crashed 결과로 짝 맞추기, 실패 결과에 능력 호출 목록, 컴팩션 요약의 틀과 요청 형식, fs.edit 정규화 일치와 줄바꿈 보존, MCP 능력은 프롬프트에 나열하지 않음. 열어 둔 것: 컴팩션에서 최근 구간 원문 유지(사고 블록 확인 뒤, TODO M4)
 
 ## 시도했으나 실패한 접근
 
@@ -58,6 +62,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - `docs/spikes/2026-11-14-m0-spikes-review.md` — 스파이크의 마지막 판(0.4.11). 1절 요약, 3절 호스트 경계, 5절 비교, 7절 cyber에 남은 것, 11절 다시 돌리는 법
 - `docs/requests/cyber-0.4.11-codeact-messages.md` — 열린 요청(문구 여섯)
 - `docs/decisions/0017-m0-spike-findings.md`, `0019-fix-spike-defects-first.md`, `0020-docs-current-state-only.md`
+- `docs/decisions/0021-borrow-from-pi-harness.md` — pi에서 가져온 것과 버린 것
 - `docs/spec/08-cyber-implementation.md` — 기준 빌드의 사실
 - `spike/s1/build.zig.zon`, `spike/s2/build.zig.zon` — cyber 고정(태그 URL과 해시)
 - `spike/s2/out/0.4.11/` — 비교 회차 원자료

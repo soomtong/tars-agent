@@ -11,14 +11,14 @@
 | type | 내용 |
 |---|---|
 | session | 버전, 모델, 프로파일, 작업 디렉터리, cyber 버전, 부모 세션(재개 시) |
-| user | 사용자 입력 |
+| user | 사용자 입력. steering 입력은 히스토리에 붙인 시점에 쓴다 |
 | assistant | 응답 content 그대로 (사고 블록 포함), stop_reason, usage |
 | run | tool_use_id, 코드, validate 결과. 실행 전에 쓴다 |
 | cap | 능력, 인자 요약, 결정(allow/ask-허용/ask-거부/deny, 근거 규칙), 걸린 시간, 결과 크기, 오류 |
-| result | tool_use_id, 결과 본문, 실패 종류, 연료(fuel) 사용량, 걸린 시간 |
+| result | tool_use_id, 결과 본문, 실패 종류, 연료(fuel) 사용량, 걸린 시간. crashed 결과는 재개할 때 쓴다 (02) |
 | system | 덧붙인 system 메시지 (모드 변경 등) |
 | memo, todo | 호스트 상태 변경 |
-| compact | 요약, 새 히스토리의 시작 seq |
+| compact | 요약, 새 히스토리의 시작 seq, 읽은 파일과 고친 파일의 누적 목록 |
 | error | 제공자 오류, 재시도 |
 
 - 비밀은 쓰기 전에 가린다 (05).

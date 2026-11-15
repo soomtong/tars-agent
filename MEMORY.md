@@ -22,6 +22,7 @@
 - [0018 커밋과 push 위임](docs/decisions/0018-commit-delegation.md) — 의미 있는 변경은 묻지 않고 커밋하고 push
 - [0019 스파이크의 결함은 모두 고치고 진행](docs/decisions/0019-fix-spike-defects-first.md) — 우회를 본체에 옮기지 않는다. 이웃 저장소 결함은 요청, 수정, 재현 통과 확인 뒤 진행
 - [0020 문서는 지금의 상태만](docs/decisions/0020-docs-current-state-only.md) — 고쳐진 결함, 걷어 낸 우회, 버전별 변천은 적지 않는다(git 이력에 있다). 반영된 요청서는 지운다
+- [0021 pi 하네스에서 가져온 것](docs/decisions/0021-borrow-from-pi-harness.md) — 결과 상한은 모델 쪽(능력 반환 1 MiB), steering 큐, 벽시계는 VM 안 시간만, 크래시 재개의 짝 맞추기, 컴팩션 요약의 틀, fs.edit 정규화 일치. 최근 구간 원문 유지는 열어 둠
 
 ## 결정이 아닌 참고
 

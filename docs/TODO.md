@@ -56,7 +56,7 @@
 - [ ] caps: 능력 표와 생성기 (Cyber 선언, 바인딩, 프롬프트 사양, JSON Schema), fs.read, fs.list, fs.glob, fs.stat, help
 - [ ] provider: Messages API 스트리밍, 적응형 사고, effort, 캐시 지점, stop_reason 분기(end_turn, tool_use, max_tokens, refusal, pause_turn), 재시도. refusal의 서버 쪽 fallbacks 옵션 적용 여부 결정
 - [ ] prompt: 조립기, rules.md
-- [ ] loop: validate, eval, 실패 분류 다섯, 한도
+- [ ] loop: validate, eval, 실패 분류, 한도. 벽시계는 VM 안의 시간만 잰다(바인딩 층이 능력 호출 동안 타이머를 멈춘다). 실패 결과에 능력 호출 목록 (ADR 0021)
 - [ ] session: JSONL 쓰기 (07의 형식)
 - [ ] headless: -p, text와 stream-json 출력
 - [ ] 테스트: 모의 provider와 시나리오 재생, 능력 단위 테스트(누수 검사 allocator), 샌드박스 탈출 시도(raw 포인터, use c, 무한 루프, 폭주 재귀, 메모리 폭주)가 모두 결과로 끝나는지
@@ -65,9 +65,9 @@
 
 ## M2 쓰기와 권한
 
-- [ ] fs.search (ripgrep), fs.edit, fs.write, 파일 상태 추적, 쓰기 전 보관
+- [ ] fs.search (ripgrep), fs.edit(정규화 일치, 줄바꿈 보존), fs.write, 파일 상태 추적, 쓰기 전 보관
 - [ ] proc.exec, proc.sh, proc.start, proc.output, proc.kill, 환경 정리, 프로세스 그룹 종료
-- [ ] 결과 상한과 넘침 파일
+- [ ] 결과 상한과 넘침 파일: 스크립트 결과 20,000자, 능력 반환 1 MiB (ADR 0021)
 - [ ] permission: 프로파일, 모드 다섯, 규칙 맞춤(경로 glob, 인자 앞부분, 도메인), 설정 파일 세 층, 보호 규칙
 - [ ] 비밀: 자격 파일 권한 검사, 자식 환경에서 지우기, 기록 가리기
 - [ ] 헤드리스 권한 옵션 (--permission-mode, --allow, --profile), json 출력, 종료 코드
@@ -81,6 +81,7 @@
 - [ ] 스트리밍 표시, 코드 접기와 펼치기, 상태 줄
 - [ ] 승인 프롬프트 (숫자 키, diff 표시, 승인 기억을 settings.local.json에). CL_AWAIT 경로로 루프 바닥에서 묻는다 (ADR 0011)
 - [ ] 인터럽트 (Esc, Ctrl-C), 취소 플래그를 능력에 연결
+- [ ] 실행 중 입력(steering): 코어의 큐, 스텝마다 하나씩, 턴 끝에 남은 입력은 다음 턴, 인터럽트 때 입력 줄로 돌려주기. 코어-프런트엔드 이벤트와 명령 타입은 사용자가 편집한다 (ADR 0021)
 - [ ] 모드 전환 (Shift+Tab, /mode)과 system 메시지
 - [ ] AGENTS.md 읽기, 프로젝트 설정 수락 절차
 - [ ] 슬래시 명령: /help /clear /mode /model /cost /permissions /quit
@@ -92,11 +93,12 @@
 ## M4 긴 세션
 
 - [ ] 재개: --continue, --resume, /resume. VM 새 시작 알림, memo와 todo 복원
-- [ ] 컴팩션: 자동 임계치와 /compact, 요약에 넣을 항목
+- [ ] 컴팩션: 자동 임계치와 /compact, 요약 요청 형식과 요약의 틀, 파일 목록 누적, 두 번째부터 요약 고치기 (02)
+- [ ] 확인: 컴팩션에서 최근 구간을 원문으로 남길 때, 앞부분이 바뀐 대화에 남긴 사고 블록을 제공자가 받는지. 결과로 남길지 정한다 (ADR 0021 열어 둔 것)
 - [ ] 캐시 점검: cache_read가 0으로 이어지면 경고
 - [ ] 비용 계산과 tars-agent stats
 - [ ] 지연 사양 (예산을 넘는 능력은 한 줄 요약과 help)
-- [ ] 죽은 세션: crash/ 보관과 재개 안내
+- [ ] 죽은 세션: crash/ 보관, 재개 때 crashed 결과 채우기, 재개 안내 (02)
 
 게이트: 컨텍스트 창을 넘기는 작업 하나를 컴팩션을 거쳐 끝낸다. 중간에 프로세스를 죽이고 이어서 끝낸다.
 
