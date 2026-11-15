@@ -27,4 +27,5 @@
 ## 결정이 아닌 참고
 
 - [초기 요구사항 대조](docs/spec/09-legacy-requirements.md) — 이력, 재검토에서 바꾼 것과 닫은 질문
+- [code mode와 cyber 설계 검토](docs/references/2026-11-15-code-mode-and-cyber-design.md) — 다른 하네스의 code mode 구현(Claude Code 공식 문서, pi 확인, 나머지 전언)과 CodeAct 비교, cyber PR #7 중 우리에게 닿는 것(표준 오류 어휘가 첫째)
 - [M0 스파이크 검토 결과](docs/spikes/2026-11-14-m0-spikes-review.md) — cyber 0.4.11, 스파이크의 마지막 판(비교 회차도 0.4.11): 에이전트가 도는 법, 스파이크별 실측, direct 대 CodeAct, 모델이 틀리는 곳, 안내, 아키텍처 추천
