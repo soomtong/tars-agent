@@ -7,7 +7,7 @@
 | 의존 | 버전 | 라이선스 | 이유 | 조건 |
 |---|---|---|---|---|
 | Zig 표준 라이브러리 | 0.17.1 | MIT | HTTP, TLS, JSON, 프로세스, 파일 | |
-| soomtong/cyber (libcyber) | latest dev 0.4.13-DEV (커밋 8a892310, 태그 0.4.13과 같은 커밋. 0.4.13 릴리스는 빌드가 실패해 나오지 않았다). `git+https://github.com/soomtong/cyber#8a892310554bba26061a5613784a20e930971275`, 해시 `cyber-0.4.13-AW3fkAQQowDHsJ54gaXZmRQLy97LTg3pDL1NKWoRadp0`로 고정한다. 의존 인자 `.dev = true, .build = "941", .commit = "8a89231"`로 프리릴리스 CLI와 같은 버전 문자열(`Cyber 0.4.13-DEV build-941-8a89231`)을 찍는다. 라이브러리는 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 받고 cyber.h가 따라온다 | MIT | 스크립트 VM과 표준 모듈(json, toon, regex, peg, time 포함). 패키지에 에이전트 안내 docs/agent-guide.md가 들어 있다 (ADR 0022) | 반드시 -Dffi=false. FFI를 켜면 tcc(LGPL)가 링크된다 |
+| soomtong/cyber (libcyber) | latest dev 0.4.13-DEV. `latest` 태그를 따른다(ADR 0023): `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#latest"`. 버전 문자열은 `Cyber 0.4.13-DEV build-0-local`이다. 라이브러리는 `b.dependency("cyber", .{ .target, .optimize, .static = true, .dev = true }).artifact("cyber")`로 받고 cyber.h가 따라온다 | MIT | 스크립트 VM과 표준 모듈(json, toon, regex, peg, time 포함). 패키지에 에이전트 안내 docs/agent-guide.md가 들어 있다 (ADR 0022) | 반드시 -Dffi=false. FFI를 켜면 tcc(LGPL)가 링크된다 |
 | translate-c (ziglang) | cyber와 같은 커밋 | MIT | 빌드할 때 cyber.h를 Zig 모듈로 바꾼다 | 스파이크에서만 썼다. 본체는 손으로 쓴 extern을 추천한다 (ADR 0017). 링크되지 않는다 |
 | glibc (동적, 대상 시스템의 것) | Debian | LGPL | 대상 환경의 바닥 라이브러리 | 동적 링크만. 정적 링크하지 않는다 |
 

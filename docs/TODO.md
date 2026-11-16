@@ -11,7 +11,7 @@
 - [x] 실행 모델 CodeAct + Cyber (ADR 0001), 호스트는 Zig + libcyber (ADR 0002)
 - [x] 초기 요구사항 대조 (09 문서)
 - [x] 명세 재검토와 열린 질문 결정 (ADR 0004~0009, 2026-11-10)
-- [x] cyber 기준 빌드 반영: latest dev 0.4.13-DEV(커밋 8a892310, 0.4.13 릴리스는 빌드 실패). 스파이크 의존을 커밋 URL과 해시로 고정하고, s1, 안내의 코드 블록과 오류 문구를 프리릴리스 CLI와 세션에서 확인했다. CodeAct 비교는 0.4.12 회차의 것이다. 표준 모듈 다섯은 안내가 가르치지 않아 스파이크의 호스트 로더에서 막는다 (2026-11-16)
+- [x] cyber 기준 빌드 반영: latest dev 0.4.13-DEV. 스파이크 의존은 `latest` 태그를 따르고(ADR 0023), s1, 안내의 코드 블록과 오류 문구를 프리릴리스 CLI와 세션에서 확인했다. CodeAct 비교는 0.4.12 회차의 것이다. 표준 모듈 다섯은 안내가 가르치지 않아 스파이크의 호스트 로더에서 막는다 (2026-11-16)
 
 ## M0 증명과 판정
 
@@ -37,22 +37,22 @@
 
 필요한 것은 cyber에 만든다. 작업 장소는 soomtong/cyber이고 그 저장소의 절차를 따른다. 목록과 필요의 증거는 08 문서 "cyber에서 만들 것"이 정본이다. M 단계와 나란히 간다.
 
-- [~] C0 M0 스파이크에서 남은 것. latest dev 0.4.13-DEV를 커밋 URL과 해시로 고정했다. 남은 것은 아래 두 줄이고 요청서는 docs/requests/cyber-0.4.13-dev-findings.md. 둘 다 본체 첫 단계의 선행 조건 (ADR 0019)
-- [~] C0 (a) `let x := 1`(`mut`도)에 틀린 고치는 법(`var x := 1 = value`)을 말한다. cyber master `3acc0797`에서 고침, CLI와 세션에서 확인. 고정을 옮기면 닫는다
-- [~] C0 (b) 세션에서 스크립트 마지막 줄의 `out.remove(i)`, `out.clear()`는 마지막 표현식 값이라 오류가 없고 `out`은 그대로다. cyber master `3acc0797`에서 고침, 세션에서 확인. 고정을 옮기면 닫는다
+- [~] C0 M0 스파이크에서 남은 것. 남은 것은 아래 두 줄이고 요청서는 docs/requests/cyber-0.4.13-dev-findings.md. 둘 다 본체 첫 단계의 선행 조건 (ADR 0019)
+- [~] C0 (a) `let x := 1`(`mut`도)에 틀린 고치는 법(`var x := 1 = value`)을 말한다. cyber master `3acc0797`에서 고침, 로컬 빌드의 CLI와 세션에서 확인. `latest`가 이 커밋을 담으면 다시 받고 닫는다
+- [~] C0 (b) 세션에서 스크립트 마지막 줄의 `out.remove(i)`, `out.clear()`는 마지막 표현식 값이라 오류가 없고 `out`은 그대로다. cyber master `3acc0797`에서 고침, 로컬 빌드의 세션에서 확인. `latest`가 이 커밋을 담으면 다시 받고 닫는다
 - [~] C1 json 모듈 (parse, stringify, 값 트리). 기준 빌드에 있다. 남은 게이트: 안내 문서의 예제가 이 모듈을 써서 통과
 - [~] C1 toon 모듈 (stringify, parse). 기준 빌드에 있다. 남은 게이트는 json과 같다
 - [~] C2 regex 모듈 (역추적 없는 엔진). 기준 빌드에 있다. 남은 게이트는 json과 같다
 - [~] C2 time 모듈. 기준 빌드에 있다. 시계와 시스템 zoneinfo를 능력 없이 읽는다. 허용할지, 능력 clock.now와 어떻게 나눌지 사용자가 정한다 (08 문서)
 - [ ] C3 임베딩 옵션: 모듈 허용 표. M1 중. 호스트 로더로 되면 올리지 않는다
 - [ ] 수시: 프로세스를 죽이는 경로 수정
-- [ ] cyber의 기준 빌드를 올릴 때마다 고정 커밋을 올리고 s1, 안내의 예제와 항목, 평가를 다시 돌린다. 문서는 새 빌드의 사실로 고쳐 쓴다 (ADR 0020)
+- [ ] `latest`가 움직여 다시 받을 때마다 s1, 안내의 예제와 항목, 평가를 다시 돌린다. 문서는 새 빌드의 사실로 고쳐 쓴다 (ADR 0020)
 
 게이트: 모듈마다 cyber의 테스트(누수 검사 포함)와 릴리스, 그리고 tars-agent 안내 문서의 예제가 그 모듈을 써서 통과한다.
 
 ## M1 최소 루프 (헤드리스, 읽기 전용)
 
-- [ ] 저장소 뼈대: build.zig, cyber 의존 고정, macOS와 linux 빌드, CI
+- [ ] 저장소 뼈대: build.zig, cyber 의존(latest, ADR 0023), macOS와 linux 빌드, CI
 - [ ] runtime: cy.zig 래퍼, 로더, 상한, 결과 조립
 - [ ] caps: 능력 표와 생성기 (Cyber 선언, 바인딩, 프롬프트 사양, JSON Schema), fs.read, fs.list, fs.glob, fs.stat, help
 - [ ] provider: Messages API 스트리밍, 적응형 사고, effort, 캐시 지점, stop_reason 분기(end_turn, tool_use, max_tokens, refusal, pause_turn), 재시도. refusal의 서버 쪽 fallbacks 옵션 적용 여부 결정

@@ -5,8 +5,8 @@
     .fingerprint = 0x5458c54c94d100c0,
     .dependencies = .{
         .cyber = .{
-            // soomtong/cyber latest dev 0.4.13-DEV build 941 (커밋 8a892310).
-            .url = "git+https://github.com/soomtong/cyber#8a892310554bba26061a5613784a20e930971275",
+            // soomtong/cyber의 latest 태그(dev 프리릴리스). 갱신: zig fetch --save=cyber "git+https://github.com/soomtong/cyber#latest"
+            .url = "git+https://github.com/soomtong/cyber?ref=latest#8a892310554bba26061a5613784a20e930971275",
             .hash = "cyber-0.4.13-AW3fkAQQowDHsJ54gaXZmRQLy97LTg3pDL1NKWoRadp0",
         },
         .translate_c = .{

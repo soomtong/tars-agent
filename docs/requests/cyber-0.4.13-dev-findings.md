@@ -69,7 +69,7 @@ REPL에서 `xs.append(4)`로 결과를 미리 보던 쓰임도 이제 오류다.
 
 ## 회신 확인 (2026-11-16, cyber master `fd9aed7e`)
 
-로컬 cyber(`3acc0797`를 담은 master)로 확인했다. CLI는 `zig build cli`의 Debug 빌드, 세션은 s1을 `zig build --fork=<cyber 저장소>`로 빌드해 `s1 replay`로 돌렸다. `build.zig.zon`의 고정은 그대로다.
+로컬 cyber(`3acc0797`를 담은 master)로 확인했다. CLI는 `zig build cli`의 Debug 빌드, 세션은 s1을 `zig build --fork=<cyber 저장소>`로 빌드해 `s1 replay`로 돌렸다. `build.zig.zon`은 그대로다.
 
 | 경우 | CLI | 세션 |
 |---|---|---|
@@ -83,4 +83,4 @@ REPL에서 `xs.append(4)`로 결과를 미리 보던 쓰임도 이제 오류다.
 
 s1 검사 40개가 이 빌드에서 모두 통과한다. 검사 0의 버전 문자열은 s1 build.zig가 넘기는 인자라 `build-941-8a89231` 그대로다.
 
-두 건은 고쳐졌다. 고정(`8a892310`)에는 아직 없으므로, 닫히는 때는 고정을 이 수정이 든 빌드로 옮긴 때다.
+두 건은 고쳐졌다. 스파이크가 따르는 `latest` 태그(지금 `8a892310`)에는 아직 없다. `latest`가 이 수정을 담으면 다시 받아 확인하고 닫는다(ADR 0023).

@@ -1,6 +1,6 @@
 # Cyber 런타임 사실과 제약
 
-출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber latest dev 0.4.13-DEV (커밋 8a892310, 태그 0.4.13과 같은 커밋, 버전 문자열 `Cyber 0.4.13-DEV build-941-8a89231`), 확인일 2026-11-16. 구현을 시작하기 전에 다시 확인한다.
+출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber latest dev 0.4.13-DEV (`latest` 태그, ADR 0023), 확인일 2026-11-16. 구현을 시작하기 전에 다시 확인한다.
 
 ## 확인된 사실
 
@@ -51,7 +51,7 @@
 
 ## M0에서 확인한 것 (2026-11-16, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
 
-- build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 `Cyber 0.4.13-DEV build-941-8a89231`처럼 버전 번호에 의존 인자 `dev`(기본 true면 `-DEV`), `build`, `commit`을 붙여 찍는다(커밋은 소스에서 읽지 않는다). ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
+- build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .dev = true }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 버전 번호에 의존 인자 `dev`(기본 true면 `-DEV`), `build`, `commit`을 붙여 찍는다(커밋은 소스에서 읽지 않는다). 넘기지 않으면 `Cyber 0.4.13-DEV build-0-local`이다. ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
 - 능력이 `Future[!str]`을 돌려주고 str 값이나 오류로 완료한다.
 - 검증은 세션 VM에서 바로 한다. 보통의 컴파일 실패 뒤에는 같은 VM의 다음 검증과 실행이 된다. 모듈 소스가 실패한 뒤 다음 use에서 다시 불러온다. 이스케이프 오류(`\|`, `\xZZ`)는 위치 있는 컴파일 오류이고 세션이 남는다.
 - `'\0'`은 NUL이다. 타입 없는 목록 리터럴은 원소를 첫 원소의 타입으로 바꾸지 않는다(`{1, 'a'}`는 컴파일 오류).
