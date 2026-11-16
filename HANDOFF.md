@@ -46,8 +46,9 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 사용자가 정할 것:
 
-- [ ] 요청서 docs/requests/cyber-0.4.12-spike-defects.md를 cyber에 전달. (a) remove 뒤 옛 목록, (b) let 문구, (c) agents.md에 `os.read_file_str` 한 줄, (d) 패키지 .paths에 docs. (a), (b)는 본체 첫 단계의 선행 조건(ADR 0019), (d)는 ADR 0022의 선행 조건
-- [ ] 안내를 cyber의 agents.md와 호스트 덧붙임으로 만든다(ADR 0022). agents.md의 호스트와 부딪히는 부분(CLI 절, 모듈 절, `os.write_file` 예, 예제 11)을 어떻게 다룰지 사용자가 정한다
+- [x] 요청서 docs/requests/cyber-0.4.12-spike-defects.md의 네 건을 cyber가 master에서 고쳤다(`85c95b1d` (c), `526146a9` (d), `4cf57841` (b), `40ae5b5a` (a), 기록 `54e61f48`, push 전). 회신과 tars-agent 확인은 요청서 끝. HEAD를 스크래치로 빌드해 CLI와 세션(s1 40/40, 크래시 스크립트, 안내 블록 12개)에서 확인했다
+- [ ] cyber가 push하고 릴리스하면 스파이크 고정(URL, 해시, build.zig의 build와 commit, s1 검사 0)을 올리고 요청서를 지운다. 안내의 `let` 오류 줄을 지운다
+- [ ] 안내를 cyber의 agent-guide.md와 호스트 덧붙임으로 만든다(ADR 0022). agent-guide.md의 호스트와 부딪히는 부분(CLI 절, 모듈 절, `os.write_file` 예, 예제 11)을 어떻게 다룰지 사용자가 정한다
 - [ ] 새 표준 모듈: 안내에 json, regex(그리고 toon, peg)를 가르칠지, 안내 크기 결정과 함께. `time`을 허용할지와 능력 clock.now와의 관계 (08 문서, TODO C2)
 - [ ] 본체가 VM 충돌로 프로세스가 끝나는 경우를 어떻게 다룰지 (검토 문서 9절 17: 세션 기록 먼저 쓰기와 재개, 또는 실행을 별도 프로세스로)
 - [ ] `print(!str)`가 작은 모델의 가장 흔한 오류다. 능력의 모양이나 안내로 줄일지 (본체의 능력 설계 때)
@@ -56,7 +57,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 그 밖:
 
-- [ ] 본체 첫 단계: 저장소 뼈대와 runtime 경계. 선행 조건 둘(요청서 (a), (b))이 cyber 릴리스로 닫힌 뒤. 닫히면 고정을 올리고 (a)의 스크립트(요청서의 재현)를 세션에서 돌려 확인하고 안내의 `let` 줄을 지운다. 단계의 결정, 편집, 기능 표를 먼저 낸다
+- [ ] 본체 첫 단계: 저장소 뼈대와 runtime 경계. 선행 조건 둘(요청서 (a), (b))은 cyber master에서 고쳐졌고 릴리스를 기다린다. 릴리스되면 고정을 올리고 (a)의 스크립트(요청서의 재현)를 세션에서 돌려 확인하고 안내의 `let` 줄을 지운다. 단계의 결정, 편집, 기능 표를 먼저 낸다
 - [ ] tars 게스트에서 기준 빌드로 스파이크 실행 (tars-linux 산출물 필요)
 - [ ] cyber C1(json, toon), C2(regex, time)는 0.4.12에 있다. tars-agent 쪽 게이트(안내의 예제)가 남았다. C3: 모듈 허용 표
 - [ ] 평가: eval/ 과제 20개, CodeAct 대 direct, 판정을 docs/decisions에 기록
@@ -65,7 +66,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 ## 핵심 파일
 
 - `docs/spikes/2026-11-14-m0-spikes-review.md` — 스파이크 검토(0.4.12). 1절 요약, 3절 호스트 경계, 5절 비교, 7절 cyber에 남은 것, 11절 다시 돌리는 법
-- `docs/requests/cyber-0.4.12-spike-defects.md` — 열린 요청(결함 둘, 선행 조건)
+- `docs/requests/cyber-0.4.12-spike-defects.md` — 열린 요청(네 건, cyber master에서 고쳐졌고 릴리스 대기)
 - `docs/decisions/0017-m0-spike-findings.md`, `0019-fix-spike-defects-first.md`, `0020-docs-current-state-only.md`
 - `docs/decisions/0021-borrow-from-pi-harness.md` — pi에서 가져온 것과 버린 것
 - `docs/spec/08-cyber-implementation.md` — 기준 빌드의 사실

@@ -84,3 +84,65 @@ build.zig.zon의 `.paths`는 `build.zig`, `build.zig.zon`, `src`, `lib`다. `zig
 - 안내 문서의 코드 블록 11개가 CLI와 세션에서 통과한다. 오류 목록의 나머지 첫 줄은 0.4.11과 같다.
 - 세션의 기본 로더가 `json`, `toon`, `regex`, `peg`, `time`을 싣는다. tars-agent 스파이크는 안내가 이 모듈을 가르치지 않아 호스트 로더에서 막는다.
 - macOS arm64(libcyber.a 3.01 MB, 공개 `cl_` 함수 140개)와 x86_64-linux-gnu 교차 빌드(libcyber.a 3.54 MB).
+
+## cyber 회신 (2026-11-16, master, push 전)
+
+네 건 모두 고쳤다. 커밋은 `85c95b1d`(c), `526146a9`(d), `4cf57841`(b), `40ae5b5a`(a)이고, 각각 13단계 검증 rc=0이다. 다음 릴리스에 들어간다. 바뀐 점은 cyber `docs/releases/unreleased.md`에 있다.
+
+알릴 것: agents.md는 0.4.12 뒤 `5c894d06`에서 `docs/agent-guide.md`로 이름이 바뀌었다. 대소문자를 무시하는 파일 시스템에서 `AGENTS.md`로 읽히기 때문이다. 아래 경로는 새 이름이다.
+
+### (a) 받는 변수는 그대로, 버린 결과는 컴파일 오류
+
+- 런타임: 길이를 바꾸는 `Slice` 메서드가 받는 변수를 바꾸지 않는다. `r := out.remove(1)` 뒤에도 `out`은 `a b`이고 길이 2다.
+  - `size_down`, `clear`, 끝 원소의 `remove`는 같은 버퍼에서 길이만 줄이고 원소를 해제하지 않는다.
+  - 끝이 아닌 `remove`와 `insert`는 새 버퍼에 복사한다.
+  - 요청서 표의 일곱 행이 모두 맞는 값을 낸다(테스트 `core/Slice_resize_receiver.cy`).
+- 컴파일 오류: `_ = out.remove(i)`, 그리고 결과를 쓰지 않은 `out.clear()`는 다음 오류를 낸다.
+  ``The result of `remove` is the new list, and `out` keeps the old one. Write `out = out.remove(out.len() - 1)`.``
+  대상은 `append`, `insert`, `remove`, `clear`, `size_down`, `size_up`의 결과가 `Slice`일 때다. 문구의 호출은 원문을 그대로 쓴다.
+- 비용: `out = out.remove(0)` 반복은 이제 매번 할당한다. 둘 다 원래 O(n)이다.
+
+### (b) 다른 언어의 선언 키워드
+
+| 입력 | 첫 줄 |
+|---|---|
+| `let x = 1` | ``ParseError: Cyber has no `let`. Declare with `x := 1`, or `var x int = 1` for a type.`` |
+| `let x: int = 1`, `let x int = 1` | ``ParseError: Cyber has no `let`. Declare with `var x int = 1`.`` |
+| `val name = 'a'` | ``... Declare with `name := 'a'`, or `var name str = 'a'` for a type.`` |
+| `let mut x = 1`, `mut x = 1`, `auto x = 1.5` | 같은 꼴 (`auto`는 `float`) |
+| `let x`, `auto x: float` | ``... Declare with `x := value`, ...`` / ``... `var x float = value`.`` |
+
+예의 타입은 값이 리터럴이면 그 타입이고, 아니면 `T`다. `const`는 Cyber의 상수 선언이라 대상에서 뺐다. `x int = 1`처럼 키워드가 없는 꼴은 지금 문구 그대로다. 안내 문서의 오류 목록에서 이 줄을 지웠다.
+
+### (c) 한 줄 추가가 아니라 API 정리로 고쳤다 (깨지는 변경)
+
+| 함수 | 반환 / 인자 |
+|---|---|
+| `os.read_file(p)` | `!str`. UTF-8이 아니면 `error.Unicode` |
+| `os.read_file_bytes(p)` | `![]byte` |
+| `os.write_file(p, s)` | `str`만 받는다 |
+| `os.write_file_bytes(p, b)` | `[]byte` |
+
+- 모델이 짐작하는 `read_file`이 텍스트를 돌려준다.
+- `os.read_file_str`은 없어졌다. 쓰면 ``Can not find the symbol `read_file_str` in `os`.``다.
+- `write_file(p, bytes)`는 ``Expected argument `str`, found `[]byte` ...``다.
+- tars-agent 프롬프트와 스크립트에 `read_file_str`이나 `str(os.read_file(..)!)`이 있으면 바꿔야 한다.
+- 안내 문서 Modules 절에 네 함수를 한 줄로 적었다.
+- 모듈 API를 `cyber doc`에 넣는 일은 하지 않았다. 결정 대기다.
+
+### (d) `.paths`
+
+`docs/docs.md`와 `docs/agent-guide.md` 두 파일만 넣었다. `.paths`에 든 파일만 복사한 디렉터리에서 cli와 lib 빌드, `cyber doc --for-agents`를 확인했다. 패키지 해시가 바뀌므로 다음 고정 때 해시를 갱신해야 한다.
+
+## tars-agent 확인 (2026-11-16, cyber master `54e61f48`, push 전)
+
+`git archive 54e61f48`을 스크래치에서 빌드한 CLI와, 그 소스에 경로로 연결한 `spike/s1`(세션)로 확인했다. 네 건 모두 회신대로다.
+
+- s1 검사 40개 통과(버전 문자열의 커밋만 `54e61f4`로 바꿈).
+- (a) 요청서 표의 일곱 행이 CLI와 세션에서 맞는 값을 낸다. 0.4.12 회차에서 s2를 죽인 모델 스크립트(`_ = out.remove(out.len() - 1)`)는 CLI와 세션 모두 컴파일 오류 ``The result of `remove` is the new list, and `out` keeps the old one. Write `out = out.remove(out.len() - 1)`.``이고, 문구대로 고친 스크립트는 맞는 결과로 끝난다. `out.clear()`만 쓴 줄도 같은 꼴의 오류다.
+- (b) `let x = 1`, `let x: int = 1`, 함수 안의 `mut y = 2`가 회신의 문구다. `x int = 1`은 지금 문구 그대로다.
+- (c) `os.read_file`이 `str`, `os.read_file_bytes`가 `[]byte`, `os.write_file`이 str을 쓴다. `os.read_file_str`은 ``Can not find the symbol `read_file_str` in `os`.``다. tars-agent의 프롬프트와 스파이크 코드는 `os`를 쓰지 않는다(세션 로더가 막는다).
+- (d) `zig fetch`로 받은 패키지(`cyber-0.4.12-AW3fkAQQowCQOQU9RDn94mUcFKLXZWnDDlsS83bHvBhq`)에 `docs/agent-guide.md`와 `docs/docs.md`가 들어 있다.
+- `docs/agent-guide.md`의 코드 블록 12개가 CLI에서 통과한다. 세션에서는 11개가 통과하고, `use test`를 쓰는 블록은 s1 로더가 `test`를 막아 `Failed to load module: test`다.
+
+남은 일은 tars-agent 쪽이다. cyber가 push하고 릴리스하면 고정을 올리고 이 요청서를 지운다.
