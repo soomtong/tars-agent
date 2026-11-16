@@ -1,8 +1,10 @@
-# cyber 요청: 0.4.12 스파이크에서 찾은 결함 둘
+# cyber 요청: 0.4.12 스파이크의 결함 둘과 `cyber doc` 검토 둘
 
-보내는 곳: soomtong/cyber. 기준: 릴리스 0.4.12 (`Cyber 0.4.12 build-919-67a2735`). 확인일 2026-11-16.
+보내는 곳: soomtong/cyber. 기준: 릴리스 0.4.12 (`Cyber 0.4.12 build-919-67a2735`), (c)와 (d)는 0.4.13에 들어갈 `cyber doc`이 있는 HEAD `fa72869e`. 확인일 2026-11-16.
 
-tars-agent는 libcyber를 정적 링크해 모델이 쓴 Cyber 스크립트를 세션 VM(persist_main, deny_raw_ptrs, deny_spawn, 검증 뒤 실행)에서 돌린다. 0.4.12로 스파이크를 다시 돌리다 결함 둘을 찾았다. 둘 다 tars-agent 본체 첫 단계의 선행 조건이다 (tars-agent ADR 0019). (a)가 무겁다.
+tars-agent는 libcyber를 정적 링크해 모델이 쓴 Cyber 스크립트를 세션 VM(persist_main, deny_raw_ptrs, deny_spawn, 검증 뒤 실행)에서 돌린다. 0.4.12로 스파이크를 다시 돌리다 결함 둘을 찾았다. 둘 다 tars-agent 본체 첫 단계의 선행 조건이다 (tars-agent ADR 0019). (a)가 무겁다. (a)와 (b)는 HEAD `fa72869e`에서도 그대로 재현된다.
+
+그 뒤 0.4.13에 들어갈 `cyber doc`을 HEAD에서 빌드해 검토했다. agents.md의 코드 블록 12개가 CLI에서 통과하고, `use test`를 쓰는 블록 하나를 뺀 11개가 tars-agent 세션에서도 통과한다. 새 주장(`os.write_file`의 `!void` 처리, `os.args()`, `fn (&&P)`, 람다가 잡는 `&T` 빌림, `cyber fmt --check`)도 탐침에서 맞았다. 검토에서 나온 것이 (c)와 (d)다.
 
 재현: 설치된 0.4.12 CLI(`cyber <파일>`)와 tars-agent의 `spike/s1`(`s1 replay <파일>`, 세션에서 실행). 표의 결과는 CLI다.
 
@@ -50,6 +52,28 @@ Debug로 빌드한 libcyber에서는 `vm.c:925`(`COPY_STR`)의 `retain`이 `reta
 문구를 따라 쓴 `var let x = 1`은 ``CompileError: Could not find the symbol `x`.``다.
 
 요청: 첫 단어가 `let`, `mut`, `val`, `auto`처럼 다른 언어의 선언 키워드이면 ``Cyber has no `let`. Declare with `x := 1`, or `var x int = 1` for a type.``처럼 말한다. `let x: int = 1`은 같은 문구에 `var x int = 1`을 보이면 된다. 그 밖의 `이름 타입 = 값`(`x int = 1`, `name str = 'a'`)은 지금 문구가 맞다.
+
+## (c) agents.md가 `os.write_file`만 보여 `os.read_file`로 텍스트를 읽게 둔다
+
+agents.md는 `os` 모듈을 한 줄로 소개하고(148행) 함수로는 `os.write_file`만 보인다(166행). 모델은 짝으로 `os.read_file`을 짐작한다. 이것은 `![]byte`를 돌려주므로(src/std/os.cy:460) 텍스트로 쓰면 컴파일 오류 없이 틀린 값이 나온다.
+
+| 코드 (`hi`가 든 파일) | HEAD 결과 |
+|---|---|
+| `print(os.read_file(p)!)` | `{0x68, 0x69}` |
+| `print(os.read_file_str(p)!)` | `hi` |
+
+텍스트를 읽는 함수는 `os.read_file_str`(os.cy:464)이다. 모듈 API는 `cyber doc`에 들어 있지 않아 에이전트가 오프라인에서 이 이름을 찾을 길이 없다.
+
+요청: agents.md의 Modules 절에 한 줄을 더한다. 예: ``Read text with `os.read_file_str(p)!`. `os.read_file` returns `[]byte`.`` 모듈 API를 `cyber doc`에 넣을지는 cyber가 정한다.
+
+## (d) 패키지의 `.paths`에 `docs`가 없다
+
+build.zig.zon의 `.paths`는 `build.zig`, `build.zig.zon`, `src`, `lib`다. `zig fetch`로 받은 패키지에는 `docs/`가 빠진다. 그래서 의존 쪽에서 두 가지가 안 된다.
+
+- tars-agent가 의존의 `docs/agents.md`를 빌드 때 읽어 시스템 프롬프트의 바탕으로 쓸 수 없다. 지금은 같은 안내를 두 저장소가 손으로 따로 고친다(tars-agent의 prompt/cyber-subset.en.md와 cyber의 docs/agents.md).
+- `create_cli_module`이 `docs/docs.md`와 `docs/agents.md`를 anonymous import로 넣으므로(build.zig:664-665) 받은 패키지에서 cli 아티팩트를 빌드하면 파일이 없어 실패할 것으로 보인다. 라이브러리 아티팩트는 문서를 쓰지 않아 tars-agent의 지금 빌드는 문제없다.
+
+요청: `.paths`에 `docs`를 넣는다. 크기가 걱정이면 `docs/agents.md`와 `docs/docs.md`만 넣어도 된다.
 
 ## 확인을 마친 것
 
