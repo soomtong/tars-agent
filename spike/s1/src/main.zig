@@ -196,7 +196,7 @@ fn loader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResul
         return true;
     }
     // c 모듈(FFI와 raw 메모리)과 test 모듈은 스크립트에 주지 않는다.
-    // 0.4.12의 새 표준 모듈은 안내가 가르치지 않으므로 s2와 같이 막는다.
+    // 표준 모듈 json, toon, regex, peg, time은 안내가 가르치지 않으므로 s2와 같이 막는다.
     if (std.mem.eql(u8, name, "c") or std.mem.eql(u8, name, "test") or isNewStd(name)) {
         g_denied_modules += 1;
         return false;
@@ -472,7 +472,7 @@ pub fn main(init: std.process.Init) !void {
     std.debug.print("libcyber: {s}\n\n", .{S(ver)});
 
     // 0. 빌드: 의존의 아티팩트로 링크하고, C 쪽은 그 include 경로로 cyber.h를 받는다
-    check("0. 아티팩트 링크, 버전 문자열의 커밋, #include \"cyber.h\"의 구조체 크기", std.mem.eql(u8, S(ver), "Cyber 0.4.12 build-919-67a2735") and inc_eval_config_size() == @sizeOf(c.CLEvalConfig) and inc_compile_config_size() == @sizeOf(c.CLCompileConfig), "version={s} CLEvalConfig C={d} Zig={d}, CLCompileConfig C={d} Zig={d}", .{ S(ver), inc_eval_config_size(), @sizeOf(c.CLEvalConfig), inc_compile_config_size(), @sizeOf(c.CLCompileConfig) });
+    check("0. 아티팩트 링크, 버전 문자열의 커밋, #include \"cyber.h\"의 구조체 크기", std.mem.eql(u8, S(ver), "Cyber 0.4.13-DEV build-941-8a89231") and inc_eval_config_size() == @sizeOf(c.CLEvalConfig) and inc_compile_config_size() == @sizeOf(c.CLCompileConfig), "version={s} CLEvalConfig C={d} Zig={d}, CLCompileConfig C={d} Zig={d}", .{ S(ver), inc_eval_config_size(), @sizeOf(c.CLEvalConfig), inc_compile_config_size(), @sizeOf(c.CLCompileConfig) });
 
     // 1. 기본: eval, print 가로채기, 결과 값
     {

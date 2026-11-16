@@ -2,7 +2,7 @@
 
 Cyber는 Python과 아주 비슷한 문법 구조를 가진다. 들여쓰기로 블록을 만들고, 줄바꿈으로 문장을 끝내고, `for`, `while`, `if`, `fn`, `use`, `print`를 거의 같은 감각으로 쓴다. 하지만 정적 타입이고 값 소유권이 있고 예외가 없다. 이런 부분들이 다르니까 코드를 구성할 때 본 문서를 참고한다. 모르는 문법은 Python 문법으로 추측하지 말고 아래 목록을 먼저 본다.
 
-기준 버전은 soomtong/cyber의 Cyber 0.4.12다 (`cyber version`이 `Cyber 0.4.12 build-919-67a2735`를 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
+기준 버전은 soomtong/cyber의 Cyber 0.4.13-DEV다 (`cyber version`이 `Cyber 0.4.13-DEV build-941-8a89231`를 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
 
 Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 한 빌드에 맞춘 것이므로 더 새 빌드와 어긋날 수 있다. 문서를 사용하거나 고치기 전에 아래를 확인한다.
 
@@ -100,7 +100,7 @@ str (문자열은 바뀌지 않고 모든 메서드가 새 값을 돌려준다):
 
 - `xs.len()`, `xs.contains(x)`, `xs.index(x)`는 `?int`, `xs.last()`
 - `xs.join(sep)`은 `[]str`에서 `str`을 돌려준다
-- `xs.append(x)`, `xs.insert(i, x)`, `xs.remove(i)`, `xs.clear()`: 새 목록을 돌려주므로 받는다: `xs = xs.remove(0)`
+- `xs.append(x)`, `xs.insert(i, x)`, `xs.remove(i)`, `xs.clear()`: 새 목록을 돌려주고 `xs`는 그대로다. 다시 대입한다: `xs = xs.remove(0)`. `_ = xs.remove(0)`은 컴파일 오류다
 - `xs.sort()`는 제자리에서 오름차순으로 정렬한다(숫자와 문자열). `xs.sort(|a, b| ...)`는 `a`가 앞에 오면 true를 돌려주는 함수로 정렬한다. 둘 다 아무것도 돌려주지 않는다.
 
 Map[K, V]:
@@ -326,7 +326,6 @@ print('%{x} %{shared.*}')
 대부분의 컴파일 오류는 고치는 법을 말한다. 예: `Did you mean starts_with?`, `Write else cond:, not else if cond:`, `Unwrap it with ! first`. 그대로 따른다. 아래 오류는 그렇지 않아서 원인과 고치는 법을 여기 적는다. 줄마다 오류의 첫 줄이다.
 
 - `Expected end of line or file. Got ...`: `def`, `class`, `lambda x:`, 세미콜론. Cyber 문법으로 다시 쓴다.
-- ``To declare a typed variable, write `var let x = 1` or `let := x(1)`.``: `let x = 1` (`mut`, `val`, `auto`도). 문구가 말하는 고치는 법이 틀렸다. `x := 1`로 쓴다.
 - `Expected right operand.`: `i++`, `10 // 3`, `//` 주석. `i += 1`, `/`, `--`로 쓴다.
 - `Expected `]`.`: 리스트 컴프리헨션. 덧붙이는 `for` 반복문으로 쓴다.
 - 함수 선언의 `Expected `,`.`: 기본값 매개변수. 빼고 오버로드를 더한다.

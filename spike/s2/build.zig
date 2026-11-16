@@ -12,9 +12,9 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = std.builtin.OptimizeMode.ReleaseFast,
         .static = true,
-        .dev = false,
-        .build = @as([]const u8, "919"),
-        .commit = @as([]const u8, "67a2735"),
+        .dev = true,
+        .build = @as([]const u8, "941"),
+        .commit = @as([]const u8, "8a89231"),
     });
     const cyber_lib = cyber.artifact("cyber");
 

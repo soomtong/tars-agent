@@ -2,7 +2,7 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the lists below first.
 
-The reference version is Cyber 0.4.12 of soomtong/cyber (`cyber version` prints `Cyber 0.4.12 build-919-67a2735`). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
+The reference version is Cyber 0.4.13-DEV of soomtong/cyber (`cyber version` prints `Cyber 0.4.13-DEV build-941-8a89231`). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
 
 Cyber is still gaining features. This document matches one build and can fall behind a newer one. Before you use or edit this document, check the following.
 
@@ -100,7 +100,7 @@ str (strings do not change; every method returns a new value):
 
 - `xs.len()`, `xs.contains(x)`, `xs.index(x)` gives `?int`, `xs.last()`
 - `xs.join(sep)` for `[]str`, gives `str`
-- `xs.append(x)`, `xs.insert(i, x)`, `xs.remove(i)`, `xs.clear()`: each returns the new list; take it: `xs = xs.remove(0)`
+- `xs.append(x)`, `xs.insert(i, x)`, `xs.remove(i)`, `xs.clear()`: each returns the new list and leaves `xs` as it was; assign it back: `xs = xs.remove(0)`. `_ = xs.remove(0)` is a compile error
 - `xs.sort()` sorts in place in ascending order (numbers and strings). `xs.sort(|a, b| ...)` sorts by a function that returns true when `a` goes first. Both return nothing.
 
 Map[K, V]:
@@ -326,7 +326,6 @@ print('%{x} %{shared.*}')
 Most compile errors say how to fix the code, for example `Did you mean starts_with?`, `Write else cond:, not else if cond:`, `Unwrap it with ! first`. Follow those. The errors below do not, so the cause and the fix are given here. Each line is the first line of the error.
 
 - `Expected end of line or file. Got ...`: `def`, `class`, `lambda x:`, a semicolon. Rewrite in Cyber syntax.
-- ``To declare a typed variable, write `var let x = 1` or `let := x(1)`.``: `let x = 1` (also `mut`, `val`, `auto`). The suggested fix is wrong. Write `x := 1`.
 - `Expected right operand.`: `i++`, `10 // 3`, a `//` comment. Write `i += 1`, `/`, `--`.
 - `Expected `]`.`: a list comprehension. Write a `for` loop that appends.
 - `Expected `,`.` in a function declaration: a default parameter value. Remove it and add an overload.

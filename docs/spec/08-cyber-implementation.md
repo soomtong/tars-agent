@@ -1,6 +1,6 @@
 # Cyber 런타임 사실과 제약
 
-출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber 릴리스 0.4.12 (태그 0.4.12 = 커밋 67a2735c, 버전 문자열 `Cyber 0.4.12 build-919-67a2735`), 확인일 2026-11-16. 구현을 시작하기 전에 다시 확인한다.
+출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber latest dev 0.4.13-DEV (커밋 8a892310, 태그 0.4.13과 같은 커밋, 버전 문자열 `Cyber 0.4.13-DEV build-941-8a89231`), 확인일 2026-11-16. 구현을 시작하기 전에 다시 확인한다.
 
 ## 확인된 사실
 
@@ -51,7 +51,7 @@
 
 ## M0에서 확인한 것 (2026-11-16, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
 
-- build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 `Cyber 0.4.12 build-919-67a2735`처럼 버전 번호에 의존 인자 `dev`(기본 true면 `-DEV`), `build`, `commit`을 붙여 찍는다(커밋은 소스에서 읽지 않는다). ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
+- build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 `Cyber 0.4.13-DEV build-941-8a89231`처럼 버전 번호에 의존 인자 `dev`(기본 true면 `-DEV`), `build`, `commit`을 붙여 찍는다(커밋은 소스에서 읽지 않는다). ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
 - 능력이 `Future[!str]`을 돌려주고 str 값이나 오류로 완료한다.
 - 검증은 세션 VM에서 바로 한다. 보통의 컴파일 실패 뒤에는 같은 VM의 다음 검증과 실행이 된다. 모듈 소스가 실패한 뒤 다음 use에서 다시 불러온다. 이스케이프 오류(`\|`, `\xZZ`)는 위치 있는 컴파일 오류이고 세션이 남는다.
 - `'\0'`은 NUL이다. 타입 없는 목록 리터럴은 원소를 첫 원소의 타입으로 바꾸지 않는다(`{1, 'a'}`는 컴파일 오류).
@@ -63,7 +63,7 @@
 - 최상위 빌림(`b := &counts`)은 persist_main 세션에서 `Cannot persist local` 오류다. 세션의 캡처 오류 문구는 `^T` 선언을 권하고 빌림은 함수 안에서 하라고 한다.
 - x86_64-linux-gnu 교차 빌드가 macOS에서 의존의 아티팩트로 된다. tars 게스트에서의 실행은 이 기준 빌드로 확인하지 않았다.
 - mimalloc은 FFI를 끈 라이브러리 빌드에 들어가지 않는다.
-- 0.4.11 CodeAct 회차의 문구 여섯은 0.4.12의 CLI와 세션에서 고치는 법을 말한다. M0에서 cyber에 낸 그 밖의 요청도 모두 닫혔다. 인덱스, 슬라이스 경계, 대입 값의 인자 불일치 문구에 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)이 나오지 않는다.
+- M0에서 cyber에 낸 요청은 모두 닫혔다. 크기를 바꾸는 `[]T` 메서드는 받는 변수를 바꾸지 않고, 결과를 버린 호출(`_ = out.remove(i)`)은 고치는 법을 말하는 컴파일 오류다. 인덱스, 슬라이스 경계, 대입 값의 인자 불일치 문구에 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)이 나오지 않는다.
 
 ## cyber에서 만들 것 (ADR 0010)
 
@@ -71,12 +71,12 @@
 
 | 순서 | 항목 | 필요의 증거 | 메모 |
 |---|---|---|---|
-| C0 | 크기를 바꾸는 `[]T` 메서드(`remove`, `clear`, `insert`) 뒤의 옛 목록이 해제된 원소를 본다. `_ = out.remove(i)` 뒤 `out`을 쓰면 관리 원소(str)에서 VM이 프로세스째 죽는다(0.4.11도 같다) | 0.4.12 CodeAct 회차에서 모델의 스크립트가 s2를 죽였다 | 요청서 docs/requests/cyber-0.4.12-spike-defects.md (a). 본체 첫 단계의 선행 조건(ADR 0019) |
-| C0 | 타입 선언 문구가 `let x = 1`(`mut`, `val`, `auto`)에 틀린 고치는 법(`var let x = 1`)을 말한다 | 0.4.12 안내 확인 | 같은 요청서 (b). 본체 첫 단계의 선행 조건(ADR 0019). 안내가 한 줄로 우회한다 |
-| C1 (0.4.12에 있음) | json 모듈: parse, stringify, 값 트리 | 평가 과제의 다수가 JSON을 다룬다. 설정 파일, API 응답, 도구 출력 | 깊이와 크기 상한. 값 타입은 복사 가능한 부분집합 안에서 다룰 수 있어야 한다 |
-| C1 (0.4.12에 있음) | toon 모듈: stringify, parse | 토큰 절약. 스크립트가 구조화된 결과(파일 목록, 검색 결과 같은 균일한 객체 배열)를 모델에게 돌려줄 때 JSON보다 적은 토큰으로 싣는다 | 값 트리는 json 모듈의 것을 쓴다. 깊이와 크기 상한. parse를 C1에 넣을지는 요청서를 쓸 때 정한다 |
-| C2 (0.4.12에 있음) | regex 모듈 | 로그와 명령 출력에서 값 뽑기. str 메서드만으로는 스크립트가 길어진다 | 역추적 없는 엔진(선형 시간), 직접 쓴다. 문법은 ripgrep 기본 문법의 부분집합 |
-| C2 (0.4.12에 있음) | time 모듈 | 파일 시각 비교, 기록의 날짜 계산 | 0.4.12의 time은 시계를 읽고(`time.now()`) IANA 시간대를 시스템 파일에서 읽는다. 능력 clock.now와의 관계와 허용 여부는 본체의 caps 단계에서 정한다 |
+| C0 | `let x := 1`(`mut`도)에 틀린 고치는 법(`var x := 1 = value`)을 말한다 | 기준 빌드의 오류 문구 확인 | 요청서 docs/requests/cyber-0.4.13-dev-findings.md (a). 본체 첫 단계 전에 닫는다(ADR 0019) |
+| C0 | 세션에서 스크립트 마지막 줄의 `out.remove(i)`, `out.clear()`는 마지막 표현식 값으로 받아들여져 오류가 없고 `out`은 그대로다 | 기준 빌드의 세션 확인 | 같은 요청서 (b). 본체 첫 단계 전에 닫는다(ADR 0019) |
+| C1 (기준 빌드에 있음) | json 모듈: parse, stringify, 값 트리 | 평가 과제의 다수가 JSON을 다룬다. 설정 파일, API 응답, 도구 출력 | 깊이와 크기 상한. 값 타입은 복사 가능한 부분집합 안에서 다룰 수 있어야 한다 |
+| C1 (기준 빌드에 있음) | toon 모듈: stringify, parse | 토큰 절약. 스크립트가 구조화된 결과(파일 목록, 검색 결과 같은 균일한 객체 배열)를 모델에게 돌려줄 때 JSON보다 적은 토큰으로 싣는다 | 값 트리는 json 모듈의 것을 쓴다. 깊이와 크기 상한. parse를 C1에 넣을지는 요청서를 쓸 때 정한다 |
+| C2 (기준 빌드에 있음) | regex 모듈 | 로그와 명령 출력에서 값 뽑기. str 메서드만으로는 스크립트가 길어진다 | 역추적 없는 엔진(선형 시간), 직접 쓴다. 문법은 ripgrep 기본 문법의 부분집합 |
+| C2 (기준 빌드에 있음) | time 모듈 | 파일 시각 비교, 기록의 날짜 계산 | time은 시계를 읽고(`time.now()`) IANA 시간대를 시스템 파일에서 읽는다. 능력 clock.now와의 관계와 허용 여부는 본체의 caps 단계에서 정한다 |
 | C3 | 임베딩 옵션: 모듈 허용 표 | 05 문서 1층. 호스트 로더로 되면 올리지 않는다 | CLEvalConfig 필드 |
 | 수시 | 프로세스를 죽이는 경로 수정 | 세션의 crash/ 디렉터리가 재현 사례를 준다 | cyber의 발견 이슈 기록 절차를 따른다 |
 | 조건부 | 문자열, Array, Map 보강 | 평가의 실패 유형에서 "있을 줄 알고 부른 메서드"가 반복되면 | 모델의 기대에 맞추는 쪽이 안내로 가르치는 것보다 싸다 |
