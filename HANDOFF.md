@@ -46,7 +46,8 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 사용자가 정할 것:
 
-- [ ] 요청서 docs/requests/cyber-0.4.12-spike-defects.md를 cyber에 전달. (a) remove 뒤 옛 목록, (b) let 문구. 둘 다 본체 첫 단계의 선행 조건(ADR 0019)
+- [ ] 요청서 docs/requests/cyber-0.4.12-spike-defects.md를 cyber에 전달. (a) remove 뒤 옛 목록, (b) let 문구, (c) agents.md에 `os.read_file_str` 한 줄, (d) 패키지 .paths에 docs. (a), (b)는 본체 첫 단계의 선행 조건(ADR 0019), (d)는 ADR 0022의 선행 조건
+- [ ] 안내를 cyber의 agents.md와 호스트 덧붙임으로 만든다(ADR 0022). agents.md의 호스트와 부딪히는 부분(CLI 절, 모듈 절, `os.write_file` 예, 예제 11)을 어떻게 다룰지 사용자가 정한다
 - [ ] 새 표준 모듈: 안내에 json, regex(그리고 toon, peg)를 가르칠지, 안내 크기 결정과 함께. `time`을 허용할지와 능력 clock.now와의 관계 (08 문서, TODO C2)
 - [ ] 본체가 VM 충돌로 프로세스가 끝나는 경우를 어떻게 다룰지 (검토 문서 9절 17: 세션 기록 먼저 쓰기와 재개, 또는 실행을 별도 프로세스로)
 - [ ] `print(!str)`가 작은 모델의 가장 흔한 오류다. 능력의 모양이나 안내로 줄일지 (본체의 능력 설계 때)

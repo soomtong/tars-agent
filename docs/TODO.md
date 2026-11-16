@@ -125,7 +125,7 @@
 - [ ] agentd와 tars 터미널 제어 채널, tars.* 능력: 자기 조작(명령 실행, 콘솔 입력). tars-linux 쪽 설계와 개선도 이 프로젝트의 일이다 (ADR 0013). 앞당길 자리는 능력 표 설계 때 정한다
 - [ ] MCP 서버 방향, MCP HTTP 전송
 - [ ] 다른 제공자 어댑터
-- [ ] cyber CLI의 spec --for-agents로 안내 문서 생성
+- [ ] 안내를 cyber의 docs/agents.md와 호스트 덧붙임으로 만든다 (ADR 0022). 선행 조건: cyber 0.4.13, 패키지 .paths의 docs (요청서 (d)). agents.md의 CLI, 모듈 절, `os.write_file` 예, 예제 11을 어떻게 다룰지 사용자가 정한다
 - [ ] fiber 안 Future.await의 양보(cyber에 있다): agentd에서 한 스레드에 여러 세션을 돌릴 때 쓸지 판단
 
 ## 뺀 것
