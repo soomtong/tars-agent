@@ -2,13 +2,13 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the lists below first.
 
-The reference version is Cyber 0.4.11 of soomtong/cyber (`cyber version` prints `Cyber 0.4.11 build-883-097b831`). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
+The reference version is Cyber 0.4.12 of soomtong/cyber (`cyber version` prints `Cyber 0.4.12 build-919-67a2735`). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
 
 Cyber is still gaining features. This document matches one build and can fall behind a newer one. Before you use or edit this document, check the following.
 
 - Run `cyber version` and compare the real build with the reference version above.
 - Re-run the 10 examples in this document on the build, once with the CLI and once in an agent session (the same VM, persist_main, validate before eval). If one fails, the document is stale.
-- Test the "Missing features" list, the "Differences from Python" list and the "Methods that exist" lists against the build, one item at a time. If a feature now exists, remove it from the document or fix the entry (for example the json, regex and time modules, or `xs.map`).
+- Test the "Missing features" list, the "Differences from Python" list and the "Methods that exist" lists against the build, one item at a time. If a feature now exists, remove it from the document or fix the entry (for example `xs.map`).
 - If the document and the build disagree, the build is right. Fix the document and update the reference version.
 
 If you want a feature that this document does not list, do not assume it exists. Run a small piece of code to check.
@@ -140,7 +140,7 @@ A borrow `c := &counts` before the lambda also works inside a function, but not 
 
 list comprehensions, the `lambda` keyword (a lambda is written `|a, b| a + b` and only where the type is known), generator expressions, decorators, `with`, `try/except`, `raise`, inheritance, `*args`, `**kwargs`, `xs.map`, `xs.filter`, `abs`, `sum`, `sorted`, `enumerate`, `zip`, f-strings, the ternary `?:`, semicolons, `i++`.
 
-The json, regex and time modules are not in the Cyber standard library now and are under construction (docs/decisions/0010). Update this document when they land. Until then, solve the task with str methods or a capability function.
+This host does not load the json, toon, regex, peg and time modules. Solve the task with str methods or a capability function.
 
 ## Errors and Option (instead of exceptions)
 
@@ -325,7 +325,8 @@ print('%{x} %{shared.*}')
 
 Most compile errors say how to fix the code, for example `Did you mean starts_with?`, `Write else cond:, not else if cond:`, `Unwrap it with ! first`. Follow those. The errors below do not, so the cause and the fix are given here. Each line is the first line of the error.
 
-- `Expected end of line or file. Got ...`: `let`, `def`, `class`, `lambda x:`, a semicolon. Rewrite in Cyber syntax.
+- `Expected end of line or file. Got ...`: `def`, `class`, `lambda x:`, a semicolon. Rewrite in Cyber syntax.
+- ``To declare a typed variable, write `var let x = 1` or `let := x(1)`.``: `let x = 1` (also `mut`, `val`, `auto`). The suggested fix is wrong. Write `x := 1`.
 - `Expected right operand.`: `i++`, `10 // 3`, a `//` comment. Write `i += 1`, `/`, `--`.
 - `Expected `]`.`: a list comprehension. Write a `for` loop that appends.
 - `Expected `,`.` in a function declaration: a default parameter value. Remove it and add an overload.
@@ -345,7 +346,7 @@ Most compile errors say how to fix the code, for example `Did you mean starts_wi
 - `Return statement is not allowed in the main block.`: a top-level return. Wrap the code in `fn main():`.
 - `Missing return statement.`: some path has no return. Add a return at the end.
 - ``fn` declarations are not allowed here.`: a function inside a block. Declare it at the top level.
-- `Failed to load module: json` (also `regex`, `time`): these modules are missing. Write the code without them.
+- `Failed to load module: json` (also `toon`, `regex`, `peg`, `time`): this host does not load them. Write the code without them.
 
 Runtime panics: `Out of bounds index: -1` is a negative index (use `xs.last()`), `OutOfBounds` on a slice is a negative or too large bound, and `MissingKey` is `m[k]` on a missing key (use `m.get(k)`).
 

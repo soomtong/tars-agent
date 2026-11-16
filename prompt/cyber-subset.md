@@ -2,13 +2,13 @@
 
 Cyber는 Python과 아주 비슷한 문법 구조를 가진다. 들여쓰기로 블록을 만들고, 줄바꿈으로 문장을 끝내고, `for`, `while`, `if`, `fn`, `use`, `print`를 거의 같은 감각으로 쓴다. 하지만 정적 타입이고 값 소유권이 있고 예외가 없다. 이런 부분들이 다르니까 코드를 구성할 때 본 문서를 참고한다. 모르는 문법은 Python 문법으로 추측하지 말고 아래 목록을 먼저 본다.
 
-기준 버전은 soomtong/cyber의 Cyber 0.4.11이다 (`cyber version`이 `Cyber 0.4.11 build-883-097b831`을 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
+기준 버전은 soomtong/cyber의 Cyber 0.4.12다 (`cyber version`이 `Cyber 0.4.12 build-919-67a2735`를 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
 
 Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 한 빌드에 맞춘 것이므로 더 새 빌드와 어긋날 수 있다. 문서를 사용하거나 고치기 전에 아래를 확인한다.
 
 - `cyber version`으로 실제 빌드를 확인하고 위의 기준 버전과 비교한다.
 - 이 문서의 예제 10개를 그 빌드로 다시 실행한다. CLI로 한 번, 에이전트 세션(같은 VM, persist_main, 검증 뒤 실행)으로 한 번. 하나라도 실패하면 문서가 낡은 것이다.
-- "없는 것" 목록, "Python과 다른 것" 목록, "있는 메서드" 목록을 그 빌드에서 하나씩 시험한다. 기능이 새로 생겼으면 문서에서 지우거나 고친다 (예: json, regex, time 모듈, `xs.map`).
+- "없는 것" 목록, "Python과 다른 것" 목록, "있는 메서드" 목록을 그 빌드에서 하나씩 시험한다. 기능이 새로 생겼으면 문서에서 지우거나 고친다 (예: `xs.map`).
 - 문서와 빌드가 다르면 빌드가 맞다. 문서를 고치고 기준 버전을 갱신한다.
 
 이 문서에 없는 기능을 쓰고 싶으면 있다고 가정하지 말고 작은 조각으로 실행해 확인한다.
@@ -140,7 +140,7 @@ names.sort(|a, b| counts[a] > counts[b] or (counts[a] == counts[b] and a < b))
 
 리스트 컴프리헨션, `lambda` 키워드(람다는 `|a, b| a + b`이고 타입이 정해진 자리에서만 쓴다), 제너레이터 식, 데코레이터, `with`, `try/except`, `raise`, 상속, `*args`, `**kwargs`, `xs.map`, `xs.filter`, `abs`, `sum`, `sorted`, `enumerate`, `zip`, f-string, 삼항 `?:`, 세미콜론, `i++`.
 
-json, regex, time 모듈은 지금 Cyber 표준 라이브러리에 없고 만드는 중이다 (docs/decisions/0010). 생기면 이 문서를 고친다. 그 전에는 str 메서드나 능력 함수로 푼다.
+이 호스트는 json, toon, regex, peg, time 모듈을 싣지 않는다. str 메서드나 능력 함수로 푼다.
 
 ## 오류와 Option (예외 대신)
 
@@ -325,7 +325,8 @@ print('%{x} %{shared.*}')
 
 대부분의 컴파일 오류는 고치는 법을 말한다. 예: `Did you mean starts_with?`, `Write else cond:, not else if cond:`, `Unwrap it with ! first`. 그대로 따른다. 아래 오류는 그렇지 않아서 원인과 고치는 법을 여기 적는다. 줄마다 오류의 첫 줄이다.
 
-- `Expected end of line or file. Got ...`: `let`, `def`, `class`, `lambda x:`, 세미콜론. Cyber 문법으로 다시 쓴다.
+- `Expected end of line or file. Got ...`: `def`, `class`, `lambda x:`, 세미콜론. Cyber 문법으로 다시 쓴다.
+- ``To declare a typed variable, write `var let x = 1` or `let := x(1)`.``: `let x = 1` (`mut`, `val`, `auto`도). 문구가 말하는 고치는 법이 틀렸다. `x := 1`로 쓴다.
 - `Expected right operand.`: `i++`, `10 // 3`, `//` 주석. `i += 1`, `/`, `--`로 쓴다.
 - `Expected `]`.`: 리스트 컴프리헨션. 덧붙이는 `for` 반복문으로 쓴다.
 - 함수 선언의 `Expected `,`.`: 기본값 매개변수. 빼고 오버로드를 더한다.
@@ -345,7 +346,7 @@ print('%{x} %{shared.*}')
 - `Return statement is not allowed in the main block.`: 최상위 return. 코드를 `fn main():`으로 감싼다.
 - `Missing return statement.`: return이 없는 경로가 있다. 끝에 return을 더한다.
 - ``fn` declarations are not allowed here.`: 블록 안의 함수. 최상위에서 선언한다.
-- `Failed to load module: json` (`regex`, `time`도): 없는 모듈이다. 모듈 없이 쓴다.
+- `Failed to load module: json` (`toon`, `regex`, `peg`, `time`도): 이 호스트가 싣지 않는다. 모듈 없이 쓴다.
 
 실행 중 panic: `Out of bounds index: -1`은 음수 인덱스(`xs.last()`를 쓴다), 슬라이스의 `OutOfBounds`는 음수이거나 너무 큰 경계, `MissingKey`는 없는 키의 `m[k]`다(`m.get(k)`를 쓴다).
 

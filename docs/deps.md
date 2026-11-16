@@ -7,7 +7,7 @@
 | 의존 | 버전 | 라이선스 | 이유 | 조건 |
 |---|---|---|---|---|
 | Zig 표준 라이브러리 | 0.17.1 | MIT | HTTP, TLS, JSON, 프로세스, 파일 | |
-| soomtong/cyber (libcyber) | 0.4.11 (태그 0.4.11 = 097b831f). `git+https://github.com/soomtong/cyber?ref=0.4.11#097b831f049c030683c52f5cec8e1b5cec1da276`, 해시 `cyber-0.4.11-AW3fkEXwjQClbWIfwyRDrnTCj0k7VNbfWrg4S4Bzkzea`로 고정한다. 의존 인자 `.dev = false, .build = "883", .commit = "097b831"`로 릴리스와 같은 버전 문자열을 찍는다. 라이브러리는 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 받고 cyber.h가 따라온다 | MIT | 스크립트 VM과 표준 모듈(json, regex, time은 만들 것) | 반드시 -Dffi=false. FFI를 켜면 tcc(LGPL)가 링크된다 |
+| soomtong/cyber (libcyber) | 0.4.12 (태그 0.4.12 = 67a2735c). `git+https://github.com/soomtong/cyber?ref=0.4.12#67a2735c2535fafbc4ba8b4815592f2c37b1d5b5`, 해시 `cyber-0.4.12-AW3fkAqEngAhLopP1tr-x8mnWp10OqG14QiB9PLuNEUp`로 고정한다. 의존 인자 `.dev = false, .build = "919", .commit = "67a2735"`로 릴리스와 같은 버전 문자열을 찍는다. 라이브러리는 `b.dependency("cyber", .{ .target, .optimize, .static = true, .commit }).artifact("cyber")`로 받고 cyber.h가 따라온다 | MIT | 스크립트 VM과 표준 모듈(json, toon, regex, peg, time 포함) | 반드시 -Dffi=false. FFI를 켜면 tcc(LGPL)가 링크된다 |
 | translate-c (ziglang) | cyber와 같은 커밋 | MIT | 빌드할 때 cyber.h를 Zig 모듈로 바꾼다 | 스파이크에서만 썼다. 본체는 손으로 쓴 extern을 추천한다 (ADR 0017). 링크되지 않는다 |
 | glibc (동적, 대상 시스템의 것) | Debian | LGPL | 대상 환경의 바닥 라이브러리 | 동적 링크만. 정적 링크하지 않는다 |
 

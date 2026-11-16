@@ -5,9 +5,9 @@
     .fingerprint = 0x5458c54c94d100c0,
     .dependencies = .{
         .cyber = .{
-            // soomtong/cyber 0.4.11 (태그 0.4.11 = 097b831f).
-            .url = "git+https://github.com/soomtong/cyber?ref=0.4.11#097b831f049c030683c52f5cec8e1b5cec1da276",
-            .hash = "cyber-0.4.11-AW3fkEXwjQClbWIfwyRDrnTCj0k7VNbfWrg4S4Bzkzea",
+            // soomtong/cyber 0.4.12 (태그 0.4.12 = 67a2735c).
+            .url = "git+https://github.com/soomtong/cyber?ref=0.4.12#67a2735c2535fafbc4ba8b4815592f2c37b1d5b5",
+            .hash = "cyber-0.4.12-AW3fkAqEngAhLopP1tr-x8mnWp10OqG14QiB9PLuNEUp",
         },
         .translate_c = .{
             .url = "git+https://codeberg.org/ziglang/translate-c#02ff0c523fb92a38939b04d0145c4a9602a74d56",
