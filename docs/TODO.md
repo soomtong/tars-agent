@@ -38,8 +38,8 @@
 필요한 것은 cyber에 만든다. 작업 장소는 soomtong/cyber이고 그 저장소의 절차를 따른다. 목록과 필요의 증거는 08 문서 "cyber에서 만들 것"이 정본이다. M 단계와 나란히 간다.
 
 - [~] C0 M0 스파이크에서 남은 것. latest dev 0.4.13-DEV를 커밋 URL과 해시로 고정했다. 남은 것은 아래 두 줄이고 요청서는 docs/requests/cyber-0.4.13-dev-findings.md. 둘 다 본체 첫 단계의 선행 조건 (ADR 0019)
-- [ ] C0 (a) `let x := 1`(`mut`도)에 틀린 고치는 법(`var x := 1 = value`)을 말한다
-- [ ] C0 (b) 세션에서 스크립트 마지막 줄의 `out.remove(i)`, `out.clear()`는 마지막 표현식 값이라 오류가 없고 `out`은 그대로다
+- [~] C0 (a) `let x := 1`(`mut`도)에 틀린 고치는 법(`var x := 1 = value`)을 말한다. cyber master `3acc0797`에서 고침, CLI와 세션에서 확인. 고정을 옮기면 닫는다
+- [~] C0 (b) 세션에서 스크립트 마지막 줄의 `out.remove(i)`, `out.clear()`는 마지막 표현식 값이라 오류가 없고 `out`은 그대로다. cyber master `3acc0797`에서 고침, 세션에서 확인. 고정을 옮기면 닫는다
 - [~] C1 json 모듈 (parse, stringify, 값 트리). 기준 빌드에 있다. 남은 게이트: 안내 문서의 예제가 이 모듈을 써서 통과
 - [~] C1 toon 모듈 (stringify, parse). 기준 빌드에 있다. 남은 게이트는 json과 같다
 - [~] C2 regex 모듈 (역추적 없는 엔진). 기준 빌드에 있다. 남은 게이트는 json과 같다

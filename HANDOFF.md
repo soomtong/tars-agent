@@ -61,7 +61,8 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 사용자가 정할 것:
 
-- [ ] 요청서 docs/requests/cyber-0.4.13-dev-findings.md를 cyber에 전달
+- [x] 요청서 docs/requests/cyber-0.4.13-dev-findings.md: cyber가 master `3acc0797`에서 고쳤고 로컬 빌드로 CLI와 세션을 확인했다(s1 40개 통과). 0.4.13 태그에는 없다
+- [ ] 고정을 옮길 곳: 다시 찍은 0.4.13 릴리스를 기다릴지, 수정이 든 dev 빌드로 바로 옮길지
 - [ ] 안내를 cyber의 agent-guide.md와 호스트 덧붙임으로 언제, 어떤 모양으로 모을지(ADR 0022 "열린 것"). 가이드와 스파이크 세션이 다른 곳은 대부분 tars-agent의 선택(모듈 막기, fiber 금지)이거나 실행 환경의 차이(`os`, CLI)다. 임베딩 호스트에 관한 한 줄을 가이드에 요청할지
 - [ ] 새 표준 모듈: 막지 않고 열어 둘지, `time`과 능력 clock.now의 관계 (08 문서, TODO C2)
 - [ ] CodeAct 비교를 기준 빌드로 다시 돌릴지 (지금 수치는 0.4.12 회차)

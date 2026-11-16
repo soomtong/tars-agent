@@ -45,3 +45,42 @@ print(out.len())
 - 0.4.12 요청서의 네 건((a) `Slice` 크기 바꾸기 뒤의 받는 변수, (b) `let`·`mut`·`val`·`auto` 문구, (c) `os.read_file`이 str, (d) 패키지의 `docs/agent-guide.md`)이 CLI와 세션에서 회신대로다. 0.4.12 회차에서 s2를 죽인 모델 스크립트는 고치는 법을 말하는 컴파일 오류로 멈춘다.
 - tars-agent 안내(prompt/cyber-subset*.md)의 코드 블록 22개(두 판 11개씩)와 오류 목록의 첫 줄.
 - `docs/agent-guide.md`의 코드 블록 12개가 CLI에서 통과한다. 세션에서는 `use test` 블록을 뺀 11개가 통과한다(s1 로더가 `test`를 막는다).
+
+## cyber 회신 (2026-11-16, master `3acc0797`, push 전)
+
+두 건 모두 고쳤다. 태그 `0.4.13`(`8a892310`)에는 들어 있지 않다. 0.4.13 릴리스는 아직 만들지 않았다(macOS arm64 러너 미배정). 릴리스할 때 태그를 다시 찍을지 정한다.
+
+### (a) `let x := 1`
+
+| 입력 | 첫 줄 |
+|---|---|
+| `let x := 1` | ``ParseError: Cyber has no `let`. Declare with `x := 1`.`` |
+| `let name := 'a'` | ``ParseError: Cyber has no `let`. Declare with `name := 'a'`.`` |
+| `mut x := 1`, `let mut x := 1` | 같은 꼴 (`mut`는 ``Cyber has no `mut`.``) |
+| `let x :=` | ``... Declare with `x := value`.`` |
+
+`=`를 쓴 꼴(`let x = 1`)의 문구는 그대로다.
+
+### (b) 세션의 마지막 줄
+
+세션(`persist_main`)의 마지막 표현식이 크기를 바꾸는 `Slice` 메서드의 결과이면, 마지막 줄이 아닌 자리와 같은 컴파일 오류가 난다. 대상 메서드는 `append`, `insert`, `remove`, `clear`, `size_down`, `size_up`이다. 그 밖의 값(`out.len()`, `out`)은 그대로 eval 결과다. 테스트는 `lib_test/session.zig`의 "a dropped Slice resize result on the last line"이다.
+
+REPL에서 `xs.append(4)`로 결과를 미리 보던 쓰임도 이제 오류다. 같은 값을 보려면 `ys := xs.append(4)` 뒤 `ys`를 쓴다.
+
+## 회신 확인 (2026-11-16, cyber master `fd9aed7e`)
+
+로컬 cyber(`3acc0797`를 담은 master)로 확인했다. CLI는 `zig build cli`의 Debug 빌드, 세션은 s1을 `zig build --fork=<cyber 저장소>`로 빌드해 `s1 replay`로 돌렸다. `build.zig.zon`의 고정은 그대로다.
+
+| 경우 | CLI | 세션 |
+|---|---|---|
+| `let x := 1` | ``Cyber has no `let`. Declare with `x := 1`.`` | 같음 |
+| `let name := 'a'`, `mut x := 1`, `let mut x := 1`, `let x :=` | 회신 표와 같음 | 확인 안 함 |
+| `let x = 1` | ``... Declare with `x := 1`, or `var x int = 1` for a type.`` (그대로) | 확인 안 함 |
+| 위 (b) 예제 | `remove` 컴파일 오류 | run 1이 같은 컴파일 오류(run 2는 `out`이 없어 ``Undeclared variable `out`.``) |
+| 마지막 줄 `_ = out.clear()` | | `clear` 컴파일 오류 |
+| 마지막 줄 `xs.append(4)` | | `append` 컴파일 오류 |
+| 마지막 줄 `out.len()`, `out` | | 검증, eval 모두 SUCCESS |
+
+s1 검사 40개가 이 빌드에서 모두 통과한다. 검사 0의 버전 문자열은 s1 build.zig가 넘기는 인자라 `build-941-8a89231` 그대로다.
+
+두 건은 고쳐졌다. 고정(`8a892310`)에는 아직 없으므로, 닫히는 때는 고정을 이 수정이 든 빌드로 옮긴 때다.
