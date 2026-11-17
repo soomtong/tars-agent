@@ -1,12 +1,21 @@
-# HANDOFF: cyber 0.4.14로 옮김, 모듈 허용 목록과 능력 경계를 정함 (2026-11-17)
+# HANDOFF: cyber 0.4.15로 옮김, cyber-lsp와 편집기 힌트 API 확인 (2026-11-18)
 
 ## 목표
 
 tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code이고, 다른 점은 모델이 JSON 도구 호출 대신 Cyber 스크립트를 써서 실행하는 CodeAct 방식이라는 것이다. 호스트는 Zig 0.17.1, 런타임은 libcyber(soomtong/cyber) 정적 링크. 본체 코드는 아직 없다. 버릴 스파이크 코드가 spike/에 있다.
 
-이번 세션(2026-11-16~17):
+이번 세션(2026-11-18):
+- cyber 0.4.15(태그 `c13a207f`, 설치된 `/usr/local/bin/cyber`는 `Cyber 0.4.15 build-967-c13a207`)로 두 스파이크의 의존을 올렸다. 깨지는 변경은 `[]T`의 크기 바꾸기가 제자리가 된 것(`xs.append(v)`, 새 목록은 `appended`, `+`)이고, 안내 두 판은 전 세션에 먼저 고쳐 두었다.
+- s1 45개 통과. 새 검사 7i가 `cl_vm_symbol_hints`(0.4.15에 더해진 C API)를 본다: 검증 뒤 쓰지 않는 지역과 `use`, 추론 타입을 받는다. 실패한 검증 뒤에는 unused가 없다. 세션의 최상위 지역도 unused로 나오므로 호스트가 걸러야 한다.
+- 안내 두 판과 agent-guide.md의 코드 블록 34개: CLI 전부, 세션은 `use test` 블록만 로더가 막는다. 제자리 `Slice` 문구, 전역 take-and-restore 문구, `os` 옛 꼴 문구(CLI)를 탐침으로 확인했다.
+- `cyber-lsp`를 stdio(JSON-RPC)로 붙여 unused Warning, quick fix(`_` 붙이기, `use` 지우기, `file_exists`, `out.append(3)`), inlay hint(추론 타입, `waits for fibers`), `scope` 출구 Information, `--|` 문서 주석 hover를 확인했다. 진단은 첫 컴파일 오류에서 멈춘다.
+- s2 빌드, x86_64-linux-gnu 교차 빌드(s1, s2). libcyber.a arm64 3,050,440바이트, x86_64 3,613,076바이트, 공개 `cl_` 함수 142개. 새 표준 모듈은 없다.
+- 문서: 검토 문서(3.1, 3.5, 6, 7, 8절, 9절 추천 18), 08, deps, ADR 0017, 0019, 0023, 안내 기준 줄, TODO.
+- CodeAct 비교는 다시 돌리지 않았다(비교 수치는 0.4.12 회차).
+
+앞선 세션(2026-11-16~17):
 - cyber가 0.4.12 요청서의 네 건을 고쳤다.
-- cyber 의존은 커밋에 묶지 않고 가장 새 빌드를 따른다(사용자 지시, ADR 0023). 지금은 릴리스 0.4.14(a2b33655)이고 설치된 `/usr/local/bin/cyber`(`Cyber 0.4.14 build-960-a2b3365`)와 같다. extern 수정, resolver 수정, 패키지의 `docs/api.json`, x86_64 AVX2 `str.index` 수정, 표준 라이브러리 이름의 snake_case 통일, 새 `path` 모듈이 들어 있다.
+- cyber 의존은 커밋에 묶지 않고 가장 새 빌드를 따른다(사용자 지시, ADR 0023). 그때는 릴리스 0.4.14(a2b33655)였다. extern 수정, resolver 수정, 패키지의 `docs/api.json`, x86_64 AVX2 `str.index` 수정, 표준 라이브러리 이름의 snake_case 통일, 새 `path` 모듈이 들어 있다.
 - 0.4.13-DEV에서 찾은 두 건(`let x := 1`의 문구, 세션 마지막 줄의 버린 `Slice` 결과)이 0.4.13에서 고쳐졌다. CLI와 세션에서 확인하고 요청서를 지웠다.
 - 모듈: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025), path(ADR 0027)를 연다. 세계에 닿는 일은 능력으로만 하고 os는 열지 않는다(ADR 0026, 사용자 결정 A). 로더는 허용 목록 core, meta, c, math, json, toon, regex, peg, time, path이다(meta와 c는 의존).
 - 0.4.13에서 찾은 결함(c가 실리기 전의 `#[extern]` 함수가 검증 중에 프로세스를 죽인다)을 cyber가 0.4.14에서 컴파일 오류로 고쳤다. s1 검사 7h로 확인하고 요청서를 지웠다. 본체 첫 단계 전에 닫을 결함은 없다(ADR 0019).
@@ -23,9 +32,10 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 완료된 작업
 
-- [x] 의존: spike/s1, s2의 build.zig.zon은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.14"`로 넣는다(`?ref=0.4.14#<커밋>`과 해시가 적힌다).
-  - build.zig 의존 인자는 `.dev = false`뿐이다(릴리스). 버전 문자열은 `Cyber 0.4.14 build-0-local`이고 s1 검사 0은 `Cyber `로 시작하는지만 본다.
-- [x] s1 44개 통과(0.4.14), s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2). libcyber.a는 arm64 2.99 MB, x86_64 3.55 MB이고 공개 `cl_`는 140개다.
+- [x] 의존: spike/s1, s2의 build.zig.zon은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.15"`로 넣는다(`?ref=0.4.15#<커밋>`과 해시가 적힌다).
+  - build.zig 의존 인자는 `.dev = false`뿐이다(릴리스). 버전 문자열은 `Cyber 0.4.15 build-0-local`이고 s1 검사 0은 `Cyber `로 시작하는지만 본다.
+- [x] s1 45개 통과(0.4.15), s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2).
+- [x] 0.4.15로 옮김(2026-11-18): 위 "이번 세션"과 TODO의 해당 줄.
 - [x] 0.4.14로 옮김(2026-11-17 저녁): 두 스파이크의 의존을 릴리스 태그로, `dev = false`. s1 43개, 안내 두 판과 agent-guide.md의 코드 블록 34개(CLI 전부, 세션은 `use test` 블록만 로더가 막음), 새 이름(`trim_left`, `trim_right`, `last_index`) 탐침, s2 빌드, x86_64 교차 빌드를 확인했다. 옛 camelCase 이름은 `Did you mean ...?` 컴파일 오류다. 안내와 04, ADR 0026의 이름을 snake_case로 고쳤다
 - [x] 0.4.12 요청서의 네 건이 CLI와 세션에서 회신대로다.
   - `Slice` 크기 바꾸기는 받는 변수를 그대로 두고, 결과를 버리면 컴파일 오류다.
@@ -42,7 +52,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 ## 시도했으나 실패한 접근
 
 - 회차 도중에 안내를 고치기: s2가 실행마다 안내를 읽어 회차가 섞인다. 회차 전에 안내를 먼저 확정한다.
-- 릴리스 CLI를 태그에서 스크래치로 빌드하기: 릴리스면 사용자가 설치한 `/usr/local/bin/cyber`를 쓴다. latest dev면 프리릴리스의 CLI를 받는다(`gh release download latest -R soomtong/cyber -p cyber-macos-arm64.tar.gz`, 스크래치에). 설치된 CLI는 지금 0.4.14다.
+- 릴리스 CLI를 태그에서 스크래치로 빌드하기: 릴리스면 사용자가 설치한 `/usr/local/bin/cyber`를 쓴다. latest dev면 프리릴리스의 CLI를 받는다(`gh release download latest -R soomtong/cyber -p cyber-macos-arm64.tar.gz`, 스크래치에). 설치된 CLI는 지금 0.4.15다.
 - `latest` 태그만 따르기: 릴리스 빌드만 돌고 `latest` 프리릴리스가 갱신되지 않는 때가 있다(0.4.13 때). 가장 새 태그를 본다(ADR 0023).
 - `zig fetch --save=cyber <url>`로 기존 `.path` 의존을 덮기: `.path`에 URL을 넣고 해시를 빼 zon이 깨진다. `zig fetch <url>`로 해시만 받고 zon을 손으로 고친다.
 - s1 사본의 zon을 정규식으로 `.path`로 바꾸기: `translate_c` 의존까지 바뀐다. cyber 항목만 고친다.
@@ -69,6 +79,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - [ ] 모듈 API(패키지의 `docs/api.json`, 여섯 모듈 약 7 KB)를 프롬프트에 둘지 help(name)으로 꺼내게 할지 (본체 능력 설계 때)
 - [ ] CodeAct 비교를 기준 빌드로 다시 돌릴지 (지금 수치는 0.4.12 회차)
 - [ ] 본체가 VM 충돌로 프로세스가 끝나는 경우를 어떻게 다룰지 (검토 문서 9절 17)
+- [ ] 검증 뒤 `cl_vm_symbol_hints`의 쓰지 않는 함수 안 지역을 모델에게 넘길지 (검토 문서 9절 18, 평가 때)
 - [ ] `print(!str)`가 작은 모델의 가장 흔한 오류다. 능력의 모양이나 안내로 줄일지 (본체의 능력 설계 때)
 - [ ] 안내가 4,000토큰 목표를 넘는다. 목표를 바꿀지 안내를 줄일지 (검토 문서 8절)
 - [ ] 검토 문서를 읽고 ADR 0017의 추천을 받거나 바꾼다. 그 뒤 spike/를 지운다

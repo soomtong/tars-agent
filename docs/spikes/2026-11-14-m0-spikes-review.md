@@ -1,8 +1,8 @@
-# M0 스파이크 검토 결과 (2026-11-16)
+# M0 스파이크 검토 결과 (2026-11-18)
 
 스파이크를 Claude가 혼자 구현하고 검토했다 (ADR 0012의 덧붙임). 이 문서는 무엇을 만들었고, 기준 빌드에서 무엇이 확인됐고, 무엇이 남았고, 본체의 아키텍처에 어떤 뜻이 있는지를 적는다. 코드는 spike/에 있고 버릴 것이다.
 
-기준 빌드: soomtong/cyber 0.4.14. 스파이크는 가장 새 빌드를 따르는 의존으로 받는다(ADR 0023). 스파이크 1, 3과 안내의 확인은 이 빌드로 2026-11-17에 돌렸다. 5절의 비교 회차는 0.4.12(커밋 67a2735c)로 돌렸고 이 빌드로 다시 돌리지 않았다. 측정 환경은 macOS arm64.
+기준 빌드: soomtong/cyber 0.4.15. 스파이크는 가장 새 빌드를 따르는 의존으로 받는다(ADR 0023). 스파이크 1, 3과 안내의 확인은 이 빌드로 2026-11-18에 돌렸다. 5절의 비교 회차는 0.4.12(커밋 67a2735c)로 돌렸고 이 빌드로 다시 돌리지 않았다. 측정 환경은 macOS arm64.
 
 읽는 순서: 1절(한 장 요약), 2절(에이전트는 어떻게 도는가), 그 뒤는 필요한 절만.
 
@@ -10,7 +10,7 @@
 
 | 질문 | 답 | 근거 |
 |---|---|---|
-| Zig 호스트가 libcyber를 링크해 VM을 돌릴 수 있는가 | 된다 | 스파이크 1, 검사 44개 모두 통과 |
+| Zig 호스트가 libcyber를 링크해 VM을 돌릴 수 있는가 | 된다 | 스파이크 1, 검사 45개 모두 통과 |
 | cyber를 build.zig.zon 의존으로 쓸 수 있는가 | 된다. 태그를 따르는 의존의 `artifact("cyber")`로 받고 cyber.h가 따라온다 | 3.1 |
 | 능력이 `Future[!str]`을 돌려줄 수 있는가 (ADR 0011의 모양) | 된다. str 값이나 오류로 완료한다 | 3.2 |
 | 승인 대기를 VM 밖에서 하는 설계(ADR 0011, 0016)가 실제로 도는가 | 돈다. 승인, 거부, 취소, 동시 요청 모두 | 3.3 |
@@ -78,17 +78,17 @@ web.log: 23
 
 ## 3. 스파이크 1: 호스트 경계
 
-코드: spike/s1. 실행: `zig build && ./zig-out/bin/s1`. 검사 44개가 PASS/FAIL로 찍히고 모두 통과한다.
+코드: spike/s1. 실행: `zig build && ./zig-out/bin/s1`. 검사 45개가 PASS/FAIL로 찍히고 모두 통과한다.
 
 ### 3.1 링크
 
 - build.zig.zon의 의존은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#latest"`로 넣는다. zig가 `.url = "git+https://github.com/soomtong/cyber?ref=latest#<받은 커밋>"`과 `.hash`를 적는다. 태그가 움직여도 다시 받기 전에는 적힌 커밋을 쓴다.
 - `b.dependency("cyber", .{ .target = target, .optimize = .ReleaseFast, .static = true, .dev = false }).artifact("cyber")`를 `linkLibrary`로 링크한다(spike/s1/build.zig). ffi는 기본 false다.
 - cyber.h는 아티팩트의 include 경로로 따라온다. s1의 C 파일(src/inc_check.c)이 `#include "cyber.h"`로 컴파일되고, `CLEvalConfig`와 `CLCompileConfig`의 크기(12)가 translate-c 쪽과 같다(검사 0).
-- 버전 문자열은 `Cyber 0.4.14 build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, `-DEV` 표시는 `dev` 인자로 정한다. 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
+- 버전 문자열은 `Cyber 0.4.15 build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, `-DEV` 표시는 `dev` 인자로 정한다. 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
 - Zig 0.17.1에는 `@cImport`가 없다. cyber.h를 Zig에서 쓰는 길은 둘이다: translate-c 패키지로 모듈을 만들거나, 쓰는 함수의 extern 선언을 손으로 쓴다. 스파이크는 앞의 것을 썼다. 본체의 추천은 9절.
 - 의존 패키지의 `docs/agent-guide.md`와 `docs/api.json`은 `addAnonymousImport`(`cyber.path(...)`)로 빌드 때 싣는다. 검사 0b가 api.json을 std.json으로 읽어 json, toon, regex, peg, time의 항목(함수 67, 타입 24)만 거른다.
-- libcyber.a(arm64, ReleaseFast)는 2.99 MB, 공개 `cl_` 함수는 140개다. 표준 모듈 json, toon, regex, peg, time이 들어 있고 각각의 `cl_mod_bind_*`가 있다. mimalloc 심볼은 없다(FFI를 끈 라이브러리 빌드에는 들어가지 않는다).
+- libcyber.a(arm64, ReleaseFast)는 3.05 MB(3,050,440바이트), 공개 `cl_` 함수는 142개다(0.4.15에 `cl_vm_symbol_hints`가 더해졌다). 표준 모듈 json, toon, regex, peg, time이 들어 있고 각각의 `cl_mod_bind_*`가 있다. mimalloc 심볼은 없다(FFI를 끈 라이브러리 빌드에는 들어가지 않는다).
 
 ### 3.2 능력 바인딩
 
@@ -146,6 +146,7 @@ ADR 0011과 0016의 설계는 고칠 것 없이 돈다.
 - reset: VM의 첫 컴파일이 실패하면 `cl_vm_reset_pending`이 true이고 다음 eval부터 세션이 이어진다(6l). 컴파일러나 지역 이월 중의 할당 실패 뒤도 같다(cyber.h). 호스트는 CL_SUCCESS가 아닌 eval과 검증 뒤에 이것을 묻는다. s2는 true면 머리말을 다시 돌리고 모델에게 "the session was reset"을 알린다.
 - 목록 참조의 `+=`(`out := ^[]str{}` 뒤 `out += 'x'`)는 검증이 잡는 컴파일 오류이고, 문구가 `out.* += ...`를 알려 준다(6h).
 - 최상위 빌림(`c := &x`)은 다음 eval로 넘길 수 없어 ``Cannot persist local `c` of borrow type `&int` across evals.``다. CLI에서는 나지 않는 오류라 안내의 조언은 세션에서 확인해야 한다(8절).
+- 편집기용 힌트(0.4.15, 검사 7i): `cl_vm_set_symbol_info(vm, true)`를 켜고 검증하면 `cl_vm_symbol_hints`가 추론된 지역 타입, `scope` 블록 출구, 쓰지 않는 지역과 `use`를 위치순으로 준다. `cyber-lsp`의 Warning과 inlay hint가 이 표에서 나온다. `_`로 시작하는 이름은 빠지고, 실패한 검증 뒤에는 쓰지 않는 이름을 내지 않는다. 세션에서 주의할 점: 최상위 지역(`top := f()`)도 unused로 나온다. 다음 eval이 쓸 수 있는 값이므로 호스트가 모델에게 넘길 때는 함수 안 지역만 고르거나 최상위를 거른다.
 - 비용: validate 200회 1~2ms, eval 200회 2ms. VM 생성과 첫 eval은 개당 2~3ms, VM 하나가 쥔 메모리 약 2.6 MiB(2700 KiB).
 
 ### 3.6 샌드박스 경계
@@ -301,14 +302,14 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 
 ## 6. 스파이크 3: 교차 빌드
 
-- `zig build -Dtarget=x86_64-linux-gnu`가 macOS arm64에서 s1, s2 모두 된다(패키지를 받은 뒤 s1 23초, s2 23초). cyber는 의존의 아티팩트로 같은 대상에 맞춰 빌드된다(libcyber.a 3.55 MB). 산출물은 glibc 동적 링크 ELF다.
+- `zig build -Dtarget=x86_64-linux-gnu`가 macOS arm64에서 s1, s2 모두 된다(패키지를 받은 뒤 s1 23초, s2 23초). cyber는 의존의 아티팩트로 같은 대상에 맞춰 빌드된다(libcyber.a 3.61 MB, 3,613,076바이트). 산출물은 glibc 동적 링크 ELF다.
 - tars 게스트(QEMU)에서의 실행은 이 빌드로 하지 않았다. tars-linux의 산출물(커널, initrd)이 필요하다. 게스트를 모는 스크립트는 spike/s3/guest.py에 있다: initrd 사본 뒤에 바이너리를 담은 gzip cpio를 이어 붙여 부팅하고, 시리얼을 유닉스 소켓으로 열어 명령을 보낸다(셸이 fish라 Enter는 CR).
 
 보지 못한 것: tars 게스트에서의 실행, 실기 노트북, tars 터미널 패널 안에서의 화면 출력, Landlock(M5).
 
 ## 7. cyber에 남은 것
 
-스파이크는 cyber 릴리스 `0.4.14`를 받는다(ADR 0023). M0에서 낸 요청은 모두 닫혔다. 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서, ADR 0022)와 모듈 API `docs/api.json`(`cyber doc --api <module>`과 같은 소스)이 들어 있다.
+스파이크는 cyber 릴리스 `0.4.15`를 받는다(ADR 0023). M0에서 낸 요청은 모두 닫혔다. 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서, ADR 0022)와 모듈 API `docs/api.json`(`cyber doc --api <module>`과 같은 소스)이 들어 있다.
 
 모델이 모르는 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)은 인덱스, 슬라이스 경계, 대입 값 어디서든 인자 불일치 문구에 나오지 않는다. 대입 값이 원소 타입과 다르면 ``An element of `[]int` must be `int`, got `str`.``처럼 원소 타입을 말하고, `?T`와 `!T`이면 푸는 법을 붙인다(`Map`도 같다). 정수 원소 자리의 한 글자 리터럴(`xs[0] = 'a'`)은 오류가 아니라 코드 포인트(97)다. 타입이 정해진 자리의 한 글자 리터럴은 코드 포인트라는 언어 규칙이다.
 
@@ -316,15 +317,19 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 
 다른 언어의 선언 키워드는 키워드만 뺀 꼴을 말한다. `let x := 1`(`mut`, `let mut`도)은 ``Cyber has no `let`. Declare with `x := 1`.``이고, `let x = 1`은 ``... Declare with `x := 1`, or `var x int = 1` for a type.``이다. CLI와 세션이 같다.
 
-크기를 바꾸는 `Slice` 메서드(`append`, `insert`, `remove`, `clear`, `size_down`, `size_up`)의 결과를 버리면 세션에서도 스크립트의 마지막 줄까지 컴파일 오류다(``The result of `remove` is the new list, and `out` keeps the old one. Write `out = out.remove(1)`.``). 그 밖의 마지막 표현식(`out.len()`, `out`)은 eval 결과다.
+`Slice`의 크기를 바꾸는 메서드는 0.4.15부터 제자리다(깨지는 변경). `append`, `insert`, `remove`, `clear`, `size_down`, `size_up`은 받는 변수를 바꾸고 아무것도 돌려주지 않는다. 새 목록은 `appended`, `inserted`, `removed`, `+`이고, `xs += v`는 제자리에서 붙인다. `pop() -> ?T`가 생겼다. 옛 꼴은 고칠 꼴을 말하는 컴파일 오류다. `xs = xs.append(3)`은 ``Write `xs.append(3)` as a statement.``, `ys := xs.append(3)`은 `xs.appended(3)`도 알려 준다. 새 목록 메서드의 결과를 버리면(`xs.appended(3)`만 쓴 문장) CLI에서는 제자리 메서드를 알려 주는 오류이고, 세션의 마지막 줄에서는 오류가 아니라 eval 결과다. 세션의 마지막 줄 `xs.append(4)`는 결과 없는 문장이다(0.4.13, 0.4.14에서는 오류). 함수 안에서 전역 목록에 제자리 메서드를 쓸 수 있고(take-and-restore), 인자가 같은 전역을 읽으면(`g.append(g.len())`) ``The method takes `g` out while it runs, so an argument can not read `g`. Read it into a local first.``다. 모두 CLI와 `replay`에서 확인했다(2026-11-18). Python의 `xs.append(v)` 습관이 그대로 맞는 꼴이 됐다. 모델의 오류율에 주는 영향은 비교를 다시 돌려야 안다(5절은 0.4.12 회차).
+
+`os` 파일 함수의 옛 꼴이 새 이름을 말한다(0.4.12 요청의 남은 회신). `os.read_file_str(p)`는 ``Use `os.read_file`. It returns `str`.``, `os.write_file_bytes(p, 'abc')`는 ``Write text with `os.write_file`.``, `os.read_file(p)!`을 담은 지역을 `[]byte` 자리에 쓰면 ``Read bytes with `os.read_file_bytes`.``다. CLI에서 확인했다. 스파이크의 세션은 `os`를 싣지 않으므로(ADR 0026) 모델에게는 ``Failed to load module: os``가 간다. 이 문구들은 tars-agent에서는 CLI로 cyber를 쓰는 사람에게만 닿는다.
+
+언어 서버: 0.4.15의 `cyber-lsp`(설치 경로 `/usr/local/bin/cyber-lsp`)를 stdio로 붙여 확인했다(2026-11-18). 쓰지 않는 지역과 `use`는 Warning(태그 Unnecessary)이고 quick fix가 `_` 붙이기와 `use` 줄 지우기다. `scope` 블록 안의 `return`은 Information(``waits for the fibers of the `scope` block``)과 inlay hint `waits for fibers`다. 컴파일 오류의 고칠 이름(`os.fileExists` → `file_exists`, `out = out.append(3)` → `out.append(3)`)은 quick fix가 된다. hover가 선언 위의 `--|` 문서 주석을 보여 준다. 진단은 컴파일 오류 하나에서 멈춘다(오류 복구를 켜지 않은 CLI와 같다). tars-agent에는 두 갈래로 닿는다. 사람이 .cy 파일을 고칠 때의 편집기 도구이고, 같은 정보를 호스트가 C API로 받는다(3.5, 검사 7i). 모델에게 경고를 넘길지는 9절 18.
 
 표준 모듈: 기준 빌드에 json, toon, regex, peg, time이 있다(TODO의 C1, C2). 세션의 기본 로더가 다섯을 싣는다. 다섯 모두 s1과 s2의 호스트 로더가 싣는다(3.6, ADR 0024, 0025). tars-agent 쪽에 남은 것은 안내에 예제를 넣을지다(크기는 8절의 결정과 함께).
 
 ## 8. 안내 문서 (prompt/cyber-subset*.md)
 
-영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.14`다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(설치된 `/usr/local/bin/cyber`, `Cyber 0.4.14 build-960-a2b3365`)와 세션(`s1 replay`)으로 확인한다.
+영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.15`다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(설치된 `/usr/local/bin/cyber`, `Cyber 0.4.15 build-967-c13a207`)와 세션(`s1 replay`)으로 확인한다.
 
-확인 방법: 안내의 항목마다 탐침 스크립트를 만들어 기준 빌드의 CLI와 `replay`(같은 VM, persist_main, 검증 뒤 실행)로 돌리고 결과(출력이나 오류 첫 줄)를 맞춰 봤다. 오류 목록의 첫 줄, "없는 것" 목록, "있는 메서드" 목록, `int('abc')`, 정수 나눗셈, 음수 인덱스가 기준 빌드에서 그대로다. 세션에서만 다른 것은 최상위 빌림과 모듈이다. CLI는 `os`, `test`를 싣고, 스파이크의 세션은 `test`(와 `c`)를 호스트 로더가 막는다. 안내는 세션 쪽을 적는다. 코드 블록 11개는 CLI와 `replay` 양쪽에서 통과했다.
+확인 방법: 안내의 항목마다 탐침 스크립트를 만들어 기준 빌드의 CLI와 `replay`(같은 VM, persist_main, 검증 뒤 실행)로 돌리고 결과(출력이나 오류 첫 줄)를 맞춰 봤다. 오류 목록의 첫 줄, "없는 것" 목록, "있는 메서드" 목록, `int('abc')`, 정수 나눗셈, 음수 인덱스가 기준 빌드에서 그대로다. 세션에서만 다른 것은 최상위 빌림과 모듈이다. CLI는 `os`, `test`를 싣고, 스파이크의 세션은 `test`(와 `c`)를 호스트 로더가 막는다. 안내는 세션 쪽을 적는다. 코드 블록 11개는 CLI와 `replay` 양쪽에서 통과했다. cyber의 agent-guide.md(`cyber doc --for-agents`)의 코드 블록 12개도 CLI에서 모두 통과하고, 세션에서는 `use test` 블록만 로더가 막는다(2026-11-18, 0.4.15).
 
 | 무엇 | 안내가 가르치는 것 |
 |---|---|
@@ -339,11 +344,12 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 | 참조의 연산자 | `n.* += 2`, `out.* += 'x'` |
 | 문자열 이스케이프 | `\n \t \r \0 \\ \' \" \xHH`. 그 밖은 컴파일 오류이고 백슬래시는 두 번 쓴다 |
 | 함수 선언 | 최상위에서만 |
+| `[]T`의 크기 바꾸기 | `append`, `insert`, `remove`, `clear`, `pop`은 제자리, 새 목록은 `appended`, `inserted`, `removed`, `+`. 전역 목록에도 제자리 메서드 (0.4.15) |
 | 메서드 | str, []T, Map의 있는 메서드 전부(`trim()`, `trim_left()`, `trim_right()`, `last_index` 포함)와 Python 이름의 대응 |
 | 없는 것 | `abs`, `sum`, `sorted`, `enumerate`, `zip`, `xs.map`, `xs.filter`. 모듈은 json, toon, regex, peg, time을 싣는다고 한 줄로 알린다 |
 | 오류 목록 | 문구가 고치는 법을 말하지 않거나 틀린 고치는 법을 말하는 오류만 (20줄). 나머지는 "문구대로 고친다" 한 줄 |
 
-크기: 영문판 19.7KB(19,538바이트)이고 시스템 프롬프트 전체가 20,628바이트다. 5절 회차는 0.4.12 판(19,807바이트, 시스템 프롬프트 20,897바이트)으로 돌았고 첫 요청 입력이 약 6,500토큰이었다. TODO의 "4,000토큰 이하" 목표를 넘는다. 목표를 바꿀지 안내를 줄일지는 사용자가 정한다. 줄일 자리는 오류 목록(cyber가 문구를 보강할 때마다 줄이 빠진다)과 "Python과 다른 것"의 문법 줄이다. json 같은 새 모듈을 가르치면 더 커진다.
+크기: 영문판 19.8KB(19,823바이트, 0.4.15의 제자리 `Slice` 줄을 넣은 판)이고 시스템 프롬프트 전체는 20,913바이트다(호스트 덧붙임 1,090바이트는 그대로). 5절 회차는 0.4.12 판(19,807바이트, 시스템 프롬프트 20,897바이트)으로 돌았고 첫 요청 입력이 약 6,500토큰이었다. TODO의 "4,000토큰 이하" 목표를 넘는다. 목표를 바꿀지 안내를 줄일지는 사용자가 정한다. 줄일 자리는 오류 목록(cyber가 문구를 보강할 때마다 줄이 빠진다)과 "Python과 다른 것"의 문법 줄이다. json 같은 새 모듈을 가르치면 더 커진다.
 
 ## 9. 본체 아키텍처에 주는 뜻 (추천, 확정은 본체를 만들 때 사용자가)
 
@@ -366,6 +372,7 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 | 15 | 안내는 회차에서 모델이 틀린 곳으로 고친다. 문구가 고치는 법을 말하는 오류는 안내에 넣지 않는다 | 5.1. 안내의 크기를 지키는 기준이 된다 |
 | 16 | 평가의 모델 목록에 크기가 다른 모델을 함께 넣는다 (DeepSeek-V4.1-Flash, qwen flash, qwen max). direct 모드는 대조군이면서 작은 모델용 기본값 후보로 본다 | 5 |
 | 17 | 스크립트가 VM을 죽여 호스트 프로세스가 끝나는 경우를 전제로 둔다. 세션 기록은 실행 전에 쓰고, 재개 때 끝나지 않은 실행을 crashed 결과로 짝 맞춘다(ADR 0021). 실행을 별도 프로세스로 떼어 놓을지는 runtime 단계에서 사용자가 정한다 | 5, 7. 0.4.12 회차에서 모델의 스크립트 하나가 s2를 세그폴트로 끝냈고 대화가 사라졌다 |
+| 18 | 검증 뒤 `cl_vm_symbol_hints`의 쓰지 않는 함수 안 지역을 모델에게 넘기는 것을 시험한다(최상위 지역은 거른다). 넘길지는 평가로 정한다 | 3.5, 7. 쓰지 않는 지역은 오타나 빠뜨린 출력의 신호일 수 있지만, 경고가 스텝과 토큰을 더 쓰게 할 수도 있다 |
 
 ## 10. 아직 모르는 것
 
@@ -381,7 +388,7 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 
 | 경로 | 내용 | 실행 |
 |---|---|---|
-| spike/s1 | 호스트 경계 검사 40개, 세션 재생, 관찰 하나 | `zig build && ./zig-out/bin/s1`, `s1 replay <파일> [nv]` (스크립트를 `=====` 줄로 나눈다, 검증과 실행 결과, 출력, 오류 첫 줄을 찍는다. `nv`면 검증 없이 실행), `s1 spawn` (deny_spawn 없이) |
+| spike/s1 | 호스트 경계 검사 45개, 세션 재생, 관찰 하나 | `zig build && ./zig-out/bin/s1`, `s1 replay <파일> [nv]` (스크립트를 `=====` 줄로 나눈다, 검증과 실행 결과, 출력, 오류 첫 줄을 찍는다. `nv`면 검증 없이 실행), `s1 spawn` (deny_spawn 없이) |
 | spike/s2a | 두 형식의 원문 응답 받기 | `./run.sh`, 결과는 out/*.sse |
 | spike/s2 | 최소 에이전트 루프 (direct, codeact), 제공자 넷 | `./zig-out/bin/s2 --provider ds-anth --mode codeact "질문"`, `./compare.sh <제공자> [모델] [모드] [과제]` |
 | spike/s3 | tars 게스트 구동 스크립트 | 6절 |

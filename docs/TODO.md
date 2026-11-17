@@ -11,7 +11,7 @@
 - [x] 실행 모델 CodeAct + Cyber (ADR 0001), 호스트는 Zig + libcyber (ADR 0002)
 - [x] 초기 요구사항 대조 (09 문서)
 - [x] 명세 재검토와 열린 질문 결정 (ADR 0004~0009, 2026-11-10)
-- [x] cyber 기준 빌드 반영: 0.4.14. 스파이크 의존은 가장 새 빌드를 따르고(ADR 0023), s1, 안내의 코드 블록과 오류 문구를 설치된 CLI와 세션에서 확인했다. CodeAct 비교는 0.4.12 회차의 것이다. 스파이크의 호스트 로더는 허용 목록이다(ADR 0026) (2026-11-17)
+- [x] cyber 기준 빌드 반영: 0.4.15. 스파이크 의존은 가장 새 빌드를 따르고(ADR 0023), s1, 안내의 코드 블록과 오류 문구를 설치된 CLI와 세션에서 확인했다. CodeAct 비교는 0.4.12 회차의 것이다. 스파이크의 호스트 로더는 허용 목록이다(ADR 0026) (2026-11-18)
 
 ## M0 증명과 판정
 
@@ -26,7 +26,8 @@
 - [x] 스파이크 검토 결과: docs/spikes/2026-11-14-m0-spikes-review.md, 발견과 추천은 ADR 0017. 스파이크 코드(spike/)는 사용자가 검토한 뒤 지운다
 - [ ] 평가는 json 모듈을 안내에 넣은 뒤 돌린다(json은 기준 빌드에 있다). 안내에 가르칠 모듈과 크기는 사용자가 정한다
 - [~] 스파이크 3, 교차 빌드: x86_64-linux-gnu 교차 빌드는 확인. tars 게스트(QEMU)에서의 실행은 기준 빌드로 확인할 것 (tars-linux 산출물 필요)
-- [ ] cyber 0.4.15로 옮기기(0.4.15는 2026-11-18 릴리스됨, 태그 커밋 `c13a207f`, `build-967-c13a207`. 같은 릴리스의 `cyber-lsp`는 쓰지 않는 지역 · `use` 경고와 quick fix를 낸다): `[]T`의 `append` · `insert` · `remove` · `clear` · `pop`이 제자리 메서드가 되고(`xs = xs.append(v)`는 컴파일 오류), 새 목록은 `appended` · `inserted` · `removed` · `+`다. 전역 목록에도 제자리 메서드가 된다(take-and-restore). 안내 두 판은 이 규칙으로 먼저 고쳤다(2026-11-17, cyber master `e323ebaf` 뒤). 0.4.14 기준 빌드에서는 예제 3(`names.append('dave')`)이 버린 결과 오류라, 의존을 0.4.15로 올리며 안내의 코드 블록을 CLI와 세션에서 다시 돌린다. cyber 쪽 결정: `docs/decisions/project_slice_append_aliasing.md` 결정 3. 같은 릴리스에서 `os` 파일 함수의 옛 꼴이 고칠 이름을 말한다: `os.read_file_str`은 'Use `os.read_file`. It returns `str`.', `os.write_file(p, bytes)`는 `os.write_file_bytes`를 알려 준다. `os.read_file(p)!`(또는 그 값을 담은 지역)을 `[]byte` 자리에 쓰면 `os.read_file_bytes`를, 반대도 같다. 0.4.12 요청의 남은 회신이다. 옮긴 뒤 탐침으로 문구를 확인한다. cyber 쪽 결정: `docs/decisions/project_os_file_text_bytes.md` "오류 문구에 새 이름"
+- [x] cyber 0.4.15로 옮기기 (2026-11-18): 두 스파이크의 의존을 태그 `0.4.15`(`c13a207f`)로 올렸다. s1 45개 통과(새 검사 7i: `cl_vm_symbol_hints`), s2 빌드, x86_64 교차 빌드. 안내 두 판과 agent-guide.md의 코드 블록 34개가 CLI에서 모두, 세션에서 `use test` 블록 하나 말고 통과한다. 제자리 `Slice`의 문구(`xs = xs.append(3)`, `ys := xs.append(3)`, 전역 `g.append(g.len())`)를 CLI와 세션에서, `os` 옛 꼴의 문구를 CLI에서 탐침으로 확인했다(세션은 `os`를 싣지 않는다). 세션의 마지막 줄 `xs.append(4)`는 결과 없는 문장, `xs.appended(3)`은 eval 결과다. `cyber-lsp`를 stdio로 붙여 unused 경고, quick fix, inlay hint, `scope` 출구 알림, 문서 주석 hover를 확인했다. 검토 문서 3.5, 7, 8절, 9절 18
+- [ ] 검증 뒤 `cl_vm_symbol_hints`의 쓰지 않는 함수 안 지역을 모델에게 넘길지 (검토 문서 9절 18, 세션의 최상위 지역은 거른다). 평가 때 정한다
 - [ ] Cyber 부분집합 안내 (prompt/cyber-subset*.md, 예제 10개). 기준 빌드로 다시 썼고 예제와 조언을 CLI와 세션(persist_main) 양쪽에서 확인했다 (검토 문서 8절). 남은 것: 크기가 4,000토큰 목표를 넘는다(검토 문서 8절의 수치). 목표를 바꿀지 안내를 줄일지 사용자가 정한다
 - [ ] eval/: 과제 20개와 채점기. 과제는 실제 쓰임에서 고른다 (파일 찾아 고치기, 여러 파일 집계, 명령 실행 후 출력 가공, 오류 처리, JSON 꺼내기 등). 과제마다 3회 실행
 - [ ] 평가 실행: CodeAct 대 direct(같은 능력을 JSON 도구로), 모델은 DeepSeek과 OpenRouter의 Qwen 계열 (ADR 0014, 목록은 평가 설계 때 정한다). 기록: 첫 시도 validate 통과율, 과제 성공률, 스텝 수, 토큰, 실패 유형

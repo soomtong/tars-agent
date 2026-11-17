@@ -4,10 +4,10 @@
 
 ## 결정
 
-스파이크(그리고 본체가 생기면 본체)의 cyber 의존은 soomtong/cyber의 가장 새 빌드를 따른다. 특정 커밋을 기준으로 고정하지 않는다. 릴리스 태그와 `latest` 프리릴리스 태그 가운데 앞선 것을 받는다. 지금은 릴리스 `0.4.14`다(`latest` 프리릴리스보다 뒤에 나왔다). 릴리스면 사용자가 설치한 `/usr/local/bin/cyber`와 같다.
+스파이크(그리고 본체가 생기면 본체)의 cyber 의존은 soomtong/cyber의 가장 새 빌드를 따른다. 특정 커밋을 기준으로 고정하지 않는다. 릴리스 태그와 `latest` 프리릴리스 태그 가운데 앞선 것을 받는다. 지금은 릴리스 `0.4.15`다(`latest` 프리릴리스보다 뒤에 나왔다). 릴리스면 사용자가 설치한 `/usr/local/bin/cyber`와 같다.
 
 - build.zig.zon: `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#<태그>"`. zig가 `?ref=<태그>#<받은 커밋>`과 해시를 적는다. 해시는 zig가 요구해서 남을 뿐, 기준을 고정하는 뜻은 없다.
-- build.zig: 의존 인자는 `dev`만 넘긴다(릴리스면 false, 프리릴리스면 true). `build`, `commit`은 넘기지 않는다. 버전 문자열은 `Cyber 0.4.14-DEV build-0-local`(dev = true) 또는 `Cyber 0.4.14 build-0-local`(dev = false) 꼴이다.
+- build.zig: 의존 인자는 `dev`만 넘긴다(릴리스면 false, 프리릴리스면 true). `build`, `commit`은 넘기지 않는다. 버전 문자열은 `Cyber 0.4.15-DEV build-0-local`(dev = true) 또는 `Cyber 0.4.15 build-0-local`(dev = false) 꼴이다.
 - s1 검사 0은 버전 문자열을 비교하지 않고 `Cyber `로 시작하는지만 본다.
 - 문구를 CLI로 볼 때는 받은 빌드와 같은 CLI를 쓴다. 릴리스면 설치된 `/usr/local/bin/cyber`, 프리릴리스면 `gh release download latest -R soomtong/cyber`.
 

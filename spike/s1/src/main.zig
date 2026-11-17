@@ -876,6 +876,47 @@ pub fn main(init: std.process.Init) !void {
         const mx = firstLine(errorSummary(vm_x));
         const rx2 = run(vm_x, "print(2)\n", .{});
         check("7h. c 없이 #[extern]: 검증과 eval이 컴파일 오류, 세션은 이어진다", vx == c.CL_ERROR_COMPILE and rx.code == c.CL_ERROR_COMPILE and rx2.code == c.CL_SUCCESS, "검증={s} eval={s} 다음={s} | {s}", .{ codeName(vx), codeName(rx.code), codeName(rx2.code), mx });
+        // 0.4.15의 cl_vm_symbol_hints: 검증 뒤 쓰지 않는 지역과 use를 호스트가 받을 수 있는가.
+        // 세션의 최상위 지역은 다음 eval이 쓸 수 있으니 함수 안 지역과 따로 본다.
+        const vm_h = newVm();
+        defer c.cl_vm_deinit(vm_h);
+        c.cl_vm_set_symbol_info(vm_h, true);
+        const hsrc = "use math\nfn f() -> int:\n    unused := 3\n    _keep := 4\n    return 1\ntop := f()\n";
+        const vh = c.cl_vm_validate(vm_h, B(hsrc));
+        var hints: [*c]const c.CLHint = null;
+        const nh = c.cl_vm_symbol_hints(vm_h, &hints);
+        var hbuf: [512]u8 = undefined;
+        var hlen: usize = 0;
+        var unused_local = false;
+        var unused_use = false;
+        var unused_top = false;
+        var i: usize = 0;
+        while (i < nh) : (i += 1) {
+            const h = hints[i];
+            const d = S(h.detail);
+            const kname = switch (h.kind) {
+                c.CL_HINT_LOCAL_TYPE => "type",
+                c.CL_HINT_SCOPE_EXIT => "scope",
+                c.CL_HINT_UNUSED_LOCAL => "unused",
+                c.CL_HINT_UNUSED_USE => "unused_use",
+                else => "?",
+            };
+            if (h.kind == c.CL_HINT_UNUSED_LOCAL and std.mem.eql(u8, d, "unused")) unused_local = true;
+            if (h.kind == c.CL_HINT_UNUSED_LOCAL and std.mem.eql(u8, d, "top")) unused_top = true;
+            if (h.kind == c.CL_HINT_UNUSED_USE and std.mem.eql(u8, d, "math")) unused_use = true;
+            const w = std.fmt.bufPrint(hbuf[hlen..], "{s}:{s}@{d} ", .{ kname, d, h.pos }) catch break;
+            hlen += w.len;
+        }
+        // 실패한 검증 뒤에는 쓰지 않는 이름을 내지 않는다.
+        _ = c.cl_vm_validate(vm_h, B("fn g():\n    nope := 1\n    print(missing)\n"));
+        var hints2: [*c]const c.CLHint = null;
+        const nh2 = c.cl_vm_symbol_hints(vm_h, &hints2);
+        var unused_after_fail: usize = 0;
+        i = 0;
+        while (i < nh2) : (i += 1) {
+            if (hints2[i].kind == c.CL_HINT_UNUSED_LOCAL) unused_after_fail += 1;
+        }
+        check("7i. cl_vm_symbol_hints: 검증 뒤 쓰지 않는 지역과 use, 실패한 검증 뒤에는 없음 (0.4.15)", vh == c.CL_SUCCESS and unused_local and unused_use and unused_after_fail == 0, "검증={s} 힌트={d} 최상위 지역도 unused={} 실패 뒤 unused={d} | {s}", .{ codeName(vh), nh, unused_top, unused_after_fail, hbuf[0..hlen] });
     }
 
     // 8. #[bind]의 기본값 매개변수
