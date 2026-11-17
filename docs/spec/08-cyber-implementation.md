@@ -56,13 +56,13 @@
 - 검증은 세션 VM에서 바로 한다. 보통의 컴파일 실패 뒤에는 같은 VM의 다음 검증과 실행이 된다. 모듈 소스가 실패한 뒤 다음 use에서 다시 불러온다. 이스케이프 오류(`\|`, `\xZZ`)는 위치 있는 컴파일 오류이고 세션이 남는다.
 - `'\0'`은 NUL이다. 타입 없는 목록 리터럴은 원소를 첫 원소의 타입으로 바꾸지 않는다(`{1, 'a'}`는 컴파일 오류).
 - 목록 참조에 대한 `+=`(`out := ^[]str{}` 뒤 `out += 'x'`)는 검증이 잡는 컴파일 오류이고 `out.* += 'x'`로 쓴다.
-- core의 함수를 가릴 필요는 보이지 않았다. 로더는 허용 목록이다: core, meta, c, math, json, toon, regex, peg, time, path(ADR 0024, 0025, 0026, 0027). 로더와 resolver는 스크립트의 use와 모듈 안의 use를 구별하지 못한다(math의 `#c.include`는 `curUri`가 스크립트인 채로 c를 resolve한다). 그래서 의존 모듈 meta와 c를 넣는다. 이전 로더가 c를 막아 `use math`가 실패했다.
+- core의 함수를 가릴 필요는 보이지 않았다. 로더는 허용 목록이다: core, meta, c, math, json, toon, regex, peg, time, path, test(ADR 0024, 0025, 0026, 0027, 0028). 로더와 resolver는 스크립트의 use와 모듈 안의 use를 구별하지 못한다(math의 `#c.include`는 `curUri`가 스크립트인 채로 c를 resolve한다). 그래서 의존 모듈 meta와 c를 넣는다. 이전 로더가 c를 막아 `use math`가 실패했다.
 - 패키지에 `docs/agent-guide.md`와 `docs/api.json`이 있다. api.json은 항목마다 `module`이 있고 `version`은 `source`다. `cyber doc --api <module>`이 같은 소스를 찍는다. 다섯 모듈(json, toon, regex, peg, time)은 함수 67개, 타입 24개, 시그니처만 모으면 약 6.8 KB다. `path`(ADR 0027)가 함수 9개, 약 0.2 KB를 더한다(s1 검사 0b, 여섯 모듈 함수 76개).
 - x86_64 AVX2 빌드에서 128바이트 이상인 문자열의 한 바이트 검색(`s.index('\n')`, 그 위의 `split`)이 틀린 위치를 돌려주던 결함(cyber F-160)이 0.4.14에서 고쳐졌다. tars 게스트(x86_64 Linux)의 기준 빌드는 0.4.14 이상이어야 한다.
 - c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의 컴파일 오류다(``An `#[extern]` function needs the `c` module. Add `use c`.``). 검증과 eval 모두 CL_ERROR_COMPILE이고 다음 eval은 세션을 이어 간다(s1 검사 7h). 0.4.13 릴리스는 검증 중에 프로세스를 죽였고 0.4.14에서 고쳐졌다.
 - `Slice`의 크기를 바꾸는 메서드(`append`, `insert`, `remove`, `clear`, `size_down`, `size_up`)는 0.4.15부터 받는 변수를 제자리에서 바꾸고 아무것도 돌려주지 않는다. 새 목록은 `appended`, `inserted`, `removed`, `+`다. 옛 꼴 `xs = xs.append(v)`는 고칠 꼴을 말하는 컴파일 오류다. 세션의 마지막 줄 `xs.append(v)`는 결과 없는 문장이다.
 - `cl_vm_set_symbol_info`를 켜고 검증하면 `cl_vm_symbol_hints`(0.4.15)가 추론된 지역 타입, `scope` 출구, 쓰지 않는 지역과 `use`를 준다. 실패한 검증 뒤에는 쓰지 않는 이름을 내지 않는다. 세션의 최상위 지역도 unused로 나오므로 호스트가 거른다(s1 검사 7i).
-- 표준 모듈 `time`은 시계(`time.now()`, `time.monotonic()`)와 시스템 파일(`time.zone(name)`의 zoneinfo 폴더, `time.local()`의 `TZ`와 `/etc/localtime`)을 능력을 거치지 않고 읽는다. 허용한다(ADR 0024). 시각 읽기는 세션 기록에 남지 않는다. json, toon, regex, peg도 허용한다(ADR 0025). 스파이크의 호스트 로더가 막는 것은 io, cy, test다.
+- 표준 모듈 `time`은 시계(`time.now()`, `time.monotonic()`)와 시스템 파일(`time.zone(name)`의 zoneinfo 폴더, `time.local()`의 `TZ`와 `/etc/localtime`)을 능력을 거치지 않고 읽는다. 허용한다(ADR 0024). 시각 읽기는 세션 기록에 남지 않는다. json, toon, regex, peg도 허용한다(ADR 0025). 스파이크의 호스트 로더가 막는 것은 io, cy다. test는 연다(ADR 0028, s1 검사 7a4).
 - deny_spawn으로 spawn은 eval과 검증에서 컴파일 오류이고, scope 블록의 동시 승인은 그대로 된다. 호스트 함수가 매개변수를 반환 슬롯보다 먼저 읽어도 직접 호출, 함수 포인터 값, 함수 union 값, sort가 부르는 경로에서 맞는 값이다(검사 6m).
 - deny_raw_ptrs와 호스트 모듈 선언은 함께 동작한다.
 - 최상위 빌림(`b := &counts`)은 persist_main 세션에서 `Cannot persist local` 오류다. 세션의 캡처 오류 문구는 `^T` 선언을 권하고 빌림은 함수 안에서 하라고 한다.

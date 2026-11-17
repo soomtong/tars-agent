@@ -20,7 +20,7 @@ CodeAct는 언어와 VM을 넣어 반복을 줄이고 작업을 배치로 돌리
 
 - 라이브러리의 기본 로더는 `os`, `libc`, `cli`를 모른다(CLI 전용). 이 결정은 이미 성립해 있고, 호스트가 `os`를 더하지 않는 것으로 지킨다.
 - 기본 로더가 주는 것은 core, meta, c, math, cy, io, test와 표준 모듈 json, toon, regex, peg, time이다. `io`는 str을 읽는 Reader, Scanner라 세계에 닿지 않는다.
-- 로더는 스크립트의 `use`와 모듈 안의 `use`를 구별하지 못한다. 그래서 허용 목록에 의존 모듈 `meta`(core, json, math가 쓴다)와 `c`(math가 쓴다)를 넣는다. 허용 목록: core, meta, c, math, json, toon, regex, peg, time, path, 그리고 호스트 능력 모듈. `io`, `cy`, `test`는 싣지 않는다(가르치지 않고 필요가 없다. 위험해서가 아니다).
+- 로더는 스크립트의 `use`와 모듈 안의 `use`를 구별하지 못한다. 그래서 허용 목록에 의존 모듈 `meta`(core, json, math가 쓴다)와 `c`(math가 쓴다)를 넣는다. 허용 목록: core, meta, c, math, json, toon, regex, peg, time, path, test(ADR 0028), 그리고 호스트 능력 모듈. `io`, `cy`는 싣지 않는다(가르치지 않고 필요가 없다. 위험해서가 아니다). `test`도 같은 이유로 막았다가 정본 안내가 가르치게 되어 열었다(ADR 0028).
 - `c`는 deny_raw_ptrs 아래에서 포인터 함수(`to_strz`, `from_strz`, `memcpy`)가 컴파일 오류이고, -Dffi=false라 extern 호출이 panic 결과다. 이전 로더는 `c`를 막아서 `use math`가 실패하고 있었다.
 - `c`가 실려 있지 않을 때 `#[extern]` 함수가 있는 스크립트는 0.4.13에서 검증 중에 프로세스를 죽였다. cyber 0.4.14에서 선언 위치의 컴파일 오류가 됐다(s1 검사 7h).
 - cyber 0.4.14부터 호스트 resolver가 소스의 use만 받는다(컴파일러 내부 조회는 resolver를 부르지 않는다). `curUri`가 `main`인 use만 허용 표와 맞추면 스크립트의 `use c`, `use meta`를 막으면서 `use math`가 된다. cyber는 `cy.eval`(새 VM이 호스트 설정을 물려받지 않는다)과 `meta.load`(컴파일 시점에 파일을 읽는다)를 스크립트에서 막을 근거로 든다. 지금 허용 목록에는 `cy`가 없다. resolver를 더할지는 본체의 runtime 단계에서 정한다. 그때 extern 문구(``Add `use c`.``)와 다투지 않게 resolver의 거부 문구를 정한다. 0.4.14의 기본 거부 문구는 ``Failed to resolve module `c`.``처럼 모듈 이름을 말한다.

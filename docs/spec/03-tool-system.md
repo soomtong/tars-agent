@@ -33,7 +33,7 @@ impl     Zig 함수. VM을 모른다
 
 - 이름은 모듈.동사 꼴이다. 모듈은 fs, proc, net, ui, memo.
 - 세션 시작 때 호스트가 머리말 스크립트를 한 번 eval해 use 선언을 넣는다. persist_main이 이를 이어 주므로 모델은 use를 쓰지 않는다.
-- 호스트 로더가 허용하는 모듈은 cyber 표준 모듈 core, meta, c, math, json, toon, regex, peg, time, path와 위의 호스트 모듈뿐이다(meta와 c는 다른 모듈의 의존). io, cy, test는 로드를 거부하고 os는 라이브러리에 없다 (05, ADR 0026). 순수 계산은 표준 모듈의 몫이고 능력으로 만들지 않는다 (ADR 0010).
+- 호스트 로더가 허용하는 모듈은 cyber 표준 모듈 core, meta, c, math, json, toon, regex, peg, time, path, test와 위의 호스트 모듈뿐이다(meta와 c는 다른 모듈의 의존). io, cy는 로드를 거부하고 os는 라이브러리에 없다 (05, ADR 0026, 0028). 순수 계산은 표준 모듈의 몫이고 능력으로 만들지 않는다 (ADR 0010).
 
 ## 검증
 

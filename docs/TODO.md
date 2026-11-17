@@ -26,7 +26,7 @@
 - [x] 스파이크 검토 결과: docs/spikes/2026-11-14-m0-spikes-review.md, 발견과 추천은 ADR 0017. 스파이크 코드(spike/)는 사용자가 검토한 뒤 지운다
 - [ ] 평가는 json 모듈을 안내에 넣은 뒤 돌린다(json은 기준 빌드에 있다). 안내에 가르칠 모듈과 크기는 사용자가 정한다
 - [~] 스파이크 3, 교차 빌드: x86_64-linux-gnu 교차 빌드는 확인. tars 게스트(QEMU)에서의 실행은 기준 빌드로 확인할 것 (tars-linux 산출물 필요)
-- [x] cyber 0.4.15로 옮기기 (2026-11-18): 두 스파이크의 의존을 태그 `0.4.15`(`c13a207f`)로 올렸다. s1 45개 통과(새 검사 7i: `cl_vm_symbol_hints`), s2 빌드, x86_64 교차 빌드. 안내 두 판과 agent-guide.md의 코드 블록 34개가 CLI에서 모두, 세션에서 `use test` 블록 하나 말고 통과한다. 제자리 `Slice`의 문구(`xs = xs.append(3)`, `ys := xs.append(3)`, 전역 `g.append(g.len())`)를 CLI와 세션에서, `os` 옛 꼴의 문구를 CLI에서 탐침으로 확인했다(세션은 `os`를 싣지 않는다). 세션의 마지막 줄 `xs.append(4)`는 결과 없는 문장, `xs.appended(3)`은 eval 결과다. `cyber-lsp`를 stdio로 붙여 unused 경고, quick fix, inlay hint, `scope` 출구 알림, 문서 주석 hover를 확인했다. 검토 문서 3.5, 7, 8절, 9절 18
+- [x] cyber 0.4.15로 옮기기 (2026-11-18): 두 스파이크의 의존을 태그 `0.4.15`(`c13a207f`)로 올렸다. s1 46개 통과(새 검사 7i: `cl_vm_symbol_hints`, 7a4: `use test`), s2 빌드, x86_64 교차 빌드. 안내 두 판과 agent-guide.md의 코드 블록 34개가 CLI와 세션에서 모두 통과한다(`test`를 연 뒤, ADR 0028). 제자리 `Slice`의 문구(`xs = xs.append(3)`, `ys := xs.append(3)`, 전역 `g.append(g.len())`)를 CLI와 세션에서, `os` 옛 꼴의 문구를 CLI에서 탐침으로 확인했다(세션은 `os`를 싣지 않는다). 세션의 마지막 줄 `xs.append(4)`는 결과 없는 문장, `xs.appended(3)`은 eval 결과다. `cyber-lsp`를 stdio로 붙여 unused 경고, quick fix, inlay hint, `scope` 출구 알림, 문서 주석 hover를 확인했다. 검토 문서 3.5, 7, 8절, 9절 18
 - [ ] 검증 뒤 `cl_vm_symbol_hints`의 쓰지 않는 함수 안 지역을 모델에게 넘길지 (검토 문서 9절 18, 세션의 최상위 지역은 거른다). 평가 때 정한다
 - [ ] Cyber 부분집합 안내 (prompt/cyber-subset*.md, 예제 10개). 기준 빌드로 다시 썼고 예제와 조언을 CLI와 세션(persist_main) 양쪽에서 확인했다 (검토 문서 8절). 남은 것: 크기가 4,000토큰 목표를 넘는다(검토 문서 8절의 수치). 목표를 바꿀지 안내를 줄일지 사용자가 정한다
 - [ ] eval/: 과제 20개와 채점기. 과제는 실제 쓰임에서 고른다 (파일 찾아 고치기, 여러 파일 집계, 명령 실행 후 출력 가공, 오류 처리, JSON 꺼내기 등). 과제마다 3회 실행
@@ -45,6 +45,7 @@
 - [~] C2 regex 모듈 (역추적 없는 엔진), peg 모듈. 기준 빌드에 있고 로더가 싣는다. 남은 게이트는 json과 같다
 - [x] C2 time 모듈. 기준 빌드에 있다. 허용하고 clock.now는 두지 않는다. 스파이크 로더에서 열었다 (ADR 0024, 2026-11-17)
 - [x] 표준 모듈 API: 패키지에 `docs/api.json`이 들어 있고 `cyber doc --api <module>`이 찍는다. s1 검사 0b가 빌드 때 읽어 모듈로 거른다 (cyber 0.4.14, 2026-11-17)
+- [x] `test` 모듈을 연다. 순수 Cyber 검사 함수이고 정본 안내가 가르친다. s1 검사 7a4 (ADR 0028, 사용자 결정, 2026-11-18)
 - [x] `path` 모듈(0.4.14, join, base, dir, ext, stem, normalize, is_absolute). 파일 시스템을 보지 않는 문자열 함수라 연다. 스파이크 로더에서 열었다. s1 검사 7a3 (ADR 0027, 2026-11-17)
 - [ ] C3 임베딩 옵션: `os`를 호스트 콜백으로 받기(ADR 0026의 방향 D). 모듈 허용 표는 호스트 로더로 되므로 올리지 않는다
 - [ ] 수시: 프로세스를 죽이는 경로 수정

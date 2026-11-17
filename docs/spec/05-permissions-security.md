@@ -12,7 +12,7 @@
 
 - libcyber를 -Dffi=false로 빌드한다. tcc가 링크되지 않아 라이선스 조건도 이것으로 성립한다.
 - 스크립트는 능력으로만 세계(파일, 프로세스, 네트워크, 환경)에 닿는다. `os`는 열지 않는다 (ADR 0026). libcyber의 기본 로더는 `os`, `libc`, `cli`를 모르고(CLI 전용), 호스트도 더하지 않는다.
-- 호스트 로더(cl_vm_set_loader)는 허용 목록이다. 표준 모듈 core, meta, c, math, json, toon, regex, peg, time, path와 호스트 능력 모듈만 싣는다. io, cy, test는 로드 실패다. 로더는 스크립트의 use와 모듈 안의 use를 구별하지 못하므로 의존 모듈 meta(core, json, math가 쓴다)와 c(math가 쓴다)를 넣는다.
+- 호스트 로더(cl_vm_set_loader)는 허용 목록이다. 표준 모듈 core, meta, c, math, json, toon, regex, peg, time, path, test와 호스트 능력 모듈만 싣는다. io, cy는 로드 실패다. test는 순수 Cyber 검사 함수라 연다(ADR 0028). 로더는 스크립트의 use와 모듈 안의 use를 구별하지 못하므로 의존 모듈 meta(core, json, math가 쓴다)와 c(math가 쓴다)를 넣는다.
 - c 모듈은 이 구성에서 무력하다. 포인터 함수(to_strz, from_strz, memcpy)는 deny_raw_ptrs로 컴파일 오류이고, extern 호출은 -Dffi=false로 panic 결과다. c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의 컴파일 오류이고 세션이 남는다(``An `#[extern]` function needs the `c` module. Add `use c`.``, s1 검사 7h).
 - 스크립트의 use만 가리는 길도 있다(cyber `latest`부터). 호스트 resolver(cl_vm_set_resolver)는 소스의 use마다 `(curUri, uri)`를 받는다. `curUri`가 `main`인 use만 허용 표와 맞추면 스크립트의 `use c`, `use meta`를 막으면서 `use math`는 된다. 로더 허용 목록은 그대로 둔다. 쓸지는 본체의 runtime 단계에서 정한다(ADR 0026).
 - time은 시계와 zoneinfo를 능력 없이 읽는다. 시각 읽기는 세션 기록에 남지 않는다 (ADR 0024).

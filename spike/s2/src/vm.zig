@@ -130,9 +130,9 @@ fn loader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResul
 
 /// 싣는 표준 모듈 (ADR 0026). 로더는 스크립트의 use와 모듈 안의 use를 구별하지 못하므로
 /// 의존 모듈도 넣는다: meta(core, json, math가 쓴다), c(math가 쓴다. deny_raw_ptrs와 ffi=false로 무력하다).
-/// 그 밖(io, cy, test)은 싣지 않는다. os, libc, cli는 라이브러리의 기본 로더에 없다.
+/// test는 순수 Cyber 검사 함수라 연다(ADR 0028). 그 밖(io, cy)은 싣지 않는다. os, libc, cli는 라이브러리의 기본 로더에 없다.
 fn isAllowedStd(name: []const u8) bool {
-    for ([_][]const u8{ "core", "meta", "c", "math", "json", "toon", "regex", "peg", "time", "path" }) |m| {
+    for ([_][]const u8{ "core", "meta", "c", "math", "json", "toon", "regex", "peg", "time", "path", "test" }) |m| {
         if (std.mem.eql(u8, name, m)) return true;
     }
     return false;

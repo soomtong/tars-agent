@@ -10,7 +10,7 @@
 
 | 질문 | 답 | 근거 |
 |---|---|---|
-| Zig 호스트가 libcyber를 링크해 VM을 돌릴 수 있는가 | 된다 | 스파이크 1, 검사 45개 모두 통과 |
+| Zig 호스트가 libcyber를 링크해 VM을 돌릴 수 있는가 | 된다 | 스파이크 1, 검사 46개 모두 통과 |
 | cyber를 build.zig.zon 의존으로 쓸 수 있는가 | 된다. 태그를 따르는 의존의 `artifact("cyber")`로 받고 cyber.h가 따라온다 | 3.1 |
 | 능력이 `Future[!str]`을 돌려줄 수 있는가 (ADR 0011의 모양) | 된다. str 값이나 오류로 완료한다 | 3.2 |
 | 승인 대기를 VM 밖에서 하는 설계(ADR 0011, 0016)가 실제로 도는가 | 돈다. 승인, 거부, 취소, 동시 요청 모두 | 3.3 |
@@ -78,7 +78,7 @@ web.log: 23
 
 ## 3. 스파이크 1: 호스트 경계
 
-코드: spike/s1. 실행: `zig build && ./zig-out/bin/s1`. 검사 45개가 PASS/FAIL로 찍히고 모두 통과한다.
+코드: spike/s1. 실행: `zig build && ./zig-out/bin/s1`. 검사 46개가 PASS/FAIL로 찍히고 모두 통과한다.
 
 ### 3.1 링크
 
@@ -159,13 +159,13 @@ ADR 0011과 0016의 설계는 고칠 것 없이 돈다.
 | `Ptr[int](0)` | CompileError: Raw pointer type `Ptr[int]` is not allowed (deny_raw_ptrs) |
 | deny_raw_ptrs와 호스트 모듈 | 함께 동작한다. 호스트 모듈의 선언은 막히지 않는다 |
 | `@bitCast` | CompileError: internal to the builtin modules |
-| `use io` (`cy`, `test`도) | 허용 목록 밖이라 로더가 거부한다(검사 7a). io는 str의 Reader, Scanner라 세계에 닿지 않는다 |
+| `use io` (`cy`도) | 허용 목록 밖이라 로더가 거부한다(검사 7a). io는 str의 Reader, Scanner라 세계에 닿지 않는다 |
 | `use json` (`toon`, `regex`, `peg`, `time`도) | 세션에서 된다(ADR 0024, 0025). json의 parse, get, stringify, toon.from_json, regex의 is_match, find_all, peg의 compile, match, time.now, time.zone('Asia/Seoul')이 맞고 `use`는 다음 run에 이어진다 |
 | `spawn(work, {21})` | deny_spawn이면 eval과 검증에서 CompileError: `spawn` is not allowed. The host disabled threads for this script (`deny_spawn`). ... |
 
 spawn에 대해: deny_spawn을 켜지 않으면(`s1 spawn`) 스레드 안에서 능력 함수(`fs.read`)가 그대로 불리고, 연료 상한은 스레드 안의 무한 루프를 502~508ms에 멈춘다(타이머 500ms). deny_spawn을 켜면 표준 모듈이 아닌 chunk의 spawn이 컴파일 오류이고 호스트 함수는 eval 스레드에서만 불린다. s1과 s2는 deny_spawn을 켠 채 돌았고, scope 블록의 동시 승인(3.3)은 그 아래에서 통과했다.
 
-로더는 허용 목록이다: core, meta, c, math, json, toon, regex, peg, time, path와 호스트 능력 모듈(ADR 0026). 로더와 resolver는 스크립트의 use와 모듈 안의 use를 구별하지 못하므로 의존 모듈 meta(core, json, math가 쓴다)와 c(math가 쓴다)를 넣는다. 이전의 차단 목록은 c를 막아 `use math`가 실패하고 있었다(검사 7a2가 이제 본다). 기본 로더는 os, libc, cli를 모른다. 새 모듈 가운데 `time`은 시계(`time.now()`, `time.monotonic()`)와 시스템 파일(`time.zone(name)`의 zoneinfo 폴더, `time.local()`의 `TZ`와 `/etc/localtime`)을 능력을 거치지 않고 읽는다. 이것을 받아들이고 허용했다. 능력 clock.now는 두지 않는다(ADR 0024). json, toon, regex, peg는 순수 계산이고 연다(ADR 0025). 0.4.14의 `path`는 경로 문자열만 다루고 파일 시스템을 보지 않아 연다(ADR 0027).
+로더는 허용 목록이다: core, meta, c, math, json, toon, regex, peg, time, path, test와 호스트 능력 모듈(ADR 0026, 0028). 로더와 resolver는 스크립트의 use와 모듈 안의 use를 구별하지 못하므로 의존 모듈 meta(core, json, math가 쓴다)와 c(math가 쓴다)를 넣는다. 이전의 차단 목록은 c를 막아 `use math`가 실패하고 있었다(검사 7a2가 이제 본다). 기본 로더는 os, libc, cli를 모른다. 새 모듈 가운데 `time`은 시계(`time.now()`, `time.monotonic()`)와 시스템 파일(`time.zone(name)`의 zoneinfo 폴더, `time.local()`의 `TZ`와 `/etc/localtime`)을 능력을 거치지 않고 읽는다. 이것을 받아들이고 허용했다. 능력 clock.now는 두지 않는다(ADR 0024). json, toon, regex, peg는 순수 계산이고 연다(ADR 0025). 0.4.14의 `path`는 경로 문자열만 다루고 파일 시스템을 보지 않아 연다(ADR 0027). `test`는 네이티브 바인딩이 없는 순수 Cyber 검사 함수이고 정본 안내가 가르치므로 연다(ADR 0028, 검사 7a4). 실패한 검사는 panic이라 앞선 eval의 최상위 지역이 사라진다(6k).
 
 ## 4. 스파이크 2: 제공자
 
@@ -329,7 +329,7 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 
 영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.15`다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(설치된 `/usr/local/bin/cyber`, `Cyber 0.4.15 build-967-c13a207`)와 세션(`s1 replay`)으로 확인한다.
 
-확인 방법: 안내의 항목마다 탐침 스크립트를 만들어 기준 빌드의 CLI와 `replay`(같은 VM, persist_main, 검증 뒤 실행)로 돌리고 결과(출력이나 오류 첫 줄)를 맞춰 봤다. 오류 목록의 첫 줄, "없는 것" 목록, "있는 메서드" 목록, `int('abc')`, 정수 나눗셈, 음수 인덱스가 기준 빌드에서 그대로다. 세션에서만 다른 것은 최상위 빌림과 모듈이다. CLI는 `os`, `test`를 싣고, 스파이크의 세션은 `test`(와 `c`)를 호스트 로더가 막는다. 안내는 세션 쪽을 적는다. 코드 블록 11개는 CLI와 `replay` 양쪽에서 통과했다. cyber의 agent-guide.md(`cyber doc --for-agents`)의 코드 블록 12개도 CLI에서 모두 통과하고, 세션에서는 `use test` 블록만 로더가 막는다(2026-11-18, 0.4.15).
+확인 방법: 안내의 항목마다 탐침 스크립트를 만들어 기준 빌드의 CLI와 `replay`(같은 VM, persist_main, 검증 뒤 실행)로 돌리고 결과(출력이나 오류 첫 줄)를 맞춰 봤다. 오류 목록의 첫 줄, "없는 것" 목록, "있는 메서드" 목록, `int('abc')`, 정수 나눗셈, 음수 인덱스가 기준 빌드에서 그대로다. 세션에서만 다른 것은 최상위 빌림과 모듈이다. CLI는 `os`를 싣고, 스파이크의 세션은 싣지 않는다(ADR 0026). `test`는 양쪽에서 실린다(ADR 0028). 안내는 세션 쪽을 적는다. 코드 블록 11개는 CLI와 `replay` 양쪽에서 통과했다. cyber의 agent-guide.md(`cyber doc --for-agents`)의 코드 블록 12개도 CLI에서 모두 통과하고, 세션에서도 모두 통과한다(2026-11-18, 0.4.15, `test`를 연 뒤. ADR 0028).
 
 | 무엇 | 안내가 가르치는 것 |
 |---|---|
@@ -359,7 +359,7 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 | 2 | 능력은 모두 `Future[!T]`를 돌려주고 머리말 래퍼가 await한다. 승인이 필요 없으면 호스트 함수 안에서 바로 완료한다 | 3.2, 3.3. 능력의 모양이 하나가 되고, 등급이 바뀌어도 선언이 바뀌지 않는다 |
 | 3 | 검증은 세션 VM에서 `cl_vm_validate`로 바로 한다. 머리말을 eval한 뒤에 검증한다 | 3.5. 검증은 마지막 eval의 설정을 쓴다(cyber.h에 적혀 있다) |
 | 4 | CL_SUCCESS가 아닌 eval과 검증 뒤 `cl_vm_reset_pending`을 묻고, reset이면 머리말을 다시 돌려 모델에게 알린다. panic과 interrupt 뒤에는 최상위 변수가 사라졌다고 알린다 | 3.4, 3.5. s2가 그렇게 돈다 |
-| 5 | 호스트 로더는 허용 목록으로 쓴다 | 3.6. 기본 로더는 cyber가 표준 모듈을 더할 때마다 넓어진다. 차단 목록이면 정하지 않은 모듈이 그대로 열린다. 표준 모듈 여섯과 의존 모듈 meta, c를 넣는다(ADR 0024, 0025, 0026, 0027) |
+| 5 | 호스트 로더는 허용 목록으로 쓴다 | 3.6. 기본 로더는 cyber가 표준 모듈을 더할 때마다 넓어진다. 차단 목록이면 정하지 않은 모듈이 그대로 열린다. 표준 모듈 일곱(json, toon, regex, peg, time, path, test)과 의존 모듈 meta, c를 넣는다(ADR 0024, 0025, 0026, 0027, 0028) |
 | 6 | deny_raw_ptrs와 deny_spawn을 켠다 | 3.6 |
 | 7 | 프로세스 실행 능력은 자체 시간 상한, 표준 입력 차단, 출력 크기 상한, 취소를 가진다 | VM의 타이머는 승인 뒤 루프가 돌리는 프로세스에 닿지 않는다 |
 | 8 | 읽기 능력도 권한 프로파일의 대상으로 둔다 (작업 폴더 밖 읽기는 승인) | 읽은 것은 모두 모델 제공자에게 간다 |
@@ -388,7 +388,7 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 
 | 경로 | 내용 | 실행 |
 |---|---|---|
-| spike/s1 | 호스트 경계 검사 45개, 세션 재생, 관찰 하나 | `zig build && ./zig-out/bin/s1`, `s1 replay <파일> [nv]` (스크립트를 `=====` 줄로 나눈다, 검증과 실행 결과, 출력, 오류 첫 줄을 찍는다. `nv`면 검증 없이 실행), `s1 spawn` (deny_spawn 없이) |
+| spike/s1 | 호스트 경계 검사 46개, 세션 재생, 관찰 하나 | `zig build && ./zig-out/bin/s1`, `s1 replay <파일> [nv]` (스크립트를 `=====` 줄로 나눈다, 검증과 실행 결과, 출력, 오류 첫 줄을 찍는다. `nv`면 검증 없이 실행), `s1 spawn` (deny_spawn 없이) |
 | spike/s2a | 두 형식의 원문 응답 받기 | `./run.sh`, 결과는 out/*.sse |
 | spike/s2 | 최소 에이전트 루프 (direct, codeact), 제공자 넷 | `./zig-out/bin/s2 --provider ds-anth --mode codeact "질문"`, `./compare.sh <제공자> [모델] [모드] [과제]` |
 | spike/s3 | tars 게스트 구동 스크립트 | 6절 |

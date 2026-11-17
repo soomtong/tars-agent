@@ -213,9 +213,9 @@ fn isAllowedApi(name: []const u8) bool {
 
 /// 싣는 표준 모듈 (ADR 0026). 로더는 스크립트의 use와 모듈 안의 use를 구별하지 못하므로
 /// 의존 모듈도 넣는다: meta(core, json, math가 쓴다), c(math가 쓴다. deny_raw_ptrs와 ffi=false로 무력하다).
-/// 그 밖(io, cy, test)은 싣지 않는다. os, libc, cli는 라이브러리의 기본 로더에 없다.
+/// test는 순수 Cyber 검사 함수라 연다(ADR 0028). 그 밖(io, cy)은 싣지 않는다. os, libc, cli는 라이브러리의 기본 로더에 없다.
 fn isAllowedStd(name: []const u8) bool {
-    for ([_][]const u8{ "core", "meta", "c", "math", "json", "toon", "regex", "peg", "time", "path" }) |m| {
+    for ([_][]const u8{ "core", "meta", "c", "math", "json", "toon", "regex", "peg", "time", "path", "test" }) |m| {
         if (std.mem.eql(u8, name, m)) return true;
     }
     return false;
@@ -844,6 +844,13 @@ pub fn main(init: std.process.Init) !void {
         check("7a2. use math, use toon: 의존 모듈(c, meta, json)을 거쳐 실린다", r1m.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "4\n"), "code={s} 출력={s} | {s}", .{ codeName(r1m.code), g_out.items, firstLine(errorSummary(vm)) });
         const r1p = run(vm, "use path\nprint(path.join('a', 'b/c.txt'))\nprint(path.dir('a'))\n", .{});
         check("7a3. use path: 파일 시스템을 보지 않는 경로 함수가 실린다 (ADR 0027)", r1p.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "a/b/c.txt\n.\n"), "code={s} 출력={s} | {s}", .{ codeName(r1p.code), std.mem.trim(u8, g_out.items, "\n"), firstLine(errorSummary(vm)) });
+        // test는 성공한 검사 뒤 출력이 이어지고, 실패한 검사는 panic이다 (ADR 0028).
+        const r1t = run(vm, "use test\ntest.eq(3, 1 + 2)\ntest.eq_slice([]int{1, 2}, {1, 2})\nprint('ok')\n", .{});
+        const out_t = std.mem.trim(u8, g_out.items, "\n");
+        const ok_t = r1t.code == c.CL_SUCCESS and std.mem.eql(u8, out_t, "ok");
+        const r1f = run(vm, "use test\ntest.eq(3, 1 + 1)\n", .{});
+        const msg_f = firstLine(errorSummary(vm));
+        check("7a4. use test: 검사 함수가 실리고 실패는 panic이다 (ADR 0028)", ok_t and r1f.code == c.CL_ERROR_PANIC, "성공={s} 출력={s} 실패={s} | {s}", .{ codeName(r1t.code), out_t, codeName(r1f.code), msg_f });
         const r2 = run(vm, "use os\nprint(os.cwd())\n", .{});
         check("7b. use os: 라이브러리에 없는 모듈", r2.code == c.CL_ERROR_COMPILE, "code={s} | {s}", .{ codeName(r2.code), firstLine(errorSummary(vm)) });
         const r3 = run(vm, "p := Ptr[int](0)\nprint(p.*)\n", .{});

@@ -25,6 +25,7 @@
 - [0021 pi 하네스에서 가져온 것](docs/decisions/0021-borrow-from-pi-harness.md) — 결과 상한은 모델 쪽(능력 반환 1 MiB), steering 큐, 벽시계는 VM 안 시간만, 크래시 재개의 짝 맞추기, 컴팩션 요약의 틀, fs.edit 정규화 일치. 최근 구간 원문 유지는 열어 둠
 - [0026 세계는 능력으로만, os는 열지 않는다](docs/decisions/0026-world-through-capabilities.md) — 배치의 힘은 주고 세계에 닿는 길은 능력 하나. 허용 목록 core, meta, c, math, json, toon, regex, peg, time, path(meta, c는 의존). 능력을 넓혀 메운다. 방향은 os를 호스트 콜백으로(D)
 - [0027 path 허용](docs/decisions/0027-allow-path-module.md) — 0.4.14의 경로 문자열 모듈. 파일 시스템을 보지 않아 능력이 필요 없다. 의존 모듈 없음
+- [0028 test 허용](docs/decisions/0028-allow-test-module.md) — 순수 Cyber 검사 함수. 정본 안내가 `use test`를 가르쳐 연다. 실패는 panic(최상위 지역이 사라진다)
 - [0025 json, toon, regex, peg 허용](docs/decisions/0025-allow-agent-std-modules.md) — tars-agent를 위해 만든 순수 계산 모듈. 로더는 c, test만 막는다. 안내에 가르칠지는 따로
 - [0024 time 모듈 허용, clock.now 없음](docs/decisions/0024-allow-time-module.md) — time은 시계와 zoneinfo를 직접 읽는다. 시각 읽기는 세션 기록에 남지 않는다. 리플레이가 필요해지면 시계 함수 바꿔 끼우기나 cyber 요청
 - [0023 cyber 의존은 가장 새 빌드](docs/decisions/0023-cyber-follows-latest.md) — 커밋을 고정하지 않는다. 가장 새 릴리스 태그(앞서 있으면 `latest`)를 `zig fetch --save=cyber`로 받는다. 검사 0은 버전 문자열을 비교하지 않는다
