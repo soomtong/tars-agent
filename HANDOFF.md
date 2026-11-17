@@ -60,7 +60,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 사용자가 정할 것:
 
-- [ ] 안내를 cyber의 agent-guide.md와 호스트 덧붙임으로 언제, 어떤 모양으로 모을지(ADR 0022 "열린 것"). 가이드와 스파이크 세션이 다른 곳은 대부분 tars-agent의 선택(모듈 막기, fiber 금지)이거나 실행 환경의 차이(`os`, CLI)다. 임베딩 호스트에 관한 한 줄을 가이드에 요청할지
+- [ ] 안내를 cyber의 agent-guide.md와 호스트 덧붙임으로 언제, 어떤 모양으로 모을지(ADR 0022 "열린 것"). 가이드와 스파이크 세션이 다른 곳은 대부분 tars-agent의 선택(모듈 막기, fiber 금지)이거나 실행 환경의 차이(`os`, CLI)다. 임베딩 호스트에 관한 줄은 요청서를 썼다(docs/requests/cyber-agent-guide-embedding-host.md, cyber에 전달)
 - [x] 표준 모듈 다섯을 연다: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025). 스파이크 로더는 허용 목록이다(ADR 0026)
 - [ ] os 대신 능력으로 넓힐 후보(fs.mkdir, fs.remove, fs.copy, fs.move, env.get)를 언제 정할지 (04, ADR 0026)
 - [ ] 다섯 모듈의 예제를 안내에 넣을지 (TODO C1, C2의 남은 게이트)
