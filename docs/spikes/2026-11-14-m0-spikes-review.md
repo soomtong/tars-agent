@@ -2,7 +2,7 @@
 
 스파이크를 Claude가 혼자 구현하고 검토했다 (ADR 0012의 덧붙임). 이 문서는 무엇을 만들었고, 기준 빌드에서 무엇이 확인됐고, 무엇이 남았고, 본체의 아키텍처에 어떤 뜻이 있는지를 적는다. 코드는 spike/에 있고 버릴 것이다.
 
-기준 빌드: soomtong/cyber latest dev 프리릴리스 0.4.13-DEV. 스파이크는 `latest` 태그를 따르는 의존으로 받는다(ADR 0023). 확인한 때의 `latest`는 커밋 8a892310이다. 스파이크 1, 3과 안내의 확인은 이 빌드로 2026-11-16에 돌렸다. 5절의 비교 회차는 0.4.12(커밋 67a2735c)로 돌렸고 이 빌드로 다시 돌리지 않았다. 측정 환경은 macOS arm64.
+기준 빌드: soomtong/cyber 0.4.13. 스파이크는 가장 새 빌드를 따르는 의존으로 받는다(ADR 0023). 스파이크 1, 3과 안내의 확인은 이 빌드로 2026-11-17에 돌렸다. 5절의 비교 회차는 0.4.12(커밋 67a2735c)로 돌렸고 이 빌드로 다시 돌리지 않았다. 측정 환경은 macOS arm64.
 
 읽는 순서: 1절(한 장 요약), 2절(에이전트는 어떻게 도는가), 그 뒤는 필요한 절만.
 
@@ -11,7 +11,7 @@
 | 질문 | 답 | 근거 |
 |---|---|---|
 | Zig 호스트가 libcyber를 링크해 VM을 돌릴 수 있는가 | 된다 | 스파이크 1, 검사 40개 모두 통과 |
-| cyber를 build.zig.zon 의존으로 쓸 수 있는가 | 된다. `latest` 태그를 따르는 의존의 `artifact("cyber")`로 받고 cyber.h가 따라온다 | 3.1 |
+| cyber를 build.zig.zon 의존으로 쓸 수 있는가 | 된다. 태그를 따르는 의존의 `artifact("cyber")`로 받고 cyber.h가 따라온다 | 3.1 |
 | 능력이 `Future[!str]`을 돌려줄 수 있는가 (ADR 0011의 모양) | 된다. str 값이나 오류로 완료한다 | 3.2 |
 | 승인 대기를 VM 밖에서 하는 설계(ADR 0011, 0016)가 실제로 도는가 | 돈다. 승인, 거부, 취소, 동시 요청 모두 | 3.3 |
 | 상한 넷(연료, 벽시계, 스택, 메모리)이 폭주를 멈추는가 | 멈춘다. VM은 계속 쓸 수 있다 | 3.4 |
@@ -82,10 +82,10 @@ web.log: 23
 
 ### 3.1 링크
 
-- build.zig.zon의 의존은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#latest"`로 넣는다. zig가 `.url = "git+https://github.com/soomtong/cyber?ref=latest#<받은 커밋>"`과 `.hash`를 적는다. `latest`가 움직여도 다시 받기 전에는 적힌 커밋을 쓴다.
-- `b.dependency("cyber", .{ .target = target, .optimize = .ReleaseFast, .static = true, .dev = true }).artifact("cyber")`를 `linkLibrary`로 링크한다(spike/s1/build.zig). ffi는 기본 false다.
+- build.zig.zon의 의존은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.13"`로 넣는다. zig가 `.url = "git+https://github.com/soomtong/cyber?ref=0.4.13#<받은 커밋>"`과 `.hash`를 적는다. 태그가 움직여도 다시 받기 전에는 적힌 커밋을 쓴다.
+- `b.dependency("cyber", .{ .target = target, .optimize = .ReleaseFast, .static = true, .dev = false }).artifact("cyber")`를 `linkLibrary`로 링크한다(spike/s1/build.zig). ffi는 기본 false다.
 - cyber.h는 아티팩트의 include 경로로 따라온다. s1의 C 파일(src/inc_check.c)이 `#include "cyber.h"`로 컴파일되고, `CLEvalConfig`와 `CLCompileConfig`의 크기(12)가 translate-c 쪽과 같다(검사 0).
-- 버전 문자열은 `Cyber 0.4.13-DEV build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
+- 버전 문자열은 `Cyber 0.4.13 build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, `-DEV` 표시는 `dev` 인자로 정한다. 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
 - Zig 0.17.1에는 `@cImport`가 없다. cyber.h를 Zig에서 쓰는 길은 둘이다: translate-c 패키지로 모듈을 만들거나, 쓰는 함수의 extern 선언을 손으로 쓴다. 스파이크는 앞의 것을 썼다. 본체의 추천은 9절.
 - libcyber.a(arm64, ReleaseFast)는 2.99 MB, 공개 `cl_` 함수는 140개다. 표준 모듈 json, toon, regex, peg, time이 들어 있고 각각의 `cl_mod_bind_*`가 있다. mimalloc 심볼은 없다(FFI를 끈 라이브러리 빌드에는 들어가지 않는다).
 
@@ -306,21 +306,21 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 
 ## 7. cyber에 남은 것
 
-스파이크는 latest dev 0.4.13-DEV를 `latest` 태그로 받는다(ADR 0023). M0에서 낸 요청은 모두 닫혔다. 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서)가 들어 있다(ADR 0022).
+스파이크는 cyber 0.4.13을 받는다(ADR 0023). M0에서 낸 요청은 모두 닫혔다. 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서)가 들어 있다(ADR 0022).
 
 모델이 모르는 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)은 인덱스, 슬라이스 경계, 대입 값 어디서든 인자 불일치 문구에 나오지 않는다. 대입 값이 원소 타입과 다르면 ``An element of `[]int` must be `int`, got `str`.``처럼 원소 타입을 말하고, `?T`와 `!T`이면 푸는 법을 붙인다(`Map`도 같다). 정수 원소 자리의 한 글자 리터럴(`xs[0] = 'a'`)은 오류가 아니라 코드 포인트(97)다. 타입이 정해진 자리의 한 글자 리터럴은 코드 포인트라는 언어 규칙이다.
 
-열린 요청: docs/requests/cyber-0.4.13-dev-findings.md. 둘 다 본체 첫 단계 전에 닫는다(ADR 0019).
+열린 요청은 없다.
 
-(a) `let x := 1`(`mut`, `let mut`도)에 ``Cyber has no `let`. Declare with `var x := 1 = value`.``라는 틀린 고치는 법을 말한다. 문구대로 쓴 `var x := 1`은 ``Expected variable type.``이다. `let x = 1`, `let x: int = 1`의 문구는 맞다. 안내는 우회하지 않았다. 5절 회차에서 `let`을 쓴 run은 없었다.
+다른 언어의 선언 키워드는 키워드만 뺀 꼴을 말한다. `let x := 1`(`mut`, `let mut`도)은 ``Cyber has no `let`. Declare with `x := 1`.``이고, `let x = 1`은 ``... Declare with `x := 1`, or `var x int = 1` for a type.``이다. CLI와 세션이 같다.
 
-(b) 세션에서 스크립트의 마지막 줄이 `out.remove(i)`나 `out.clear()`이면 마지막 표현식 값으로 받아들여져 오류가 없고 `out`은 그대로다. CLI와 마지막이 아닌 줄에서는 컴파일 오류다. 모델은 목록이 줄었다고 여기고 다음 run을 쓴다.
+크기를 바꾸는 `Slice` 메서드(`append`, `insert`, `remove`, `clear`, `size_down`, `size_up`)의 결과를 버리면 세션에서도 스크립트의 마지막 줄까지 컴파일 오류다(``The result of `remove` is the new list, and `out` keeps the old one. Write `out = out.remove(1)`.``). 그 밖의 마지막 표현식(`out.len()`, `out`)은 eval 결과다.
 
 표준 모듈: 기준 빌드에 json, toon, regex, peg, time이 있다(TODO의 C1, C2). 세션의 기본 로더가 다섯을 싣는다. 스파이크는 안내가 이 모듈을 가르치지 않으므로 s1과 s2의 호스트 로더에서 막았다(3.6). tars-agent 쪽에 남은 것은 안내에 넣는 것(크기는 8절의 결정과 함께)과 `time`의 허용 여부다. `time`은 시계와 zoneinfo 파일을 능력 없이 읽는다.
 
 ## 8. 안내 문서 (prompt/cyber-subset*.md)
 
-영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.13-DEV`다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(지금은 latest dev 프리릴리스의 CLI. 설치된 `/usr/local/bin/cyber`는 0.4.12다)와 세션(`s1 replay`)으로 확인한다.
+영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.13`이다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(설치된 `/usr/local/bin/cyber`, `Cyber 0.4.13 build-945-1dee651`)와 세션(`s1 replay`)으로 확인한다.
 
 확인 방법: 안내의 항목마다 탐침 스크립트를 만들어 기준 빌드의 CLI와 `replay`(같은 VM, persist_main, 검증 뒤 실행)로 돌리고 결과(출력이나 오류 첫 줄)를 맞춰 봤다. 오류 목록의 첫 줄, "없는 것" 목록, "있는 메서드" 목록, `int('abc')`, 정수 나눗셈, 음수 인덱스가 기준 빌드에서 그대로다. 세션에서만 다른 것은 최상위 빌림과 모듈이다. CLI는 `use json`을 싣고, 스파이크의 세션은 호스트 로더가 막아 `Failed to load module: json`을 낸다. 안내는 세션 쪽을 적는다. 코드 블록 11개는 CLI와 `replay` 양쪽에서 통과했다.
 
@@ -341,7 +341,7 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 | 없는 것 | `abs`, `sum`, `sorted`, `enumerate`, `zip`, `xs.map`, `xs.filter`. json, toon, regex, peg, time은 이 호스트가 싣지 않는다 |
 | 오류 목록 | 문구가 고치는 법을 말하지 않거나 틀린 고치는 법을 말하는 오류만 (21줄). 나머지는 "문구대로 고친다" 한 줄 |
 
-크기: 영문판 19.7KB(19,729바이트)이고 시스템 프롬프트 전체가 20,819바이트다. 5절 회차는 0.4.12 판(19,807바이트, 시스템 프롬프트 20,897바이트)으로 돌았고 첫 요청 입력이 약 6,500토큰이었다. TODO의 "4,000토큰 이하" 목표를 넘는다. 목표를 바꿀지 안내를 줄일지는 사용자가 정한다. 줄일 자리는 오류 목록(cyber가 문구를 보강할 때마다 줄이 빠진다)과 "Python과 다른 것"의 문법 줄이다. json 같은 새 모듈을 가르치면 더 커진다.
+크기: 영문판 19.7KB(19,721바이트)이고 시스템 프롬프트 전체가 20,811바이트다. 5절 회차는 0.4.12 판(19,807바이트, 시스템 프롬프트 20,897바이트)으로 돌았고 첫 요청 입력이 약 6,500토큰이었다. TODO의 "4,000토큰 이하" 목표를 넘는다. 목표를 바꿀지 안내를 줄일지는 사용자가 정한다. 줄일 자리는 오류 목록(cyber가 문구를 보강할 때마다 줄이 빠진다)과 "Python과 다른 것"의 문법 줄이다. json 같은 새 모듈을 가르치면 더 커진다.
 
 ## 9. 본체 아키텍처에 주는 뜻 (추천, 확정은 본체를 만들 때 사용자가)
 
@@ -384,9 +384,9 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 | spike/s2 | 최소 에이전트 루프 (direct, codeact), 제공자 넷 | `./zig-out/bin/s2 --provider ds-anth --mode codeact "질문"`, `./compare.sh <제공자> [모델] [모드] [과제]` |
 | spike/s3 | tars 게스트 구동 스크립트 | 6절 |
 
-- 두 스파이크의 cyber 의존은 `latest` 태그를 따르는 패키지다(build.zig.zon, ADR 0023). 로컬 cyber 저장소의 상태와 상관없다. 새 `latest`를 받을 때는 두 스파이크에서 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#latest"`를 돌린다. 문구를 CLI로 볼 때는 프리릴리스의 CLI(`gh release download latest -R soomtong/cyber`)를 쓴다. 아직 `latest`에 없는 cyber 수정은 `zig build --fork=<cyber 저장소>`로 본다.
+- 두 스파이크의 cyber 의존은 가장 새 빌드의 태그를 따르는 패키지다(build.zig.zon, ADR 0023). 로컬 cyber 저장소의 상태와 상관없다. 새 빌드를 받을 때는 두 스파이크에서 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#<태그>"`를 돌린다. 문구를 CLI로 볼 때는 받은 빌드와 같은 CLI를 쓴다(릴리스면 설치된 `/usr/local/bin/cyber`). 아직 태그에 없는 cyber 수정은 `zig build --fork=<cyber 저장소>`로 본다.
 - 키는 환경 변수 DEEPSEEK_API_KEY, OPENROUTER_API_KEY. 모델이 쓴 명령은 jail.zig의 샌드박스 안에서만 돈다. 이 가두기를 풀지 않는다.
 - compare.sh는 결과를 out/cmp-*에 덮어쓴다. 회차를 여럿 돌리면 회차마다 기준 빌드 이름의 폴더로 옮긴다(out/0.4.12/<회차>/). 회차는 차례로 돌린다(같은 작업 폴더 /tmp/tars-agent-s2를 쓰므로 겹치면 결과가 섞인다). s2는 실행마다 안내 파일을 읽으므로 회차 도중에 안내를 고치지 않는다.
-- cyber의 기준 빌드를 올리면: 의존을 올리고(build.zig의 commit 인자 포함), s1, 안내의 탐침, 코드 블록 11개를 CLI와 `replay`로 다시 돌리고, 기본 로더가 새로 주는 모듈이 있는지 보고(있으면 s1과 s2의 로더에서 막거나 안내에 넣는다), s2 비교를 다시 돌리고, 문서를 새 빌드의 사실로 고쳐 쓴다.
+- cyber의 기준 빌드를 올리면: `zig fetch --save=cyber`로 의존을 다시 받고(릴리스와 프리릴리스에 따라 build.zig의 `dev` 인자), s1, 안내의 탐침, 코드 블록 11개를 CLI와 `replay`로 다시 돌리고, 기본 로더가 새로 주는 모듈이 있는지 보고(있으면 s1과 s2의 로더에서 막거나 안내에 넣는다), s2 비교를 다시 돌리고, 문서를 새 빌드의 사실로 고쳐 쓴다.
 
 읽을 가치가 있는 순서: s2/src/main.zig(루프), s2/src/provider.zig(메시지 모델과 어댑터), s2/src/vm.zig(검증, 실행, 승인), s1/src/main.zig(검사 목록).

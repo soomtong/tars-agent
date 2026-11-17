@@ -5,9 +5,9 @@
     .fingerprint = 0xcd5194f6e0ab868f,
     .dependencies = .{
         .cyber = .{
-            // soomtong/cyber의 latest 태그(dev 프리릴리스). 갱신: zig fetch --save=cyber "git+https://github.com/soomtong/cyber#latest"
-            .url = "git+https://github.com/soomtong/cyber?ref=latest#8a892310554bba26061a5613784a20e930971275",
-            .hash = "cyber-0.4.13-AW3fkAQQowDHsJ54gaXZmRQLy97LTg3pDL1NKWoRadp0",
+            // soomtong/cyber의 가장 새 릴리스 태그(ADR 0023). 갱신: zig fetch --save=cyber "git+https://github.com/soomtong/cyber#<태그>"
+            .url = "git+https://github.com/soomtong/cyber?ref=0.4.13#1dee651462b6cdb6dc21e753e130755900e2c974",
+            .hash = "cyber-0.4.13-AW3fkN4YowAofOglwfhhZAIqAHRsf2JE2HWSZDF6qZhD",
         },
         .translate_c = .{
             .url = "git+https://codeberg.org/ziglang/translate-c#02ff0c523fb92a38939b04d0145c4a9602a74d56",

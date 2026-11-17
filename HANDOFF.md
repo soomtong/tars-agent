@@ -1,13 +1,13 @@
-# HANDOFF: cyber 의존이 latest 태그를 따름 (2026-11-16)
+# HANDOFF: cyber 0.4.13 릴리스로 옮기고 열린 요청을 닫음 (2026-11-17)
 
 ## 목표
 
 tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code이고, 다른 점은 모델이 JSON 도구 호출 대신 Cyber 스크립트를 써서 실행하는 CodeAct 방식이라는 것이다. 호스트는 Zig 0.17.1, 런타임은 libcyber(soomtong/cyber) 정적 링크. 본체 코드는 아직 없다. 버릴 스파이크 코드가 spike/에 있다.
 
-이번 세션(2026-11-16):
+이번 세션(2026-11-16~17):
 - cyber가 0.4.12 요청서의 네 건을 고쳤다.
-- 0.4.13 릴리스는 빌드가 실패했다(macOS arm64 러너). 스파이크의 cyber 의존은 커밋에 묶지 않고 latest dev 프리릴리스의 `latest` 태그를 따른다(사용자 지시, ADR 0023). 지금 받은 `latest`는 커밋 8a892310이다.
-- 새 요청서의 두 건을 cyber가 master `3acc0797`에서 고쳤다. 로컬 빌드(`zig build --fork`)의 CLI와 세션에서 확인했다. `latest`에는 아직 없다. master의 Latest Build가 macOS arm64 러너를 기다린다.
+- cyber 의존은 커밋에 묶지 않고 가장 새 빌드를 따른다(사용자 지시, ADR 0023). 지금은 릴리스 0.4.13(태그 커밋 1dee651)이고, 설치된 `/usr/local/bin/cyber`(`Cyber 0.4.13 build-945-1dee651`)와 같다. `latest` 프리릴리스는 0.4.13보다 앞의 커밋에 남아 있어 쓰지 않는다.
+- 0.4.13-DEV에서 찾은 두 건(`let x := 1`의 문구, 세션 마지막 줄의 버린 `Slice` 결과)이 0.4.13에서 고쳐졌다. CLI와 세션에서 확인하고 요청서를 지웠다. 열린 요청은 없다.
 - s1, 안내, 네 건을 CLI와 세션에서 확인했다. 새로 찾은 둘로 요청서를 냈다.
 - CodeAct 비교는 다시 돌리지 않았다(비교 수치는 0.4.12 회차).
 - 안내의 정본을 cyber의 docs/agent-guide.md로 정했다(ADR 0022). 진행은 천천히, 제약보다 열어 두고 본다(사용자 지시).
@@ -20,8 +20,8 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 완료된 작업
 
-- [x] 의존: spike/s1, s2의 build.zig.zon은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#latest"`로 넣는다(`?ref=latest#<커밋>`과 해시가 적힌다).
-  - build.zig 의존 인자는 `.dev = true`뿐이다. 버전 문자열은 `Cyber 0.4.13-DEV build-0-local`이고 s1 검사 0은 `Cyber `로 시작하는지만 본다.
+- [x] 의존: spike/s1, s2의 build.zig.zon은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.13"`로 넣는다(`?ref=0.4.13#<커밋>`과 해시가 적힌다).
+  - build.zig 의존 인자는 `.dev = false`뿐이다. 버전 문자열은 `Cyber 0.4.13 build-0-local`이고 s1 검사 0은 `Cyber `로 시작하는지만 본다.
 - [x] s1 40개 통과, s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2 각 23초). libcyber.a는 arm64 2.99 MB, x86_64 3.55 MB이고 공개 `cl_`는 140개다.
 - [x] 0.4.12 요청서의 네 건이 CLI와 세션에서 회신대로다.
   - `Slice` 크기 바꾸기는 받는 변수를 그대로 두고, 결과를 버리면 컴파일 오류다.
@@ -30,19 +30,16 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
   - 패키지에 docs/agent-guide.md가 들어 있다.
 
   0.4.12 회차에서 s2를 죽인 스크립트는 고치는 법을 말하는 컴파일 오류로 멈춘다. 요청서는 지웠다.
-- [x] 안내 두 판: 기준 줄을 고쳤다. `[]T`의 크기 바꾸기 줄을 가이드에 맞췄다. `let` 우회 줄은 지웠다(영문판 19,729바이트). 코드 블록 22개와 오류 목록의 첫 줄이 dev CLI와 세션에서 맞다.
-- [x] 새 요청서 docs/requests/cyber-0.4.13-dev-findings.md:
-  - (a) `let x := 1`에 `var x := 1 = value`를 권한다.
-  - (b) 세션에서 스크립트 마지막 줄의 `out.remove(i)`는 마지막 표현식 값이라 오류가 없고 `out`은 그대로다.
-
-  둘 다 본체 첫 단계 전에 닫는다(ADR 0019).
+- [x] 안내 두 판: 기준 줄을 고쳤다. `[]T`의 크기 바꾸기 줄을 가이드에 맞췄다. `let` 우회 줄은 지웠다(영문판 19,721바이트). 코드 블록 22개가 0.4.13 CLI와 세션에서 통과한다. agent-guide.md의 12개도 CLI에서 통과하고, 세션에서는 `use test` 블록만 로더가 막는다.
+- [x] 0.4.13-DEV 요청 두 건이 0.4.13에서 닫혔다. `let x := 1`은 ``Declare with `x := 1`.``을 말하고, 세션의 마지막 줄에서도 버린 `Slice` 크기 바꾸기 결과는 컴파일 오류다. 요청서는 지웠다.
 - [x] ADR 0022: 안내의 정본은 cyber docs/agent-guide.md, tars-agent는 호스트 덧붙임만. 가이드와 스파이크 세션이 다른 곳을 "열린 것"에 적었다.
 - [x] 문서: 검토 문서, 08, 00, deps, ADR 0017, 0019, 0022, TODO, MEMORY, 참고 문서 한 줄
 
 ## 시도했으나 실패한 접근
 
 - 회차 도중에 안내를 고치기: s2가 실행마다 안내를 읽어 회차가 섞인다. 회차 전에 안내를 먼저 확정한다.
-- 릴리스 CLI를 태그에서 스크래치로 빌드하기: 릴리스면 사용자가 설치한 `/usr/local/bin/cyber`를 쓴다. latest dev면 프리릴리스의 CLI를 받는다(`gh release download latest -R soomtong/cyber -p cyber-macos-arm64.tar.gz`, 스크래치에). 설치된 CLI는 지금 0.4.12다.
+- 릴리스 CLI를 태그에서 스크래치로 빌드하기: 릴리스면 사용자가 설치한 `/usr/local/bin/cyber`를 쓴다. latest dev면 프리릴리스의 CLI를 받는다(`gh release download latest -R soomtong/cyber -p cyber-macos-arm64.tar.gz`, 스크래치에). 설치된 CLI는 지금 0.4.13이다.
+- `latest` 태그만 따르기: 릴리스 빌드만 돌고 `latest` 프리릴리스가 갱신되지 않는 때가 있다(0.4.13 때). 가장 새 태그를 본다(ADR 0023).
 - `zig fetch --save=cyber <url>`로 기존 `.path` 의존을 덮기: `.path`에 URL을 넣고 해시를 빼 zon이 깨진다. `zig fetch <url>`로 해시만 받고 zon을 손으로 고친다.
 - s1 사본의 zon을 정규식으로 `.path`로 바꾸기: `translate_c` 의존까지 바뀐다. cyber 항목만 고친다.
 - zsh에서 맞는 것이 없는 glob(`rm out/cmp-*`): 명령 전체가 멈춘다. 따로 지운다.
@@ -60,7 +57,6 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 사용자가 정할 것:
 
-- [x] 요청서 docs/requests/cyber-0.4.13-dev-findings.md: cyber가 master `3acc0797`에서 고쳤고 로컬 빌드로 CLI와 세션을 확인했다(s1 40개 통과)
 - [ ] 안내를 cyber의 agent-guide.md와 호스트 덧붙임으로 언제, 어떤 모양으로 모을지(ADR 0022 "열린 것"). 가이드와 스파이크 세션이 다른 곳은 대부분 tars-agent의 선택(모듈 막기, fiber 금지)이거나 실행 환경의 차이(`os`, CLI)다. 임베딩 호스트에 관한 한 줄을 가이드에 요청할지
 - [ ] 새 표준 모듈: 막지 않고 열어 둘지, `time`과 능력 clock.now의 관계 (08 문서, TODO C2)
 - [ ] CodeAct 비교를 기준 빌드로 다시 돌릴지 (지금 수치는 0.4.12 회차)
@@ -71,8 +67,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 그 밖:
 
-- [ ] 본체 첫 단계: 저장소 뼈대와 runtime 경계. 선행 조건은 새 요청서의 둘. 단계의 결정, 편집, 기능 표를 먼저 낸다
-- [ ] `latest`가 `3acc0797` 뒤로 옮겨지면(`gh release view latest -R soomtong/cyber`) 두 스파이크에서 `zig fetch --save=cyber`를 다시 돌리고 s1을 돌린다. 그 뒤 TODO C0 (a), (b)를 닫고 요청서를 지운다(ADR 0020)
+- [ ] 본체 첫 단계: 저장소 뼈대와 runtime 경계. 선행 조건은 모두 닫혔다(ADR 0019). 단계의 결정, 편집, 기능 표를 먼저 낸다
 - [ ] tars 게스트에서 기준 빌드로 스파이크 실행 (tars-linux 산출물 필요)
 - [ ] 평가: eval/ 과제 20개, CodeAct 대 direct, 판정을 docs/decisions에 기록
 - [ ] M1~M6. 미확인: tars 커널의 CONFIG_SECURITY_LANDLOCK (M5)
@@ -80,11 +75,10 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 ## 핵심 파일
 
 - `docs/spikes/2026-11-14-m0-spikes-review.md` — 스파이크 검토. 1절 요약, 3절 호스트 경계, 5절 비교(0.4.12 회차), 7절 cyber에 남은 것, 11절 다시 돌리는 법
-- `docs/requests/cyber-0.4.13-dev-findings.md` — 열린 요청(둘)
 - `docs/decisions/0022-guide-from-cyber-agent-guide.md` — 안내의 정본과 열린 것
 - `docs/decisions/0017-m0-spike-findings.md`, `0019-fix-spike-defects-first.md`, `0020-docs-current-state-only.md`, `0021-borrow-from-pi-harness.md`
 - `docs/spec/08-cyber-implementation.md` — 기준 빌드의 사실
-- `spike/s1/build.zig.zon`, `spike/s2/build.zig.zon` — cyber 의존(`latest` 태그, ADR 0023)
+- `spike/s1/build.zig.zon`, `spike/s2/build.zig.zon` — cyber 의존(가장 새 빌드의 태그, ADR 0023)
 - `spike/s2/out/0.4.12/` — 비교 회차 원자료
 - `spike/s1/src/main.zig` — 검사 40개, `replay`, `spawn`. `spike/s2/src/vm.zig` — 검증, 실행, 승인, reset 알림
 
@@ -98,5 +92,5 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
    - 결정은 docs/decisions에 `NNNN-slug.md`로 남기고 MEMORY.md에 한 줄을 더한다.
 2. 본체 구현은 페어 코딩이다. 구조에 관한 결정은 사용자가 정한다. 지금은 제약을 늘리기보다 열어 두고 살펴보는 단계다.
 3. 문서는 지금 참인 것만 적는다 (ADR 0020).
-4. 스파이크는 cyber를 `latest` 태그로 받는다(build.zig.zon, ADR 0023). 로컬 cyber 저장소의 상태와 상관없다. 아직 `latest`에 없는 수정은 `zig build --fork=<cyber 저장소>`로 본다. cyber 저장소는 읽고 빌드만 한다. 편집은 사용자가 지시할 때다 (ADR 0013).
+4. 스파이크는 cyber를 가장 새 빌드의 태그로 받는다(build.zig.zon, ADR 0023). 로컬 cyber 저장소의 상태와 상관없다. 아직 태그에 없는 수정은 `zig build --fork=<cyber 저장소>`로 본다. cyber 저장소는 읽고 빌드만 한다. 편집은 사용자가 지시할 때다 (ADR 0013).
 5. 키는 환경 변수 DEEPSEEK_API_KEY, OPENROUTER_API_KEY. 모델이 쓴 명령은 jail.zig의 샌드박스 안에서만 돈다.
