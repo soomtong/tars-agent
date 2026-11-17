@@ -52,7 +52,7 @@ Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 한 빌�
 - `P(name='a', n=1)`은 `P{name='a', n=1}`. 필드는 `:`가 아니라 `=`로 준다.
 - `print(a, b)`는 `print(x)`. 인자는 정확히 하나다. 여러 값은 보간으로 합친다.
 - `len(xs)`는 `xs.len()`. 메서드다. `xs.len`은 오류다.
-- `xs.append(1)`은 `xs += 1` 또는 `xs = xs.append(1)`. 크기를 바꾸는 메서드는 새 값을 돌려주므로 받아야 한다.
+- `xs.append(1)`은 그대로 `xs.append(1)`(또는 `xs += 1`). `xs`를 그 자리에서 바꾸고 아무것도 돌려주지 않는다.
 - `x in xs`는 `xs.contains(x)`, Map은 `m.contains(k)`
 - `[1, 2, 3]`은 `{1, 2, 3}`. 목록은 첫 원소의 타입을 따르고(`[]int`) 나머지 원소도 그 타입이어야 한다. 빈 목록은 타입이 필요하다: `[]int{}`. 타입은 언제든 적어도 된다: `[]str{'a', 'b'}`.
 - `{"a": 1, "b": 2}`는 `Map[str, int]{a=1, b=2}`. 맨 이름은 문자열 키다. 식으로 계산한 키는 괄호로 감싼다: `Map[str, int]{(k)=1}`. 빈 Map은 `Map[str, int]{}`.
@@ -100,7 +100,9 @@ str (문자열은 바뀌지 않고 모든 메서드가 새 값을 돌려준다):
 
 - `xs.len()`, `xs.contains(x)`, `xs.index(x)`는 `?int`, `xs.last()`
 - `xs.join(sep)`은 `[]str`에서 `str`을 돌려준다
-- `xs.append(x)`, `xs.insert(i, x)`, `xs.remove(i)`, `xs.clear()`: 새 목록을 돌려주고 `xs`는 그대로다. 다시 대입한다: `xs = xs.remove(0)`. `_ = xs.remove(0)`은 컴파일 오류다
+- `xs.append(x)`, `xs.insert(i, x)`, `xs.remove(i)`, `xs.clear()`, `xs.pop()`은 `?T`: 모두 `xs`를 그 자리에서 바꾼다. `xs = xs.remove(0)`은 컴파일 오류다
+- `xs.appended(x)`, `xs.inserted(i, x)`, `xs.removed(i)`, `xs + x`: 새 목록을 돌려주고 `xs`는 그대로다
+- 제자리 메서드는 전역 목록에도 된다(`global log []str = {}` 뒤 함수 안에서 `log.append(s)`). 인자가 같은 전역을 읽으면 컴파일 오류다: `g.append(g.len())` 대신 `n := g.len()`을 먼저 쓴다
 - `xs.sort()`는 제자리에서 오름차순으로 정렬한다(숫자와 문자열). `xs.sort(|a, b| ...)`는 `a`가 앞에 오면 true를 돌려주는 함수로 정렬한다. 둘 다 아무것도 돌려주지 않는다.
 
 Map[K, V]:
@@ -113,7 +115,7 @@ Python 이름과 Cyber 이름:
 
 - `sep.join(xs)`는 `xs.join(sep)` (구분자가 아니라 목록이 합친다)
 - `xs.find(x)`는 `xs.index(x)`이고 `?int`를 돌려준다: `xs.index(x) ?else -1`
-- `xs.pop()`은 `v := xs.last()` 뒤 `xs = xs.remove(xs.len() - 1)`
+- `xs.pop()`은 그대로 `xs.pop()`이지만 `?T`를 돌려준다: 비어 있지 않으면 `v := xs.pop().?`
 - `s.startswith(p)`, `s.endswith(p)`는 `s.starts_with(p)`, `s.ends_with(p)`
 - `s.strip()`은 `s.trim()`, `s.lstrip()`은 `s.trim_left()`, `s.rstrip()`은 `s.trim_right()`
 - `s.find(sub)`는 `s.index(sub)`, `s.rfind(sub)`는 `s.last_index(sub)`. 둘 다 `?int`다. 경로의 마지막 부분은 `p.split('/').last()`
@@ -192,12 +194,12 @@ fn mean(xs []int) -> float:
 print(mean({1, 2, 3, 4}))
 ~~~
 
-3. 목록 만들기와 정렬 (append가 돌려준 값을 받는다)
+3. 목록 만들기와 정렬 (append는 목록을 그 자리에서 바꾼다)
 
 ~~~cy
 names := {'bob', 'alice'}
 names += 'carol'
-names = names.append('dave')
+names.append('dave')
 names.sort()
 print(names.join(','))
 ~~~
