@@ -205,7 +205,7 @@ fn loader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResul
 
 /// 모듈 API를 모델에게 줄 모듈. 허용 목록에서 의존으로만 싣는 meta와 c, 그리고 core와 math는 뺀다.
 fn isAllowedApi(name: []const u8) bool {
-    for ([_][]const u8{ "json", "toon", "regex", "peg", "time" }) |m| {
+    for ([_][]const u8{ "json", "toon", "regex", "peg", "time", "path" }) |m| {
         if (std.mem.eql(u8, name, m)) return true;
     }
     return false;
@@ -215,7 +215,7 @@ fn isAllowedApi(name: []const u8) bool {
 /// 의존 모듈도 넣는다: meta(core, json, math가 쓴다), c(math가 쓴다. deny_raw_ptrs와 ffi=false로 무력하다).
 /// 그 밖(io, cy, test)은 싣지 않는다. os, libc, cli는 라이브러리의 기본 로더에 없다.
 fn isAllowedStd(name: []const u8) bool {
-    for ([_][]const u8{ "core", "meta", "c", "math", "json", "toon", "regex", "peg", "time" }) |m| {
+    for ([_][]const u8{ "core", "meta", "c", "math", "json", "toon", "regex", "peg", "time", "path" }) |m| {
         if (std.mem.eql(u8, name, m)) return true;
     }
     return false;
@@ -506,7 +506,7 @@ pub fn main(init: std.process.Init) !void {
             }
         } else |_| {}
         const has_host = std.mem.indexOf(u8, guide, "embedding host") != null;
-        check("0b. 패키지의 agent-guide.md와 api.json을 빌드 때 읽고 모듈로 거른다", has_host and funcs > 0 and types > 0 and json_funcs > 0, "가이드 {d}B(임베딩 호스트 줄 {}), api.json version={s}, json·toon·regex·peg·time 함수 {d} 타입 {d} (json 함수 {d})", .{ guide.len, has_host, version, funcs, types, json_funcs });
+        check("0b. 패키지의 agent-guide.md와 api.json을 빌드 때 읽고 모듈로 거른다", has_host and funcs > 0 and types > 0 and json_funcs > 0, "가이드 {d}B(임베딩 호스트 줄 {}), api.json version={s}, json·toon·regex·peg·time·path 함수 {d} 타입 {d} (json 함수 {d})", .{ guide.len, has_host, version, funcs, types, json_funcs });
     }
 
     // 1. 기본: eval, print 가로채기, 결과 값
@@ -842,6 +842,8 @@ pub fn main(init: std.process.Init) !void {
         check("7a. use io: 허용 목록 밖이라 호스트 로더가 거부한다", r1.code == c.CL_ERROR_COMPILE and g_denied_modules == 1, "code={s} | {s}", .{ codeName(r1.code), s1 });
         const r1m = run(vm, "use math\nuse toon\nprint(math.sqrt(16.0))\n", .{});
         check("7a2. use math, use toon: 의존 모듈(c, meta, json)을 거쳐 실린다", r1m.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "4\n"), "code={s} 출력={s} | {s}", .{ codeName(r1m.code), g_out.items, firstLine(errorSummary(vm)) });
+        const r1p = run(vm, "use path\nprint(path.join('a', 'b/c.txt'))\nprint(path.dir('a'))\n", .{});
+        check("7a3. use path: 파일 시스템을 보지 않는 경로 함수가 실린다 (ADR 0027)", r1p.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "a/b/c.txt\n.\n"), "code={s} 출력={s} | {s}", .{ codeName(r1p.code), std.mem.trim(u8, g_out.items, "\n"), firstLine(errorSummary(vm)) });
         const r2 = run(vm, "use os\nprint(os.cwd())\n", .{});
         check("7b. use os: 라이브러리에 없는 모듈", r2.code == c.CL_ERROR_COMPILE, "code={s} | {s}", .{ codeName(r2.code), firstLine(errorSummary(vm)) });
         const r3 = run(vm, "p := Ptr[int](0)\nprint(p.*)\n", .{});

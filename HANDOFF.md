@@ -8,7 +8,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - cyber가 0.4.12 요청서의 네 건을 고쳤다.
 - cyber 의존은 커밋에 묶지 않고 가장 새 빌드를 따른다(사용자 지시, ADR 0023). 지금은 릴리스 0.4.14(a2b33655)이고 설치된 `/usr/local/bin/cyber`(`Cyber 0.4.14 build-960-a2b3365`)와 같다. extern 수정, resolver 수정, 패키지의 `docs/api.json`, x86_64 AVX2 `str.index` 수정, 표준 라이브러리 이름의 snake_case 통일, 새 `path` 모듈이 들어 있다.
 - 0.4.13-DEV에서 찾은 두 건(`let x := 1`의 문구, 세션 마지막 줄의 버린 `Slice` 결과)이 0.4.13에서 고쳐졌다. CLI와 세션에서 확인하고 요청서를 지웠다.
-- 모듈: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025)를 연다. 세계에 닿는 일은 능력으로만 하고 os는 열지 않는다(ADR 0026, 사용자 결정 A). 로더는 허용 목록 core, meta, c, math, json, toon, regex, peg, time이다(meta와 c는 의존).
+- 모듈: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025), path(ADR 0027)를 연다. 세계에 닿는 일은 능력으로만 하고 os는 열지 않는다(ADR 0026, 사용자 결정 A). 로더는 허용 목록 core, meta, c, math, json, toon, regex, peg, time, path이다(meta와 c는 의존).
 - 0.4.13에서 찾은 결함(c가 실리기 전의 `#[extern]` 함수가 검증 중에 프로세스를 죽인다)을 cyber가 0.4.14에서 컴파일 오류로 고쳤다. s1 검사 7h로 확인하고 요청서를 지웠다. 본체 첫 단계 전에 닫을 결함은 없다(ADR 0019).
 - cyber 회신: 0.4.14부터 호스트 resolver가 소스의 use만 받는다. 스크립트의 `use c`, `use meta`만 막는 길이다. 쓸지는 본체 runtime 단계에서 정한다(ADR 0026, 05 1층).
 - s1, 안내, 네 건을 CLI와 세션에서 확인했다. 새로 찾은 둘로 요청서를 냈다.
@@ -25,7 +25,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 - [x] 의존: spike/s1, s2의 build.zig.zon은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.14"`로 넣는다(`?ref=0.4.14#<커밋>`과 해시가 적힌다).
   - build.zig 의존 인자는 `.dev = false`뿐이다(릴리스). 버전 문자열은 `Cyber 0.4.14 build-0-local`이고 s1 검사 0은 `Cyber `로 시작하는지만 본다.
-- [x] s1 43개 통과(0.4.14), s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2). libcyber.a는 arm64 2.99 MB, x86_64 3.55 MB이고 공개 `cl_`는 140개다.
+- [x] s1 44개 통과(0.4.14), s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2). libcyber.a는 arm64 2.99 MB, x86_64 3.55 MB이고 공개 `cl_`는 140개다.
 - [x] 0.4.14로 옮김(2026-11-17 저녁): 두 스파이크의 의존을 릴리스 태그로, `dev = false`. s1 43개, 안내 두 판과 agent-guide.md의 코드 블록 34개(CLI 전부, 세션은 `use test` 블록만 로더가 막음), 새 이름(`trim_left`, `trim_right`, `last_index`) 탐침, s2 빌드, x86_64 교차 빌드를 확인했다. 옛 camelCase 이름은 `Did you mean ...?` 컴파일 오류다. 안내와 04, ADR 0026의 이름을 snake_case로 고쳤다
 - [x] 0.4.12 요청서의 네 건이 CLI와 세션에서 회신대로다.
   - `Slice` 크기 바꾸기는 받는 변수를 그대로 두고, 결과를 버리면 컴파일 오류다.
@@ -63,10 +63,10 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 - [ ] 안내를 cyber의 agent-guide.md와 호스트 덧붙임으로 언제, 어떤 모양으로 모을지(ADR 0022 "열린 것"). 가이드와 스파이크 세션이 다른 곳은 대부분 tars-agent의 선택(모듈 막기, fiber 금지)이거나 실행 환경의 차이(`os`, CLI)다. 가이드에 임베딩 호스트 줄이 들어갔다(호스트의 지시가 앞선다, 거부된 모듈의 문구). 요청서는 닫았다
 - [x] 표준 모듈 다섯을 연다: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025). 스파이크 로더는 허용 목록이다(ADR 0026)
-- [ ] `path` 모듈(0.4.14에 새로 생김, 파일 시스템을 보지 않는 경로 문자열 함수)을 허용 목록에 넣을지. 지금은 스파이크 로더가 막는다 (TODO C, ADR 0026)
+- [x] `path` 모듈을 연다(ADR 0027, 사용자 결정). s1 검사 7a3, 44개 통과
 - [ ] os 대신 능력으로 넓힐 후보(fs.mkdir, fs.remove, fs.copy, fs.move, env.get)를 언제 정할지 (04, ADR 0026)
-- [ ] 다섯 모듈의 예제를 안내에 넣을지 (TODO C1, C2의 남은 게이트)
-- [ ] 모듈 API(패키지의 `docs/api.json`, 다섯 모듈 약 6.8 KB)를 프롬프트에 둘지 help(name)으로 꺼내게 할지 (본체 능력 설계 때)
+- [ ] 여섯 모듈의 예제를 안내에 넣을지 (TODO C1, C2의 남은 게이트)
+- [ ] 모듈 API(패키지의 `docs/api.json`, 여섯 모듈 약 7 KB)를 프롬프트에 둘지 help(name)으로 꺼내게 할지 (본체 능력 설계 때)
 - [ ] CodeAct 비교를 기준 빌드로 다시 돌릴지 (지금 수치는 0.4.12 회차)
 - [ ] 본체가 VM 충돌로 프로세스가 끝나는 경우를 어떻게 다룰지 (검토 문서 9절 17)
 - [ ] `print(!str)`가 작은 모델의 가장 흔한 오류다. 능력의 모양이나 안내로 줄일지 (본체의 능력 설계 때)
@@ -88,7 +88,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - `docs/spec/08-cyber-implementation.md` — 기준 빌드의 사실
 - `spike/s1/build.zig.zon`, `spike/s2/build.zig.zon` — cyber 의존(가장 새 빌드의 태그, ADR 0023)
 - `spike/s2/out/0.4.12/` — 비교 회차 원자료
-- `spike/s1/src/main.zig` — 검사 43개, `replay`, `spawn`. `spike/s2/src/vm.zig` — 검증, 실행, 승인, reset 알림
+- `spike/s1/src/main.zig` — 검사 44개, `replay`, `spawn`. `spike/s2/src/vm.zig` — 검증, 실행, 승인, reset 알림
 
 ## 다음 에이전트에게
 
