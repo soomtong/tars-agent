@@ -10,7 +10,7 @@
 
 | 질문 | 답 | 근거 |
 |---|---|---|
-| Zig 호스트가 libcyber를 링크해 VM을 돌릴 수 있는가 | 된다 | 스파이크 1, 검사 40개 모두 통과 |
+| Zig 호스트가 libcyber를 링크해 VM을 돌릴 수 있는가 | 된다 | 스파이크 1, 검사 42개 모두 통과 |
 | cyber를 build.zig.zon 의존으로 쓸 수 있는가 | 된다. 태그를 따르는 의존의 `artifact("cyber")`로 받고 cyber.h가 따라온다 | 3.1 |
 | 능력이 `Future[!str]`을 돌려줄 수 있는가 (ADR 0011의 모양) | 된다. str 값이나 오류로 완료한다 | 3.2 |
 | 승인 대기를 VM 밖에서 하는 설계(ADR 0011, 0016)가 실제로 도는가 | 돈다. 승인, 거부, 취소, 동시 요청 모두 | 3.3 |
@@ -78,14 +78,14 @@ web.log: 23
 
 ## 3. 스파이크 1: 호스트 경계
 
-코드: spike/s1. 실행: `zig build && ./zig-out/bin/s1`. 검사 40개가 PASS/FAIL로 찍히고 모두 통과한다.
+코드: spike/s1. 실행: `zig build && ./zig-out/bin/s1`. 검사 42개가 PASS/FAIL로 찍히고 모두 통과한다.
 
 ### 3.1 링크
 
-- build.zig.zon의 의존은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.13"`로 넣는다. zig가 `.url = "git+https://github.com/soomtong/cyber?ref=0.4.13#<받은 커밋>"`과 `.hash`를 적는다. 태그가 움직여도 다시 받기 전에는 적힌 커밋을 쓴다.
-- `b.dependency("cyber", .{ .target = target, .optimize = .ReleaseFast, .static = true, .dev = false }).artifact("cyber")`를 `linkLibrary`로 링크한다(spike/s1/build.zig). ffi는 기본 false다.
+- build.zig.zon의 의존은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#latest"`로 넣는다. zig가 `.url = "git+https://github.com/soomtong/cyber?ref=latest#<받은 커밋>"`과 `.hash`를 적는다. 태그가 움직여도 다시 받기 전에는 적힌 커밋을 쓴다.
+- `b.dependency("cyber", .{ .target = target, .optimize = .ReleaseFast, .static = true, .dev = true }).artifact("cyber")`를 `linkLibrary`로 링크한다(spike/s1/build.zig). ffi는 기본 false다.
 - cyber.h는 아티팩트의 include 경로로 따라온다. s1의 C 파일(src/inc_check.c)이 `#include "cyber.h"`로 컴파일되고, `CLEvalConfig`와 `CLCompileConfig`의 크기(12)가 translate-c 쪽과 같다(검사 0).
-- 버전 문자열은 `Cyber 0.4.13 build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, `-DEV` 표시는 `dev` 인자로 정한다. 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
+- 버전 문자열은 `Cyber 0.4.13-DEV build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, `-DEV` 표시는 `dev` 인자로 정한다. 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
 - Zig 0.17.1에는 `@cImport`가 없다. cyber.h를 Zig에서 쓰는 길은 둘이다: translate-c 패키지로 모듈을 만들거나, 쓰는 함수의 extern 선언을 손으로 쓴다. 스파이크는 앞의 것을 썼다. 본체의 추천은 9절.
 - libcyber.a(arm64, ReleaseFast)는 2.99 MB, 공개 `cl_` 함수는 140개다. 표준 모듈 json, toon, regex, peg, time이 들어 있고 각각의 `cl_mod_bind_*`가 있다. mimalloc 심볼은 없다(FFI를 끈 라이브러리 빌드에는 들어가지 않는다).
 
@@ -152,7 +152,7 @@ ADR 0011과 0016의 설계는 고칠 것 없이 돈다.
 | 시도 | 결과 |
 |---|---|
 | `use c` | 실린다. math가 c를 쓰므로 허용 목록에 넣는다. 포인터 함수는 deny_raw_ptrs로 컴파일 오류, extern 호출은 -Dffi=false로 panic 결과다 |
-| `#[extern]` 함수(`use c` 없이) | 검증 중에 프로세스가 죽는다(ReleaseFast 세그폴트, Debug는 `compiler.zig:1035`의 null). 열린 요청 |
+| `#[extern]` 함수(`use c` 없이) | CompileError: An `#[extern]` function needs the `c` module. Add `use c`. 세션이 남는다(검사 7h). 0.4.13 릴리스는 검증 중에 프로세스가 죽었다 |
 | `use os` | 라이브러리에 없다. 같은 오류 |
 | `Ptr[int](0)` | CompileError: Raw pointer type `Ptr[int]` is not allowed (deny_raw_ptrs) |
 | deny_raw_ptrs와 호스트 모듈 | 함께 동작한다. 호스트 모듈의 선언은 막히지 않는다 |
@@ -307,11 +307,11 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 
 ## 7. cyber에 남은 것
 
-스파이크는 cyber 0.4.13을 받는다(ADR 0023). M0에서 낸 요청은 모두 닫혔다. 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서)가 들어 있다(ADR 0022).
+스파이크는 cyber `latest`(0.4.13-DEV, 23ac9045)를 받는다(ADR 0023). M0에서 낸 요청은 모두 닫혔다. 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서)가 들어 있다(ADR 0022).
 
 모델이 모르는 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)은 인덱스, 슬라이스 경계, 대입 값 어디서든 인자 불일치 문구에 나오지 않는다. 대입 값이 원소 타입과 다르면 ``An element of `[]int` must be `int`, got `str`.``처럼 원소 타입을 말하고, `?T`와 `!T`이면 푸는 법을 붙인다(`Map`도 같다). 정수 원소 자리의 한 글자 리터럴(`xs[0] = 'a'`)은 오류가 아니라 코드 포인트(97)다. 타입이 정해진 자리의 한 글자 리터럴은 코드 포인트라는 언어 규칙이다.
 
-열린 요청: docs/requests/cyber-0.4.13-extern-without-c.md. c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트가 검증 중에 프로세스를 죽인다. 본체 첫 단계 전에 닫는다(ADR 0019).
+c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의 컴파일 오류다(``An `#[extern]` function needs the `c` module. Add `use c`.``). 0.4.13 릴리스에서는 검증 중에 프로세스를 죽였다.
 
 다른 언어의 선언 키워드는 키워드만 뺀 꼴을 말한다. `let x := 1`(`mut`, `let mut`도)은 ``Cyber has no `let`. Declare with `x := 1`.``이고, `let x = 1`은 ``... Declare with `x := 1`, or `var x int = 1` for a type.``이다. CLI와 세션이 같다.
 

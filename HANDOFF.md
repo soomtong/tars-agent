@@ -1,4 +1,4 @@
-# HANDOFF: 모듈 허용 목록과 능력 경계를 정함, extern 결함 요청 (2026-11-17)
+# HANDOFF: 모듈 허용 목록과 능력 경계를 정함, cyber latest로 extern 결함 닫음 (2026-11-17)
 
 ## 목표
 
@@ -6,10 +6,11 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 이번 세션(2026-11-16~17):
 - cyber가 0.4.12 요청서의 네 건을 고쳤다.
-- cyber 의존은 커밋에 묶지 않고 가장 새 빌드를 따른다(사용자 지시, ADR 0023). 지금은 릴리스 0.4.13(태그 커밋 1dee651)이고, 설치된 `/usr/local/bin/cyber`(`Cyber 0.4.13 build-945-1dee651`)와 같다. `latest` 프리릴리스는 0.4.13보다 앞의 커밋에 남아 있어 쓰지 않는다.
+- cyber 의존은 커밋에 묶지 않고 가장 새 빌드를 따른다(사용자 지시, ADR 0023). 지금은 `latest` 프리릴리스(0.4.13-DEV, 커밋 23ac9045)다. 릴리스 0.4.13 뒤의 extern 수정과 resolver 수정이 들어 있다. 설치된 `/usr/local/bin/cyber`는 릴리스 0.4.13이라 이 빌드와 다르다.
 - 0.4.13-DEV에서 찾은 두 건(`let x := 1`의 문구, 세션 마지막 줄의 버린 `Slice` 결과)이 0.4.13에서 고쳐졌다. CLI와 세션에서 확인하고 요청서를 지웠다.
 - 모듈: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025)를 연다. 세계에 닿는 일은 능력으로만 하고 os는 열지 않는다(ADR 0026, 사용자 결정 A). 로더는 허용 목록 core, meta, c, math, json, toon, regex, peg, time이다(meta와 c는 의존).
-- 새 결함: c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트가 검증 중에 프로세스를 죽인다. 요청서 docs/requests/cyber-0.4.13-extern-without-c.md (ADR 0019 선행 조건).
+- 0.4.13에서 찾은 결함(c가 실리기 전의 `#[extern]` 함수가 검증 중에 프로세스를 죽인다)을 cyber가 `latest`에서 컴파일 오류로 고쳤다. s1 검사 7h로 확인하고 요청서를 지웠다. 본체 첫 단계 전에 닫을 결함은 없다(ADR 0019).
+- cyber 회신: `latest`부터 호스트 resolver가 소스의 use만 받는다. 스크립트의 `use c`, `use meta`만 막는 길이다. 쓸지는 본체 runtime 단계에서 정한다(ADR 0026, 05 1층).
 - s1, 안내, 네 건을 CLI와 세션에서 확인했다. 새로 찾은 둘로 요청서를 냈다.
 - CodeAct 비교는 다시 돌리지 않았다(비교 수치는 0.4.12 회차).
 - 안내의 정본을 cyber의 docs/agent-guide.md로 정했다(ADR 0022). 진행은 천천히, 제약보다 열어 두고 본다(사용자 지시).
@@ -22,9 +23,9 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 완료된 작업
 
-- [x] 의존: spike/s1, s2의 build.zig.zon은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.13"`로 넣는다(`?ref=0.4.13#<커밋>`과 해시가 적힌다).
-  - build.zig 의존 인자는 `.dev = false`뿐이다. 버전 문자열은 `Cyber 0.4.13 build-0-local`이고 s1 검사 0은 `Cyber `로 시작하는지만 본다.
-- [x] s1 40개 통과, s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2 각 23초). libcyber.a는 arm64 2.99 MB, x86_64 3.55 MB이고 공개 `cl_`는 140개다.
+- [x] 의존: spike/s1, s2의 build.zig.zon은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#latest"`로 넣는다(`?ref=latest#<커밋>`과 해시가 적힌다).
+  - build.zig 의존 인자는 `.dev = true`뿐이다(프리릴리스). 버전 문자열은 `Cyber 0.4.13-DEV build-0-local`이고 s1 검사 0은 `Cyber `로 시작하는지만 본다.
+- [x] s1 42개 통과(`latest`), s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2 각 23초). libcyber.a는 arm64 2.99 MB, x86_64 3.55 MB이고 공개 `cl_`는 140개다.
 - [x] 0.4.12 요청서의 네 건이 CLI와 세션에서 회신대로다.
   - `Slice` 크기 바꾸기는 받는 변수를 그대로 두고, 결과를 버리면 컴파일 오류다.
   - `let`, `mut`, `val`, `auto` 문구가 고쳐졌다.
@@ -32,7 +33,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
   - 패키지에 docs/agent-guide.md가 들어 있다.
 
   0.4.12 회차에서 s2를 죽인 스크립트는 고치는 법을 말하는 컴파일 오류로 멈춘다. 요청서는 지웠다.
-- [x] 안내 두 판: 기준 줄을 고쳤다. `[]T`의 크기 바꾸기 줄을 가이드에 맞췄다. `let` 우회 줄은 지웠다(영문판 19,538바이트). 코드 블록 22개가 0.4.13 CLI와 세션에서 통과한다. agent-guide.md의 12개도 CLI에서 통과하고, 세션에서는 `use test` 블록만 로더가 막는다.
+- [x] 안내 두 판: 기준 줄을 고쳤다. `[]T`의 크기 바꾸기 줄을 가이드에 맞췄다. `let` 우회 줄은 지웠다(영문판 19,538바이트). 코드 블록 22개가 0.4.13 CLI와 세션에서 통과한다. agent-guide.md의 12개도 CLI에서 통과하고, 세션에서는 `use test` 블록만 로더가 막는다. `latest` 세션에서 34개를 다시 돌려 같은 결과다.
 - [x] 0.4.13-DEV 요청 두 건이 0.4.13에서 닫혔다. `let x := 1`은 ``Declare with `x := 1`.``을 말하고, 세션의 마지막 줄에서도 버린 `Slice` 크기 바꾸기 결과는 컴파일 오류다. 요청서는 지웠다.
 - [x] ADR 0022: 안내의 정본은 cyber docs/agent-guide.md, tars-agent는 호스트 덧붙임만. 가이드와 스파이크 세션이 다른 곳을 "열린 것"에 적었다.
 - [x] 문서: 검토 문서, 08, 00, deps, ADR 0017, 0019, 0022, TODO, MEMORY, 참고 문서 한 줄
@@ -61,7 +62,6 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 - [ ] 안내를 cyber의 agent-guide.md와 호스트 덧붙임으로 언제, 어떤 모양으로 모을지(ADR 0022 "열린 것"). 가이드와 스파이크 세션이 다른 곳은 대부분 tars-agent의 선택(모듈 막기, fiber 금지)이거나 실행 환경의 차이(`os`, CLI)다. 임베딩 호스트에 관한 한 줄을 가이드에 요청할지
 - [x] 표준 모듈 다섯을 연다: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025). 스파이크 로더는 허용 목록이다(ADR 0026)
-- [ ] 요청서 docs/requests/cyber-0.4.13-extern-without-c.md를 cyber에 전달
 - [ ] os 대신 능력으로 넓힐 후보(fs.mkdir, fs.remove, fs.copy, fs.move, env.get)를 언제 정할지 (04, ADR 0026)
 - [ ] 다섯 모듈의 예제를 안내에 넣을지 (TODO C1, C2의 남은 게이트)
 - [ ] CodeAct 비교를 기준 빌드로 다시 돌릴지 (지금 수치는 0.4.12 회차)
@@ -72,7 +72,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 그 밖:
 
-- [ ] 본체 첫 단계: 저장소 뼈대와 runtime 경계. 선행 조건은 extern 결함 요청 하나(ADR 0019). 단계의 결정, 편집, 기능 표를 먼저 낸다
+- [ ] 본체 첫 단계: 저장소 뼈대와 runtime 경계. 선행 조건으로 남은 결함은 없다(ADR 0019). 단계의 결정, 편집, 기능 표를 먼저 낸다
 - [ ] tars 게스트에서 기준 빌드로 스파이크 실행 (tars-linux 산출물 필요)
 - [ ] 평가: eval/ 과제 20개, CodeAct 대 direct, 판정을 docs/decisions에 기록
 - [ ] M1~M6. 미확인: tars 커널의 CONFIG_SECURITY_LANDLOCK (M5)
@@ -85,7 +85,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - `docs/spec/08-cyber-implementation.md` — 기준 빌드의 사실
 - `spike/s1/build.zig.zon`, `spike/s2/build.zig.zon` — cyber 의존(가장 새 빌드의 태그, ADR 0023)
 - `spike/s2/out/0.4.12/` — 비교 회차 원자료
-- `spike/s1/src/main.zig` — 검사 40개, `replay`, `spawn`. `spike/s2/src/vm.zig` — 검증, 실행, 승인, reset 알림
+- `spike/s1/src/main.zig` — 검사 42개, `replay`, `spawn`. `spike/s2/src/vm.zig` — 검증, 실행, 승인, reset 알림
 
 ## 다음 에이전트에게
 

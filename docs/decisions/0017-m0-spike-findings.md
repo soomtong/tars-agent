@@ -6,7 +6,7 @@
 
 ## 증명된 것
 
-- Zig 0.17.1 호스트가 libcyber를 build.zig.zon 의존의 아티팩트로 정적 링크해 VM을 돌린다. 호스트 경계 검사 40개가 macOS arm64에서 모두 통과했다. x86_64-linux-gnu 교차 빌드도 된다.
+- Zig 0.17.1 호스트가 libcyber를 build.zig.zon 의존의 아티팩트로 정적 링크해 VM을 돌린다. 호스트 경계 검사 42개가 macOS arm64에서 모두 통과했다. x86_64-linux-gnu 교차 빌드도 된다.
 - 능력은 `Future[!str]`을 돌려주고 str 값이나 오류로 완료한다. 머리말 래퍼가 await하고 모델은 `fs.read(path) -> !str`만 본다.
 - 승인 대기를 VM 밖에서 하는 설계(0011, 0016)가 고칠 것 없이 돈다: 승인, 거부, 취소, 버린 요청, 동시 요청, 중첩 scope.
 - 검증을 세션 VM에서 바로 할 수 있다. 컴파일 실패 뒤에도 세션이 그대로다. 세션이 reset되는 경우(VM의 첫 컴파일 실패, 할당 실패)는 cl_vm_reset_pending으로 안다. panic과 interrupt 뒤에는 최상위 변수만 사라진다.
@@ -18,7 +18,7 @@
 
 ## cyber에 남은 것
 
-스파이크는 cyber 0.4.13을 가장 새 빌드로 받는다(ADR 0023). 본체 첫 단계의 선행 조건이 하나 있다(docs/requests/cyber-0.4.13-extern-without-c.md, ADR 0019).
+스파이크는 가장 새 빌드인 cyber `latest`(0.4.13-DEV, 23ac9045)를 받는다(ADR 0023). 본체 첫 단계 전에 닫을 요청은 없다(ADR 0019).
 
 ## 스파이크 안에서 Claude가 정한 것 (위임받은 결정)
 
@@ -50,5 +50,5 @@
 
 - TODO의 M0: 스파이크 셋 완료. 남은 것은 평가 도구와 판정, tars 게스트에서의 확인.
 - 08 문서의 "M0에서 확인한 것"과 "cyber에서 만들 것"의 C0 줄.
-- deps.md: cyber는 가장 새 빌드(0.4.13)를 따른다(ADR 0023). mimalloc은 링크되지 않는다.
+- deps.md: cyber는 가장 새 빌드(지금 `latest`, 0.4.13-DEV)를 따른다(ADR 0023). mimalloc은 링크되지 않는다.
 - cyber 작업 줄기: C0(M0에서 남은 것)은 요청서의 둘이 남았다. C1, C2의 모듈은 기준 빌드에 있고 tars-agent 쪽 게이트(안내의 예제)가 남았다.

@@ -833,6 +833,15 @@ pub fn main(init: std.process.Init) !void {
         check("7f. deny_spawn: eval과 검증에서 spawn은 컴파일 오류", r6.code == c.CL_ERROR_COMPILE and v6 == c.CL_ERROR_COMPILE, "eval={s} 검증={s} (eval 전의 새 VM에서 검증={s}) | {s}", .{ codeName(r6.code), codeName(v6), codeName(v6b), msg6 });
         const r7 = run(vm, "use io\nprint(1)\n", .{});
         check("7g. use io: 기본 로더가 주는 모듈 (관찰)", true, "code={s} | {s}", .{ codeName(r7.code), if (r7.code != c.CL_SUCCESS) firstLine(errorSummary(vm)) else "로드됨" });
+        // c가 실리지 않은 VM에서 extern 선언. 0.4.13 릴리스는 검증 중에 세그폴트였다 (cyber 23ac9045에서 고침).
+        const vm_x = newVm();
+        defer c.cl_vm_deinit(vm_x);
+        const ext = "#[extern='abs'] fn c_abs(a int) -> int\nprint(c_abs(-3))\n";
+        const vx = c.cl_vm_validate(vm_x, B(ext));
+        const rx = run(vm_x, ext, .{});
+        const mx = firstLine(errorSummary(vm_x));
+        const rx2 = run(vm_x, "print(2)\n", .{});
+        check("7h. c 없이 #[extern]: 검증과 eval이 컴파일 오류, 세션은 이어진다", vx == c.CL_ERROR_COMPILE and rx.code == c.CL_ERROR_COMPILE and rx2.code == c.CL_SUCCESS, "검증={s} eval={s} 다음={s} | {s}", .{ codeName(vx), codeName(rx.code), codeName(rx2.code), mx });
     }
 
     // 8. #[bind]의 기본값 매개변수
