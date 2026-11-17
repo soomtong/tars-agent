@@ -140,7 +140,7 @@ A borrow `c := &counts` before the lambda also works inside a function, but not 
 
 list comprehensions, the `lambda` keyword (a lambda is written `|a, b| a + b` and only where the type is known), generator expressions, decorators, `with`, `try/except`, `raise`, inheritance, `*args`, `**kwargs`, `xs.map`, `xs.filter`, `abs`, `sum`, `sorted`, `enumerate`, `zip`, f-strings, the ternary `?:`, semicolons, `i++`.
 
-This host does not load the json, toon, regex, peg and time modules. Solve the task with str methods or a capability function.
+This host does not load the json, toon, regex and peg modules. Solve the task with str methods or a capability function.
 
 ## Errors and Option (instead of exceptions)
 
@@ -345,7 +345,7 @@ Most compile errors say how to fix the code, for example `Did you mean starts_wi
 - `Return statement is not allowed in the main block.`: a top-level return. Wrap the code in `fn main():`.
 - `Missing return statement.`: some path has no return. Add a return at the end.
 - ``fn` declarations are not allowed here.`: a function inside a block. Declare it at the top level.
-- `Failed to load module: json` (also `toon`, `regex`, `peg`, `time`): this host does not load them. Write the code without them.
+- `Failed to load module: json` (also `toon`, `regex`, `peg`): this host does not load them. Write the code without them.
 
 Runtime panics: `Out of bounds index: -1` is a negative index (use `xs.last()`), `OutOfBounds` on a slice is a negative or too large bound, and `MissingKey` is `m[k]` on a missing key (use `m.get(k)`).
 

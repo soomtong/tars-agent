@@ -140,7 +140,7 @@ names.sort(|a, b| counts[a] > counts[b] or (counts[a] == counts[b] and a < b))
 
 리스트 컴프리헨션, `lambda` 키워드(람다는 `|a, b| a + b`이고 타입이 정해진 자리에서만 쓴다), 제너레이터 식, 데코레이터, `with`, `try/except`, `raise`, 상속, `*args`, `**kwargs`, `xs.map`, `xs.filter`, `abs`, `sum`, `sorted`, `enumerate`, `zip`, f-string, 삼항 `?:`, 세미콜론, `i++`.
 
-이 호스트는 json, toon, regex, peg, time 모듈을 싣지 않는다. str 메서드나 능력 함수로 푼다.
+이 호스트는 json, toon, regex, peg 모듈을 싣지 않는다. str 메서드나 능력 함수로 푼다.
 
 ## 오류와 Option (예외 대신)
 
@@ -345,7 +345,7 @@ print('%{x} %{shared.*}')
 - `Return statement is not allowed in the main block.`: 최상위 return. 코드를 `fn main():`으로 감싼다.
 - `Missing return statement.`: return이 없는 경로가 있다. 끝에 return을 더한다.
 - ``fn` declarations are not allowed here.`: 블록 안의 함수. 최상위에서 선언한다.
-- `Failed to load module: json` (`toon`, `regex`, `peg`, `time`도): 이 호스트가 싣지 않는다. 모듈 없이 쓴다.
+- `Failed to load module: json` (`toon`, `regex`, `peg`도): 이 호스트가 싣지 않는다. 모듈 없이 쓴다.
 
 실행 중 panic: `Out of bounds index: -1`은 음수 인덱스(`xs.last()`를 쓴다), 슬라이스의 `OutOfBounds`는 음수이거나 너무 큰 경계, `MissingKey`는 없는 키의 `m[k]`다(`m.get(k)`를 쓴다).
 

@@ -34,6 +34,6 @@
 
 ## 결과
 
-- spec/04에서 json.* 능력과 time.format을 뺀다. 시계 읽기만 능력 clock.now로 남는다 (표준 모듈 time과 이름이 겹치지 않게 한다).
+- spec/04에서 json.* 능력과 time.format을 뺀다. 시계 읽기도 표준 모듈 time이 맡는다 (ADR 0024).
 - 시스템 프롬프트의 Cyber 안내가 json, regex, time 모듈을 가르친다. 4,000 토큰 예산은 그대로다.
 - TODO에 cyber 쪽 작업 줄기(C)를 둔다. M0의 평가는 json 모듈이 있어야 뜻이 있으므로 C1이 M0 평가보다 먼저다.

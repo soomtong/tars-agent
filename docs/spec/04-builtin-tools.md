@@ -22,7 +22,6 @@
 | ui.ask(question, options) -> !str | ui | 사용자에게 선택지를 묻는다 |
 | ui.todo(items) -> !str | ui | 할 일 목록 전체를 교체한다 |
 | memo.set(key, value) -> !str, memo.get(key) -> !str | pure | 변수 초기화와 재개에도 남는 메모 |
-| clock.now() -> int | pure | 유닉스 밀리초. 시계 읽기만 능력이고 계산은 표준 모듈 time |
 | help(name = '') -> str | pure | 능력 목록 또는 한 능력의 전체 사양 |
 
 ## 능력별 메모
@@ -76,10 +75,10 @@ memo
 | core, math | 문자열, Array, Map, 수학 | 있음 |
 | json | parse, stringify, 값 트리 타입과 접근 함수 | 만든다 |
 | regex | 컴파일, 찾기, 모두 찾기, 치환, 나누기. 역추적 없는 엔진 | 만든다 |
-| time | 유닉스 시각과 달력 날짜 변환, ISO 8601 형식과 해석, 기간 계산 | 만든다 |
+| time | 시계(`now`, `monotonic`), 유닉스 시각과 달력 날짜 변환, IANA 시간대, ISO 8601 형식과 해석, 기간 계산 | 있음 (0.4.13). 허용 (ADR 0024) |
 
 - 시그니처는 cyber 쪽 설계에서 정한다. 기준은 모델이 다른 언어에서 익힌 모양에 가깝게 하는 것이다.
-- 시계 읽기는 세계에 닿으므로 능력 clock.now다. time 모듈은 받은 값을 계산만 한다.
+- 시계 읽기는 능력이 아니다. `time`이 시계와 zoneinfo를 직접 읽는다. 시각 읽기는 세션 기록에 남지 않는다 (ADR 0024).
 - fs.search의 pattern은 ripgrep 정규식이고 regex 모듈과 문법이 다를 수 있다. 차이를 사양에 적고, 가능하면 regex 모듈의 문법을 ripgrep 기본 문법의 부분집합으로 잡는다.
 
 ## 후속 능력

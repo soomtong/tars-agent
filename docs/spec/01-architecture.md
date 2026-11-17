@@ -68,7 +68,7 @@ src/
   provider/{anthropic,openai,sse,http}.zig
   prompt/{build.zig, rules.md, cyber-subset.md}
   runtime/{cy,vm,loader,limits}.zig
-  caps/{table,bind,fs,search,edit,proc,net,ui,memo,clock}.zig
+  caps/{table,bind,fs,search,edit,proc,net,ui,memo}.zig
   permission/{profile,rules,gate}.zig
   sandbox/landlock.zig
   frontend/{repl,headless}.zig

@@ -41,7 +41,7 @@
 - [~] C1 json 모듈 (parse, stringify, 값 트리). 기준 빌드에 있다. 남은 게이트: 안내 문서의 예제가 이 모듈을 써서 통과
 - [~] C1 toon 모듈 (stringify, parse). 기준 빌드에 있다. 남은 게이트는 json과 같다
 - [~] C2 regex 모듈 (역추적 없는 엔진). 기준 빌드에 있다. 남은 게이트는 json과 같다
-- [~] C2 time 모듈. 기준 빌드에 있다. 시계와 시스템 zoneinfo를 능력 없이 읽는다. 허용할지, 능력 clock.now와 어떻게 나눌지 사용자가 정한다 (08 문서)
+- [x] C2 time 모듈. 기준 빌드에 있다. 허용하고 clock.now는 두지 않는다. 스파이크 로더에서 열었다 (ADR 0024, 2026-11-17)
 - [ ] C3 임베딩 옵션: 모듈 허용 표. M1 중. 호스트 로더로 되면 올리지 않는다
 - [ ] 수시: 프로세스를 죽이는 경로 수정
 - [ ] cyber의 새 빌드를 받을 때마다 s1, 안내의 예제와 항목, 평가를 다시 돌린다. 문서는 새 빌드의 사실로 고쳐 쓴다 (ADR 0020)
@@ -84,7 +84,7 @@
 - [ ] 모드 전환 (Shift+Tab, /mode)과 system 메시지
 - [ ] AGENTS.md 읽기, 프로젝트 설정 수락 절차
 - [ ] 슬래시 명령: /help /clear /mode /model /cost /permissions /quit
-- [ ] ui.ask, ui.todo, memo, clock.now
+- [ ] ui.ask, ui.todo, memo
 - [ ] net.fetch와 외부 입력 표시
 
 게이트: macOS 터미널과 tars 패널(QEMU)에서 대화로 파일을 고친다. 승인, 거부, 인터럽트가 한글 입력 상태에서도 동작한다.
