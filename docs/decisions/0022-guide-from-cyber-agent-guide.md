@@ -32,7 +32,7 @@ agent-guide.md가 정본이고 tars-agent의 문서는 정본이 아니다. 덧�
 
 가이드와 스파이크 세션이 다른 곳은 아래와 같다. 대부분은 가이드의 문제가 아니라 tars-agent의 선택이거나 실행 환경의 차이다.
 
-- `## Modules`의 `json`, `toon`, `regex`, `peg`, `test`, 그리고 예제 11(`use test`): 스파이크 로더가 막는다. `time`은 연다(ADR 0024). 0.4.12 비교 회차를 같은 조건으로 돌리려고 스파이크 안에서 정한 것이다. 본체에서 다시 정한다.
+- `## Modules`의 `test`와 예제 11(`use test`): 스파이크 로더가 막는다. `json`, `toon`, `regex`, `peg`, `time`은 연다(ADR 0024, 0025).
 - Principles의 "fibers ... only when you must": 스파이크 안내는 fiber를 쓰지 않게 했다. 근거가 없으면 본체에서 뺀다.
 - `os` 모듈(오류 절의 `os.write_file` 예 포함): 이 호스트에서는 `fs`, `proc` 능력과 가두기를 거쳐야 바깥에 닿는다. 실행 환경의 사실이다.
 - `## Running and checking code`(`cyber main.cy`, `cyber fmt`, `cyber doc`): 세션에서는 run 도구로 코드를 돌린다. 실행 환경의 사실이다.

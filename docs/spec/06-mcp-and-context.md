@@ -12,7 +12,7 @@
 Cyber 부분집합 안내
 
 - 원본은 이 저장소의 prompt/cyber-subset.md다. 안의 예제 10개는 테스트가 링크된 libcyber로 실제 실행한다. 런타임 버전이 바뀌어 예제가 깨지면 빌드가 실패한다.
-- 가르치는 범위: :=, int, float, bool, str, []T, Map, struct, if, for, while, fn, !T와 오류 처리, 문자열 보간 %{}, str 메서드, 표준 모듈 json, regex, time. 가르치지 않는 것: move, 빌림(&T), ^T, 제너레이터, spawn, 템플릿.
+- 가르치는 범위: :=, int, float, bool, str, []T, Map, struct, if, for, while, fn, !T와 오류 처리, 문자열 보간 %{}, str 메서드, 표준 모듈 json, toon, regex, peg, time(다섯 모두 로더가 싣는다, ADR 0024, 0025). 가르치지 않는 것: move, 빌림(&T), ^T, 제너레이터, spawn, 템플릿.
 - 안내의 문구는 평가(eval/)의 실패 유형에서만 고친다.
 - cyber CLI가 이 문서를 생성하게 하는 일(spec --for-agents)은 후속이다. 지금은 원본이 한 곳이면 충분하다.
 

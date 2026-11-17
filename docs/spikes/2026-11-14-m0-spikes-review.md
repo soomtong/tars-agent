@@ -157,13 +157,12 @@ ADR 0011과 0016의 설계는 고칠 것 없이 돈다.
 | deny_raw_ptrs와 호스트 모듈 | 함께 동작한다. 호스트 모듈의 선언은 막히지 않는다 |
 | `@bitCast` | CompileError: internal to the builtin modules |
 | `use io` | 기본 로더가 준다. 본체에서 허용 목록으로 뒤집어야 한다 |
-| `use json` (`toon`, `regex`, `peg`도) | 기본 로더가 준다. 스파이크의 호스트 로더가 막는다(Failed to load module: json) |
-| `use time` | 세션에서 된다. `time.now()`, `time.zone('Asia/Seoul')`, 날짜 계산이 맞고 `use`는 다음 run에 이어진다(ADR 0024) |
+| `use json` (`toon`, `regex`, `peg`, `time`도) | 세션에서 된다(ADR 0024, 0025). json의 parse, get, stringify, toon.from_json, regex의 is_match, find_all, peg의 compile, match, time.now, time.zone('Asia/Seoul')이 맞고 `use`는 다음 run에 이어진다 |
 | `spawn(work, {21})` | deny_spawn이면 eval과 검증에서 CompileError: `spawn` is not allowed. The host disabled threads for this script (`deny_spawn`). ... |
 
 spawn에 대해: deny_spawn을 켜지 않으면(`s1 spawn`) 스레드 안에서 능력 함수(`fs.read`)가 그대로 불리고, 연료 상한은 스레드 안의 무한 루프를 502~508ms에 멈춘다(타이머 500ms). deny_spawn을 켜면 표준 모듈이 아닌 chunk의 spawn이 컴파일 오류이고 호스트 함수는 eval 스레드에서만 불린다. s1과 s2는 deny_spawn을 켠 채 돌았고, scope 블록의 동시 승인(3.3)은 그 아래에서 통과했다.
 
-로더는 지금 "c, test와 표준 모듈 json, toon, regex, peg를 거부"하는 차단 목록이다. 기본 로더는 cyber가 표준 모듈을 더할 때마다 함께 넓어진다. 막지 않으면 안내가 가르치지 않는 모듈이 그대로 스크립트에 열린다. 본체는 허용 목록(core, math, time, 그리고 우리 모듈)으로 가야 한다. 새 모듈 가운데 `time`은 시계(`time.now()`, `time.monotonic()`)와 시스템 파일(`time.zone(name)`의 zoneinfo 폴더, `time.local()`의 `TZ`와 `/etc/localtime`)을 능력을 거치지 않고 읽는다. 이것을 받아들이고 허용했다. 능력 clock.now는 두지 않는다(ADR 0024). json, toon, regex, peg는 순수 계산이다.
+로더는 지금 "c와 test를 거부"하는 차단 목록이다. 기본 로더는 cyber가 표준 모듈을 더할 때마다 함께 넓어진다. 막지 않으면 정하지 않은 모듈(`io`, `os` 등)이 그대로 스크립트에 열린다. 본체는 허용 목록(core, math, json, toon, regex, peg, time, 그리고 우리 모듈)으로 가야 한다. 새 모듈 가운데 `time`은 시계(`time.now()`, `time.monotonic()`)와 시스템 파일(`time.zone(name)`의 zoneinfo 폴더, `time.local()`의 `TZ`와 `/etc/localtime`)을 능력을 거치지 않고 읽는다. 이것을 받아들이고 허용했다. 능력 clock.now는 두지 않는다(ADR 0024). json, toon, regex, peg는 순수 계산이고 연다(ADR 0025).
 
 ## 4. 스파이크 2: 제공자
 
@@ -317,13 +316,13 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 
 크기를 바꾸는 `Slice` 메서드(`append`, `insert`, `remove`, `clear`, `size_down`, `size_up`)의 결과를 버리면 세션에서도 스크립트의 마지막 줄까지 컴파일 오류다(``The result of `remove` is the new list, and `out` keeps the old one. Write `out = out.remove(1)`.``). 그 밖의 마지막 표현식(`out.len()`, `out`)은 eval 결과다.
 
-표준 모듈: 기준 빌드에 json, toon, regex, peg, time이 있다(TODO의 C1, C2). 세션의 기본 로더가 다섯을 싣는다. 스파이크는 안내가 가르치지 않는 json, toon, regex, peg를 s1과 s2의 호스트 로더에서 막았다(3.6). `time`은 허용한다(ADR 0024). tars-agent 쪽에 남은 것은 넷을 안내에 넣을지다(크기는 8절의 결정과 함께).
+표준 모듈: 기준 빌드에 json, toon, regex, peg, time이 있다(TODO의 C1, C2). 세션의 기본 로더가 다섯을 싣는다. 다섯 모두 s1과 s2의 호스트 로더가 싣는다(3.6, ADR 0024, 0025). tars-agent 쪽에 남은 것은 안내에 예제를 넣을지다(크기는 8절의 결정과 함께).
 
 ## 8. 안내 문서 (prompt/cyber-subset*.md)
 
 영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.13`이다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(설치된 `/usr/local/bin/cyber`, `Cyber 0.4.13 build-945-1dee651`)와 세션(`s1 replay`)으로 확인한다.
 
-확인 방법: 안내의 항목마다 탐침 스크립트를 만들어 기준 빌드의 CLI와 `replay`(같은 VM, persist_main, 검증 뒤 실행)로 돌리고 결과(출력이나 오류 첫 줄)를 맞춰 봤다. 오류 목록의 첫 줄, "없는 것" 목록, "있는 메서드" 목록, `int('abc')`, 정수 나눗셈, 음수 인덱스가 기준 빌드에서 그대로다. 세션에서만 다른 것은 최상위 빌림과 모듈이다. CLI는 `use json`을 싣고, 스파이크의 세션은 호스트 로더가 막아 `Failed to load module: json`을 낸다. 안내는 세션 쪽을 적는다. 코드 블록 11개는 CLI와 `replay` 양쪽에서 통과했다.
+확인 방법: 안내의 항목마다 탐침 스크립트를 만들어 기준 빌드의 CLI와 `replay`(같은 VM, persist_main, 검증 뒤 실행)로 돌리고 결과(출력이나 오류 첫 줄)를 맞춰 봤다. 오류 목록의 첫 줄, "없는 것" 목록, "있는 메서드" 목록, `int('abc')`, 정수 나눗셈, 음수 인덱스가 기준 빌드에서 그대로다. 세션에서만 다른 것은 최상위 빌림과 모듈이다. CLI는 `os`, `test`를 싣고, 스파이크의 세션은 `test`(와 `c`)를 호스트 로더가 막는다. 안내는 세션 쪽을 적는다. 코드 블록 11개는 CLI와 `replay` 양쪽에서 통과했다.
 
 | 무엇 | 안내가 가르치는 것 |
 |---|---|
@@ -339,10 +338,10 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 | 문자열 이스케이프 | `\n \t \r \0 \\ \' \" \xHH`. 그 밖은 컴파일 오류이고 백슬래시는 두 번 쓴다 |
 | 함수 선언 | 최상위에서만 |
 | 메서드 | str, []T, Map의 있는 메서드 전부(`trim()`, `trimLeft()`, `trimRight()`, `lastIndexOf` 포함)와 Python 이름의 대응 |
-| 없는 것 | `abs`, `sum`, `sorted`, `enumerate`, `zip`, `xs.map`, `xs.filter`. json, toon, regex, peg, time은 이 호스트가 싣지 않는다 |
-| 오류 목록 | 문구가 고치는 법을 말하지 않거나 틀린 고치는 법을 말하는 오류만 (21줄). 나머지는 "문구대로 고친다" 한 줄 |
+| 없는 것 | `abs`, `sum`, `sorted`, `enumerate`, `zip`, `xs.map`, `xs.filter`. 모듈은 json, toon, regex, peg, time을 싣는다고 한 줄로 알린다 |
+| 오류 목록 | 문구가 고치는 법을 말하지 않거나 틀린 고치는 법을 말하는 오류만 (20줄). 나머지는 "문구대로 고친다" 한 줄 |
 
-크기: 영문판 19.7KB(19,707바이트)이고 시스템 프롬프트 전체가 20,797바이트다. 5절 회차는 0.4.12 판(19,807바이트, 시스템 프롬프트 20,897바이트)으로 돌았고 첫 요청 입력이 약 6,500토큰이었다. TODO의 "4,000토큰 이하" 목표를 넘는다. 목표를 바꿀지 안내를 줄일지는 사용자가 정한다. 줄일 자리는 오류 목록(cyber가 문구를 보강할 때마다 줄이 빠진다)과 "Python과 다른 것"의 문법 줄이다. json 같은 새 모듈을 가르치면 더 커진다.
+크기: 영문판 19.7KB(19,538바이트)이고 시스템 프롬프트 전체가 20,628바이트다. 5절 회차는 0.4.12 판(19,807바이트, 시스템 프롬프트 20,897바이트)으로 돌았고 첫 요청 입력이 약 6,500토큰이었다. TODO의 "4,000토큰 이하" 목표를 넘는다. 목표를 바꿀지 안내를 줄일지는 사용자가 정한다. 줄일 자리는 오류 목록(cyber가 문구를 보강할 때마다 줄이 빠진다)과 "Python과 다른 것"의 문법 줄이다. json 같은 새 모듈을 가르치면 더 커진다.
 
 ## 9. 본체 아키텍처에 주는 뜻 (추천, 확정은 본체를 만들 때 사용자가)
 
@@ -352,7 +351,7 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 | 2 | 능력은 모두 `Future[!T]`를 돌려주고 머리말 래퍼가 await한다. 승인이 필요 없으면 호스트 함수 안에서 바로 완료한다 | 3.2, 3.3. 능력의 모양이 하나가 되고, 등급이 바뀌어도 선언이 바뀌지 않는다 |
 | 3 | 검증은 세션 VM에서 `cl_vm_validate`로 바로 한다. 머리말을 eval한 뒤에 검증한다 | 3.5. 검증은 마지막 eval의 설정을 쓴다(cyber.h에 적혀 있다) |
 | 4 | CL_SUCCESS가 아닌 eval과 검증 뒤 `cl_vm_reset_pending`을 묻고, reset이면 머리말을 다시 돌려 모델에게 알린다. panic과 interrupt 뒤에는 최상위 변수가 사라졌다고 알린다 | 3.4, 3.5. s2가 그렇게 돈다 |
-| 5 | 호스트 로더는 허용 목록으로 쓴다 | 3.6. 기본 로더는 cyber가 표준 모듈을 더할 때마다 넓어진다. 차단 목록이면 안내가 가르치지 않는 모듈이 그대로 열린다. `time`은 알고 연다(ADR 0024) |
+| 5 | 호스트 로더는 허용 목록으로 쓴다 | 3.6. 기본 로더는 cyber가 표준 모듈을 더할 때마다 넓어진다. 차단 목록이면 정하지 않은 모듈이 그대로 열린다. 표준 모듈 다섯은 알고 연다(ADR 0024, 0025) |
 | 6 | deny_raw_ptrs와 deny_spawn을 켠다 | 3.6 |
 | 7 | 프로세스 실행 능력은 자체 시간 상한, 표준 입력 차단, 출력 크기 상한, 취소를 가진다 | VM의 타이머는 승인 뒤 루프가 돌리는 프로세스에 닿지 않는다 |
 | 8 | 읽기 능력도 권한 프로파일의 대상으로 둔다 (작업 폴더 밖 읽기는 승인) | 읽은 것은 모두 모델 제공자에게 간다 |

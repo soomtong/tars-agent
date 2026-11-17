@@ -196,20 +196,14 @@ fn loader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResul
         return true;
     }
     // c 모듈(FFI와 raw 메모리)과 test 모듈은 스크립트에 주지 않는다.
-    // 표준 모듈 json, toon, regex, peg는 안내가 가르치지 않으므로 s2와 같이 막는다. time은 허용한다(ADR 0024).
-    if (std.mem.eql(u8, name, "c") or std.mem.eql(u8, name, "test") or isNewStd(name)) {
+    // 표준 모듈 json, toon, regex, peg, time은 연다(ADR 0024, 0025).
+    if (std.mem.eql(u8, name, "c") or std.mem.eql(u8, name, "test")) {
         g_denied_modules += 1;
         return false;
     }
     return c.cl_default_loader(vm, mod, uri, res);
 }
 
-fn isNewStd(name: []const u8) bool {
-    for ([_][]const u8{ "json", "toon", "regex", "peg" }) |m| {
-        if (std.mem.eql(u8, name, m)) return true;
-    }
-    return false;
-}
 
 // ---------- 실행: 에이전트 루프의 "한 스텝"에 해당 ----------
 
