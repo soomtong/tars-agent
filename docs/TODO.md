@@ -20,7 +20,7 @@
 스파이크는 Claude가 혼자 검토, 구현하고 결정도 위임받았다 (ADR 0012의 덧붙임, 2026-11-13). 코드는 spike/에, 상세한 검토 결과는 docs/spikes/에 둔다. 사용자는 검토 결과로 아키텍처의 감을 잡고, 본체 구현은 페어로 한다.
 
 - [x] 스파이크 1, 호스트 경계: build.zig.zon으로 cyber를 받아 Zig에서 링크. 능력 2개(fs.read, proc.exec), 호스트 로더(허용 목록), deny_raw_ptrs, 연료(fuel), 벽시계(wall-clock) interrupt, 스택과 메모리 상한, persist_main 반복 eval, validate, 능력 안에서 블록 후 반환
-- [x] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인한 것"). 검사 42개 모두 통과
+- [x] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인한 것"). 검사 43개 모두 통과
 - [x] 스파이크 1에서 동시 승인 확인 (ADR 0016): scope 블록으로 요청 둘을 걸고 번호 순으로 하나씩 완료, 중첩 블록, 하나를 거부하면 나머지가 버려지고 요청 표가 비는지
 - [x] 스파이크 2, 제공자: 전송 형식 둘(Anthropic Messages, OpenAI Chat Completions)을 DeepSeek으로 확인 (ADR 0014). Zig std.http로 스트리밍 요청, SSE 해석, run 도구 한 번 왕복. TLS와 CA 묶음은 macOS에서 된다
 - [x] 스파이크 검토 결과: docs/spikes/2026-11-14-m0-spikes-review.md, 발견과 추천은 ADR 0017. 스파이크 코드(spike/)는 사용자가 검토한 뒤 지운다
@@ -42,7 +42,7 @@
 - [~] C1 toon 모듈 (encode, decode). 기준 빌드에 있고 로더가 싣는다. 남은 게이트는 json과 같다
 - [~] C2 regex 모듈 (역추적 없는 엔진), peg 모듈. 기준 빌드에 있고 로더가 싣는다. 남은 게이트는 json과 같다
 - [x] C2 time 모듈. 기준 빌드에 있다. 허용하고 clock.now는 두지 않는다. 스파이크 로더에서 열었다 (ADR 0024, 2026-11-17)
-- [ ] 요청 표준 모듈 API를 의존 패키지와 `cyber doc`에서(docs/requests/cyber-module-api-for-agents.md). 0.4.12 요청 (c)의 "결정 대기"를 이어 받는다
+- [x] 표준 모듈 API: 패키지에 `docs/api.json`이 들어 있고 `cyber doc --api <module>`이 찍는다. s1 검사 0b가 빌드 때 읽어 모듈로 거른다 (cyber 4d47ac76, 2026-11-17)
 - [ ] C3 임베딩 옵션: `os`를 호스트 콜백으로 받기(ADR 0026의 방향 D). 모듈 허용 표는 호스트 로더로 되므로 올리지 않는다
 - [ ] 수시: 프로세스를 죽이는 경로 수정
 - [ ] cyber의 새 빌드를 받을 때마다 s1, 안내의 예제와 항목, 평가를 다시 돌린다. 문서는 새 빌드의 사실로 고쳐 쓴다 (ADR 0020)

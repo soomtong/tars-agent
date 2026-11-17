@@ -203,6 +203,14 @@ fn loader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResul
     return c.cl_default_loader(vm, mod, uri, res);
 }
 
+/// 모듈 API를 모델에게 줄 모듈. 허용 목록에서 의존으로만 싣는 meta와 c, 그리고 core와 math는 뺀다.
+fn isAllowedApi(name: []const u8) bool {
+    for ([_][]const u8{ "json", "toon", "regex", "peg", "time" }) |m| {
+        if (std.mem.eql(u8, name, m)) return true;
+    }
+    return false;
+}
+
 /// 싣는 표준 모듈 (ADR 0026). 로더는 스크립트의 use와 모듈 안의 use를 구별하지 못하므로
 /// 의존 모듈도 넣는다: meta(core, json, math가 쓴다), c(math가 쓴다. deny_raw_ptrs와 ffi=false로 무력하다).
 /// 그 밖(io, cy, test)은 싣지 않는다. os, libc, cli는 라이브러리의 기본 로더에 없다.
@@ -476,6 +484,30 @@ pub fn main(init: std.process.Init) !void {
 
     // 0. 빌드: 의존의 아티팩트로 링크하고, C 쪽은 그 include 경로로 cyber.h를 받는다
     check("0. 아티팩트 링크, 버전 문자열, #include \"cyber.h\"의 구조체 크기", std.mem.startsWith(u8, S(ver), "Cyber ") and inc_eval_config_size() == @sizeOf(c.CLEvalConfig) and inc_compile_config_size() == @sizeOf(c.CLCompileConfig), "version={s} CLEvalConfig C={d} Zig={d}, CLCompileConfig C={d} Zig={d}", .{ S(ver), inc_eval_config_size(), @sizeOf(c.CLEvalConfig), inc_compile_config_size(), @sizeOf(c.CLCompileConfig) });
+
+    // 0b. 의존 패키지의 문서: 안내와 모듈 API를 빌드 때 읽고, API는 허용 목록의 모듈로 거른다
+    {
+        const guide = @embedFile("cyber_guide");
+        var funcs: usize = 0;
+        var types: usize = 0;
+        var json_funcs: usize = 0;
+        var version: []const u8 = "";
+        const parsed = std.json.parseFromSlice(std.json.Value, g_gpa, @embedFile("cyber_api"), .{});
+        if (parsed) |p| {
+            defer p.deinit();
+            version = g_gpa.dupe(u8, p.value.object.get("version").?.string) catch "";
+            for (p.value.object.get("funcs").?.array.items) |f| {
+                const m = f.object.get("module").?.string;
+                if (isAllowedApi(m)) funcs += 1;
+                if (std.mem.eql(u8, m, "json")) json_funcs += 1;
+            }
+            for (p.value.object.get("types").?.array.items) |ty| {
+                if (isAllowedApi(ty.object.get("module").?.string)) types += 1;
+            }
+        } else |_| {}
+        const has_host = std.mem.indexOf(u8, guide, "embedding host") != null;
+        check("0b. 패키지의 agent-guide.md와 api.json을 빌드 때 읽고 모듈로 거른다", has_host and funcs > 0 and types > 0 and json_funcs > 0, "가이드 {d}B(임베딩 호스트 줄 {}), api.json version={s}, json·toon·regex·peg·time 함수 {d} 타입 {d} (json 함수 {d})", .{ guide.len, has_host, version, funcs, types, json_funcs });
+    }
 
     // 1. 기본: eval, print 가로채기, 결과 값
     {

@@ -22,7 +22,7 @@
 
 ## 선행 조건
 
-- cyber 패키지가 `docs/agent-guide.md`를 담고 있어야 한다. 기준 빌드(0.4.13)의 패키지에 들어 있다.
+- cyber 패키지가 `docs/agent-guide.md`를 담고 있어야 한다. 기준 빌드의 패키지에 들어 있다. 모듈 API `docs/api.json`도 들어 있다(4d47ac76부터). 둘 다 s1 검사 0b가 빌드 때 읽는다.
 
 아래 "열린 것"을 정하기 전까지 스파이크는 prompt/cyber-subset.en.md와 prompt/cyber-subset.md를 쓴다.
 
@@ -37,7 +37,7 @@ agent-guide.md가 정본이고 tars-agent의 문서는 정본이 아니다. 덧�
 - `os` 모듈(오류 절의 `os.write_file` 예 포함): 이 호스트에서는 `fs`, `proc` 능력과 가두기를 거쳐야 바깥에 닿는다. 실행 환경의 사실이다.
 - `## Running and checking code`(`cyber main.cy`, `cyber fmt`, `cyber doc`): 세션에서는 run 도구로 코드를 돌린다. 실행 환경의 사실이다.
 
-가이드에 임베딩 호스트를 두고 고칠 것이 있으면 cyber에 알린다. 예를 들어 "임베딩 호스트는 더 적은 모듈을 싣고 코드를 다르게 돌릴 수 있으며 호스트의 지시가 그것을 말한다"는 한 줄이 있으면 덧붙임이 가이드와 다투지 않는다. 요청서 docs/requests/cyber-agent-guide-embedding-host.md (2026-11-17 사용자 지시).
+가이드는 머리말에서 임베딩 호스트의 지시가 실행 방법과 모듈에 대해 가이드보다 앞선다고 말하고, `## Modules`에서 거부된 모듈의 문구(`Failed to load module: name` 등)와 "다시 시도하지 말라"를 말한다(cyber def798e9, 2026-11-17 요청). 그래서 위 네 곳은 덧붙임이 이 호스트의 사실을 말하면 되고 가이드와 다투지 않는다. 모듈 API는 가이드가 `cyber doc --api <module>`을 가리키고 "호스트가 다른 길로 줄 수 있다"고 말한다.
 
 ## 버린 대안
 

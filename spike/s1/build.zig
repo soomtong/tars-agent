@@ -34,6 +34,9 @@ pub fn build(b: *std.Build) void {
         .default_init = true,
     });
     exe.root_module.addImport("cyber_c", cy_c.mod);
+    // 의존 패키지의 문서를 빌드 때 싣는다: 에이전트 안내(ADR 0022)와 모듈 API(docs/api.json).
+    exe.root_module.addAnonymousImport("cyber_guide", .{ .root_source_file = cyber.path("docs/agent-guide.md") });
+    exe.root_module.addAnonymousImport("cyber_api", .{ .root_source_file = cyber.path("docs/api.json") });
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
