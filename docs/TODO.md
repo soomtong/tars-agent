@@ -11,7 +11,7 @@
 - [x] 실행 모델 CodeAct + Cyber (ADR 0001), 호스트는 Zig + libcyber (ADR 0002)
 - [x] 초기 요구사항 대조 (09 문서)
 - [x] 명세 재검토와 열린 질문 결정 (ADR 0004~0009, 2026-11-10)
-- [x] cyber 기준 빌드 반영: 0.4.13. 스파이크 의존은 가장 새 빌드를 따르고(ADR 0023), s1, 안내의 코드 블록과 오류 문구를 설치된 CLI와 세션에서 확인했다. CodeAct 비교는 0.4.12 회차의 것이다. 표준 모듈 다섯은 안내가 가르치지 않아 스파이크의 호스트 로더에서 막는다 (2026-11-17)
+- [x] cyber 기준 빌드 반영: 0.4.13. 스파이크 의존은 가장 새 빌드를 따르고(ADR 0023), s1, 안내의 코드 블록과 오류 문구를 설치된 CLI와 세션에서 확인했다. CodeAct 비교는 0.4.12 회차의 것이다. 스파이크의 호스트 로더는 허용 목록이다(ADR 0026) (2026-11-17)
 
 ## M0 증명과 판정
 
@@ -19,7 +19,7 @@
 
 스파이크는 Claude가 혼자 검토, 구현하고 결정도 위임받았다 (ADR 0012의 덧붙임, 2026-11-13). 코드는 spike/에, 상세한 검토 결과는 docs/spikes/에 둔다. 사용자는 검토 결과로 아키텍처의 감을 잡고, 본체 구현은 페어로 한다.
 
-- [x] 스파이크 1, 호스트 경계: build.zig.zon으로 cyber를 받아 Zig에서 링크. 능력 2개(fs.read, proc.exec), 호스트 로더(c 거부), deny_raw_ptrs, 연료(fuel), 벽시계(wall-clock) interrupt, 스택과 메모리 상한, persist_main 반복 eval, validate, 능력 안에서 블록 후 반환
+- [x] 스파이크 1, 호스트 경계: build.zig.zon으로 cyber를 받아 Zig에서 링크. 능력 2개(fs.read, proc.exec), 호스트 로더(허용 목록), deny_raw_ptrs, 연료(fuel), 벽시계(wall-clock) interrupt, 스택과 메모리 상한, persist_main 반복 eval, validate, 능력 안에서 블록 후 반환
 - [x] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인한 것"). 검사 40개 모두 통과
 - [x] 스파이크 1에서 동시 승인 확인 (ADR 0016): scope 블록으로 요청 둘을 걸고 번호 순으로 하나씩 완료, 중첩 블록, 하나를 거부하면 나머지가 버려지고 요청 표가 비는지
 - [x] 스파이크 2, 제공자: 전송 형식 둘(Anthropic Messages, OpenAI Chat Completions)을 DeepSeek으로 확인 (ADR 0014). Zig std.http로 스트리밍 요청, SSE 해석, run 도구 한 번 왕복. TLS와 CA 묶음은 macOS에서 된다
@@ -37,12 +37,12 @@
 
 필요한 것은 cyber에 만든다. 작업 장소는 soomtong/cyber이고 그 저장소의 절차를 따른다. 목록과 필요의 증거는 08 문서 "cyber에서 만들 것"이 정본이다. M 단계와 나란히 간다.
 
-- [x] C0 M0 스파이크에서 남은 것. 0.4.13에서 모두 닫혔다. 열린 요청은 없다 (ADR 0019)
+- [ ] C0 `use c` 없는 `#[extern]` 함수가 검증 중에 프로세스를 죽인다. 요청서 docs/requests/cyber-0.4.13-extern-without-c.md. 본체 첫 단계의 선행 조건 (ADR 0019, 0026)
 - [~] C1 json 모듈 (parse, stringify, 값 트리). 기준 빌드에 있고 로더가 싣는다(ADR 0025). 남은 게이트: 안내 문서의 예제가 이 모듈을 써서 통과
 - [~] C1 toon 모듈 (encode, decode). 기준 빌드에 있고 로더가 싣는다. 남은 게이트는 json과 같다
 - [~] C2 regex 모듈 (역추적 없는 엔진), peg 모듈. 기준 빌드에 있고 로더가 싣는다. 남은 게이트는 json과 같다
 - [x] C2 time 모듈. 기준 빌드에 있다. 허용하고 clock.now는 두지 않는다. 스파이크 로더에서 열었다 (ADR 0024, 2026-11-17)
-- [ ] C3 임베딩 옵션: 모듈 허용 표. M1 중. 호스트 로더로 되면 올리지 않는다
+- [ ] C3 임베딩 옵션: `os`를 호스트 콜백으로 받기(ADR 0026의 방향 D). 모듈 허용 표는 호스트 로더로 되므로 올리지 않는다
 - [ ] 수시: 프로세스를 죽이는 경로 수정
 - [ ] cyber의 새 빌드를 받을 때마다 s1, 안내의 예제와 항목, 평가를 다시 돌린다. 문서는 새 빌드의 사실로 고쳐 쓴다 (ADR 0020)
 
@@ -85,6 +85,7 @@
 - [ ] AGENTS.md 읽기, 프로젝트 설정 수락 절차
 - [ ] 슬래시 명령: /help /clear /mode /model /cost /permissions /quit
 - [ ] ui.ask, ui.todo, memo
+- [ ] os 대신 능력으로: fs.mkdir, fs.remove, fs.copy, fs.move, env.get 후보를 평가를 보고 정한다 (04, ADR 0026)
 - [ ] net.fetch와 외부 입력 표시
 
 게이트: macOS 터미널과 tars 패널(QEMU)에서 대화로 파일을 고친다. 승인, 거부, 인터럽트가 한글 입력 상태에서도 동작한다.

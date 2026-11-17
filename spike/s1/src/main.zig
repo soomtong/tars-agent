@@ -195,13 +195,22 @@ fn loader(vm: ?*c.CLVM, mod: ?*c.CLSym, uri: c.CLBytes, res: [*c]c.CLLoaderResul
         res.*.manage_src = false;
         return true;
     }
-    // c 모듈(FFI와 raw 메모리)과 test 모듈은 스크립트에 주지 않는다.
-    // 표준 모듈 json, toon, regex, peg, time은 연다(ADR 0024, 0025).
-    if (std.mem.eql(u8, name, "c") or std.mem.eql(u8, name, "test")) {
+    // 허용 목록 밖의 모듈은 싣지 않는다. 세계에 닿는 일은 능력으로만 한다 (ADR 0026).
+    if (!isAllowedStd(name)) {
         g_denied_modules += 1;
         return false;
     }
     return c.cl_default_loader(vm, mod, uri, res);
+}
+
+/// 싣는 표준 모듈 (ADR 0026). 로더는 스크립트의 use와 모듈 안의 use를 구별하지 못하므로
+/// 의존 모듈도 넣는다: meta(core, json, math가 쓴다), c(math가 쓴다. deny_raw_ptrs와 ffi=false로 무력하다).
+/// 그 밖(io, cy, test)은 싣지 않는다. os, libc, cli는 라이브러리의 기본 로더에 없다.
+fn isAllowedStd(name: []const u8) bool {
+    for ([_][]const u8{ "core", "meta", "c", "math", "json", "toon", "regex", "peg", "time" }) |m| {
+        if (std.mem.eql(u8, name, m)) return true;
+    }
+    return false;
 }
 
 
@@ -796,9 +805,11 @@ pub fn main(init: std.process.Init) !void {
         const vm = newVm();
         defer c.cl_vm_deinit(vm);
         g_denied_modules = 0;
-        const r1 = run(vm, "use c\nprint(1)\n", .{});
+        const r1 = run(vm, "use io\nprint(1)\n", .{});
         const s1 = firstLine(errorSummary(vm));
-        check("7a. use c: 호스트 로더가 거부한다", r1.code == c.CL_ERROR_COMPILE and g_denied_modules == 1, "code={s} | {s}", .{ codeName(r1.code), s1 });
+        check("7a. use io: 허용 목록 밖이라 호스트 로더가 거부한다", r1.code == c.CL_ERROR_COMPILE and g_denied_modules == 1, "code={s} | {s}", .{ codeName(r1.code), s1 });
+        const r1m = run(vm, "use math\nuse toon\nprint(math.sqrt(16.0))\n", .{});
+        check("7a2. use math, use toon: 의존 모듈(c, meta, json)을 거쳐 실린다", r1m.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "4\n"), "code={s} 출력={s} | {s}", .{ codeName(r1m.code), g_out.items, firstLine(errorSummary(vm)) });
         const r2 = run(vm, "use os\nprint(os.cwd())\n", .{});
         check("7b. use os: 라이브러리에 없는 모듈", r2.code == c.CL_ERROR_COMPILE, "code={s} | {s}", .{ codeName(r2.code), firstLine(errorSummary(vm)) });
         const r3 = run(vm, "p := Ptr[int](0)\nprint(p.*)\n", .{});

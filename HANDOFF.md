@@ -1,4 +1,4 @@
-# HANDOFF: cyber 0.4.13 릴리스로 옮기고 열린 요청을 닫음 (2026-11-17)
+# HANDOFF: 모듈 허용 목록과 능력 경계를 정함, extern 결함 요청 (2026-11-17)
 
 ## 목표
 
@@ -7,7 +7,9 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 이번 세션(2026-11-16~17):
 - cyber가 0.4.12 요청서의 네 건을 고쳤다.
 - cyber 의존은 커밋에 묶지 않고 가장 새 빌드를 따른다(사용자 지시, ADR 0023). 지금은 릴리스 0.4.13(태그 커밋 1dee651)이고, 설치된 `/usr/local/bin/cyber`(`Cyber 0.4.13 build-945-1dee651`)와 같다. `latest` 프리릴리스는 0.4.13보다 앞의 커밋에 남아 있어 쓰지 않는다.
-- 0.4.13-DEV에서 찾은 두 건(`let x := 1`의 문구, 세션 마지막 줄의 버린 `Slice` 결과)이 0.4.13에서 고쳐졌다. CLI와 세션에서 확인하고 요청서를 지웠다. 열린 요청은 없다.
+- 0.4.13-DEV에서 찾은 두 건(`let x := 1`의 문구, 세션 마지막 줄의 버린 `Slice` 결과)이 0.4.13에서 고쳐졌다. CLI와 세션에서 확인하고 요청서를 지웠다.
+- 모듈: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025)를 연다. 세계에 닿는 일은 능력으로만 하고 os는 열지 않는다(ADR 0026, 사용자 결정 A). 로더는 허용 목록 core, meta, c, math, json, toon, regex, peg, time이다(meta와 c는 의존).
+- 새 결함: c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트가 검증 중에 프로세스를 죽인다. 요청서 docs/requests/cyber-0.4.13-extern-without-c.md (ADR 0019 선행 조건).
 - s1, 안내, 네 건을 CLI와 세션에서 확인했다. 새로 찾은 둘로 요청서를 냈다.
 - CodeAct 비교는 다시 돌리지 않았다(비교 수치는 0.4.12 회차).
 - 안내의 정본을 cyber의 docs/agent-guide.md로 정했다(ADR 0022). 진행은 천천히, 제약보다 열어 두고 본다(사용자 지시).
@@ -58,7 +60,9 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 사용자가 정할 것:
 
 - [ ] 안내를 cyber의 agent-guide.md와 호스트 덧붙임으로 언제, 어떤 모양으로 모을지(ADR 0022 "열린 것"). 가이드와 스파이크 세션이 다른 곳은 대부분 tars-agent의 선택(모듈 막기, fiber 금지)이거나 실행 환경의 차이(`os`, CLI)다. 임베딩 호스트에 관한 한 줄을 가이드에 요청할지
-- [x] 표준 모듈 다섯을 연다: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025). 스파이크 로더는 c와 test만 막는다
+- [x] 표준 모듈 다섯을 연다: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025). 스파이크 로더는 허용 목록이다(ADR 0026)
+- [ ] 요청서 docs/requests/cyber-0.4.13-extern-without-c.md를 cyber에 전달
+- [ ] os 대신 능력으로 넓힐 후보(fs.mkdir, fs.remove, fs.copy, fs.move, env.get)를 언제 정할지 (04, ADR 0026)
 - [ ] 다섯 모듈의 예제를 안내에 넣을지 (TODO C1, C2의 남은 게이트)
 - [ ] CodeAct 비교를 기준 빌드로 다시 돌릴지 (지금 수치는 0.4.12 회차)
 - [ ] 본체가 VM 충돌로 프로세스가 끝나는 경우를 어떻게 다룰지 (검토 문서 9절 17)
@@ -68,7 +72,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 그 밖:
 
-- [ ] 본체 첫 단계: 저장소 뼈대와 runtime 경계. 선행 조건은 모두 닫혔다(ADR 0019). 단계의 결정, 편집, 기능 표를 먼저 낸다
+- [ ] 본체 첫 단계: 저장소 뼈대와 runtime 경계. 선행 조건은 extern 결함 요청 하나(ADR 0019). 단계의 결정, 편집, 기능 표를 먼저 낸다
 - [ ] tars 게스트에서 기준 빌드로 스파이크 실행 (tars-linux 산출물 필요)
 - [ ] 평가: eval/ 과제 20개, CodeAct 대 direct, 판정을 docs/decisions에 기록
 - [ ] M1~M6. 미확인: tars 커널의 CONFIG_SECURITY_LANDLOCK (M5)

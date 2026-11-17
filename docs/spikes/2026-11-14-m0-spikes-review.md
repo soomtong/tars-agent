@@ -151,18 +151,19 @@ ADR 0011과 0016의 설계는 고칠 것 없이 돈다.
 
 | 시도 | 결과 |
 |---|---|
-| `use c` | 호스트 로더가 false를 돌려준다. CompileError: Failed to load module: c |
+| `use c` | 실린다. math가 c를 쓰므로 허용 목록에 넣는다. 포인터 함수는 deny_raw_ptrs로 컴파일 오류, extern 호출은 -Dffi=false로 panic 결과다 |
+| `#[extern]` 함수(`use c` 없이) | 검증 중에 프로세스가 죽는다(ReleaseFast 세그폴트, Debug는 `compiler.zig:1035`의 null). 열린 요청 |
 | `use os` | 라이브러리에 없다. 같은 오류 |
 | `Ptr[int](0)` | CompileError: Raw pointer type `Ptr[int]` is not allowed (deny_raw_ptrs) |
 | deny_raw_ptrs와 호스트 모듈 | 함께 동작한다. 호스트 모듈의 선언은 막히지 않는다 |
 | `@bitCast` | CompileError: internal to the builtin modules |
-| `use io` | 기본 로더가 준다. 본체에서 허용 목록으로 뒤집어야 한다 |
+| `use io` (`cy`, `test`도) | 허용 목록 밖이라 로더가 거부한다(검사 7a). io는 str의 Reader, Scanner라 세계에 닿지 않는다 |
 | `use json` (`toon`, `regex`, `peg`, `time`도) | 세션에서 된다(ADR 0024, 0025). json의 parse, get, stringify, toon.from_json, regex의 is_match, find_all, peg의 compile, match, time.now, time.zone('Asia/Seoul')이 맞고 `use`는 다음 run에 이어진다 |
 | `spawn(work, {21})` | deny_spawn이면 eval과 검증에서 CompileError: `spawn` is not allowed. The host disabled threads for this script (`deny_spawn`). ... |
 
 spawn에 대해: deny_spawn을 켜지 않으면(`s1 spawn`) 스레드 안에서 능력 함수(`fs.read`)가 그대로 불리고, 연료 상한은 스레드 안의 무한 루프를 502~508ms에 멈춘다(타이머 500ms). deny_spawn을 켜면 표준 모듈이 아닌 chunk의 spawn이 컴파일 오류이고 호스트 함수는 eval 스레드에서만 불린다. s1과 s2는 deny_spawn을 켠 채 돌았고, scope 블록의 동시 승인(3.3)은 그 아래에서 통과했다.
 
-로더는 지금 "c와 test를 거부"하는 차단 목록이다. 기본 로더는 cyber가 표준 모듈을 더할 때마다 함께 넓어진다. 막지 않으면 정하지 않은 모듈(`io`, `os` 등)이 그대로 스크립트에 열린다. 본체는 허용 목록(core, math, json, toon, regex, peg, time, 그리고 우리 모듈)으로 가야 한다. 새 모듈 가운데 `time`은 시계(`time.now()`, `time.monotonic()`)와 시스템 파일(`time.zone(name)`의 zoneinfo 폴더, `time.local()`의 `TZ`와 `/etc/localtime`)을 능력을 거치지 않고 읽는다. 이것을 받아들이고 허용했다. 능력 clock.now는 두지 않는다(ADR 0024). json, toon, regex, peg는 순수 계산이고 연다(ADR 0025).
+로더는 허용 목록이다: core, meta, c, math, json, toon, regex, peg, time과 호스트 능력 모듈(ADR 0026). 로더와 resolver는 스크립트의 use와 모듈 안의 use를 구별하지 못하므로 의존 모듈 meta(core, json, math가 쓴다)와 c(math가 쓴다)를 넣는다. 이전의 차단 목록은 c를 막아 `use math`가 실패하고 있었다(검사 7a2가 이제 본다). 기본 로더는 os, libc, cli를 모른다. 새 모듈 가운데 `time`은 시계(`time.now()`, `time.monotonic()`)와 시스템 파일(`time.zone(name)`의 zoneinfo 폴더, `time.local()`의 `TZ`와 `/etc/localtime`)을 능력을 거치지 않고 읽는다. 이것을 받아들이고 허용했다. 능력 clock.now는 두지 않는다(ADR 0024). json, toon, regex, peg는 순수 계산이고 연다(ADR 0025).
 
 ## 4. 스파이크 2: 제공자
 
@@ -310,7 +311,7 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 
 모델이 모르는 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)은 인덱스, 슬라이스 경계, 대입 값 어디서든 인자 불일치 문구에 나오지 않는다. 대입 값이 원소 타입과 다르면 ``An element of `[]int` must be `int`, got `str`.``처럼 원소 타입을 말하고, `?T`와 `!T`이면 푸는 법을 붙인다(`Map`도 같다). 정수 원소 자리의 한 글자 리터럴(`xs[0] = 'a'`)은 오류가 아니라 코드 포인트(97)다. 타입이 정해진 자리의 한 글자 리터럴은 코드 포인트라는 언어 규칙이다.
 
-열린 요청은 없다.
+열린 요청: docs/requests/cyber-0.4.13-extern-without-c.md. c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트가 검증 중에 프로세스를 죽인다. 본체 첫 단계 전에 닫는다(ADR 0019).
 
 다른 언어의 선언 키워드는 키워드만 뺀 꼴을 말한다. `let x := 1`(`mut`, `let mut`도)은 ``Cyber has no `let`. Declare with `x := 1`.``이고, `let x = 1`은 ``... Declare with `x := 1`, or `var x int = 1` for a type.``이다. CLI와 세션이 같다.
 
@@ -351,7 +352,7 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 | 2 | 능력은 모두 `Future[!T]`를 돌려주고 머리말 래퍼가 await한다. 승인이 필요 없으면 호스트 함수 안에서 바로 완료한다 | 3.2, 3.3. 능력의 모양이 하나가 되고, 등급이 바뀌어도 선언이 바뀌지 않는다 |
 | 3 | 검증은 세션 VM에서 `cl_vm_validate`로 바로 한다. 머리말을 eval한 뒤에 검증한다 | 3.5. 검증은 마지막 eval의 설정을 쓴다(cyber.h에 적혀 있다) |
 | 4 | CL_SUCCESS가 아닌 eval과 검증 뒤 `cl_vm_reset_pending`을 묻고, reset이면 머리말을 다시 돌려 모델에게 알린다. panic과 interrupt 뒤에는 최상위 변수가 사라졌다고 알린다 | 3.4, 3.5. s2가 그렇게 돈다 |
-| 5 | 호스트 로더는 허용 목록으로 쓴다 | 3.6. 기본 로더는 cyber가 표준 모듈을 더할 때마다 넓어진다. 차단 목록이면 정하지 않은 모듈이 그대로 열린다. 표준 모듈 다섯은 알고 연다(ADR 0024, 0025) |
+| 5 | 호스트 로더는 허용 목록으로 쓴다 | 3.6. 기본 로더는 cyber가 표준 모듈을 더할 때마다 넓어진다. 차단 목록이면 정하지 않은 모듈이 그대로 열린다. 표준 모듈 다섯과 의존 모듈 meta, c를 넣는다(ADR 0024, 0025, 0026) |
 | 6 | deny_raw_ptrs와 deny_spawn을 켠다 | 3.6 |
 | 7 | 프로세스 실행 능력은 자체 시간 상한, 표준 입력 차단, 출력 크기 상한, 취소를 가진다 | VM의 타이머는 승인 뒤 루프가 돌리는 프로세스에 닿지 않는다 |
 | 8 | 읽기 능력도 권한 프로파일의 대상으로 둔다 (작업 폴더 밖 읽기는 승인) | 읽은 것은 모두 모델 제공자에게 간다 |

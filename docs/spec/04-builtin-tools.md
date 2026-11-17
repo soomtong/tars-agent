@@ -24,6 +24,21 @@
 | memo.set(key, value) -> !str, memo.get(key) -> !str | pure | 변수 초기화와 재개에도 남는 메모 |
 | help(name = '') -> str | pure | 능력 목록 또는 한 능력의 전체 사양 |
 
+## os 대신 능력으로 (ADR 0026)
+
+스크립트에 `os`를 열지 않는다. `os`가 하던 일 가운데 쓸모 있는 것은 능력으로 메운다. 아래는 후보이고 지금은 `proc.exec`로 된다. 위 원칙(역할이 겹치는 능력은 만들지 않는다)과 평가의 실패 유형을 보고 본체의 caps 단계에서 정한다.
+
+| os | 후보 |
+|---|---|
+| read_file, write_file, fileInfo, open_dir | 있음: fs.read, fs.write, fs.stat, fs.list |
+| createDir | fs.mkdir |
+| removeFile, removeDir | fs.remove (write 등급, 작업 디렉터리 안) |
+| copy_file, 이름 바꾸기 | fs.copy, fs.move |
+| get_env | env.get (read 등급. deny 규칙으로 비밀 변수를 가린다) |
+| cwd | 시스템 프롬프트의 환경 줄 (06), 또는 fs.cwd |
+| exec | 있음: proc.exec |
+| set_env, chdir, exit, malloc, free | 만들지 않는다. 하네스 프로세스를 바꾼다 |
+
 ## 능력별 메모
 
 fs.read
