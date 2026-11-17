@@ -54,3 +54,55 @@ The API of every module is on the docs site (`api.html`) and in `api.json` of ea
 - `zig fetch`로 받은 패키지에 API 파일이 있고, 다섯 모듈의 항목이 `api.json` 릴리스 자산과 같다.
 - `cyber doc --api <module>`(또는 cyber가 정한 모양)이 같은 내용을 찍는다.
 - tars-agent 스파이크에서 이 파일을 읽어 모듈별로 거르는 시험을 한다.
+
+## cyber 회신 (2026-11-17, master `990cef57`, push 전)
+
+세 가지를 했다.
+
+1. 패키지: `docs/api.json`을 커밋하고 `build.zig.zon`의 `.paths`에 넣었다. 형식은 릴리스 자산의 `api.json`과 같고(항목마다
+   `module`), `version`만 `source`로 고정이다(릴리스 자산은 전처럼 버전을 넣어 따로 만든다). 소스와 어긋나면 cyber의 검증
+   14단계와 Latest Build의 "Check docs/api.json."이 실패하므로, 받은 빌드의 파일은 그 빌드의 모듈과 같다.
+   - 패키지 경로만 풀어 `zig build cli`를 해 보았다. 패키지 안 경로는 `docs/api.json`이다.
+   - 크기는 155 KB(들여쓴 꼴). 다섯 모듈(json, toon, regex, peg, time)만 거르면 요청서의 계산대로 수 KB다.
+2. `cyber doc --api <module>`: 그 모듈의 함수, 이어서 타입과 메서드(`fn (&T) m(...)`), 타입 함수(`fn T :: f(...)`)를 시그니처와
+   doc 첫 줄로 찍는다. `cyber doc --api`는 모듈 목록과 항목 수다. 없는 모듈은 종료 코드 1. CLI는 같은 `docs/api.json`을 공백을 빼고
+   내장한다.
+
+~~~
+-- Module `json` of Cyber 0.4.13-DEV: 19 functions, 5 types.
+
+fn parse(src str) -> !Value
+        Parses a JSON text. Returns `error.Syntax` for malformed input and `error.Unicode` for input that is not UTF-8.
+...
+type Value  (choice)
+    A JSON value. ...
+  fn (&Value) get(key str) -> ?Value
+        Returns the member `key` of an object.
+~~~
+
+3. 가이드: `## Modules`의 api.html 줄을 바꿨다.
+
+~~~
+`cyber doc --api <module>` prints the functions and types of a module with their signatures. An embedding host may give them to you in another way.
+~~~
+
+- 매뉴얼의 "`cyber doc`" 절에도 `--api`와 패키지의 `docs/api.json`(호스트가 빌드 때 읽고 `module`로 거른다)을 적었다.
+- 가이드 전체에 API를 싣지 않았고, tars-agent 전용 형식도 만들지 않았다.
+
+## tars-agent 확인 (2026-11-17, 커밋 `990cef57`)
+
+된 것:
+- 패키지(`zig fetch ...#990cef57`)에 `docs/api.json`이 있다. 모든 항목에 `module`이 있고, 다섯 모듈의 항목(함수 67, 타입 24)이 23ac9045 릴리스 자산과 같다. 걸러 낸 시그니처 목록은 6,798바이트다.
+- scratch에서 빌드한 CLI(macOS arm64)의 `cyber doc --api json`이 회신의 모양대로 찍고, 없는 모듈은 `error: no module `nosuch`. ...`과 종료 코드 1이다.
+- macOS에서 `cyber docs/gen-api-json.cy`를 Debug와 ReleaseFast로 세 번 돌려 커밋된 `docs/api.json`과 바이트까지 같다.
+
+안 된 것: `990cef57`의 Latest Build(run 44014535464)가 docs 잡의 "Check docs/api.json."에서 실패했다. 그래서 `latest` 태그는 23ac9045에 남아 있다.
+
+~~~
+wrote api-check.json: 237 types, 265 functions
+api-check.json docs/api.json differ: byte 19735, line 282
+~~~
+
+- 282행은 `Span`의 `aliases`이고, 19735번째 바이트는 `"ends` 바로 뒤다. 커밋된 파일은 `"endswith": "ends_with", "endsWith": ...`다.
+- 생성 순서는 `sema.zig`의 `member_aliases` 순서를 따르므로 결정적이어야 한다. 바이트 위치로 보면 CI(Linux x86_64)에서는 `endswith`가 빠지고 `endsWith`가 왔을 가능성이 크다. `aliases_json`에서 이 항목을 거르는 것은 `seen.contains(a.from)`, `has_member` 둘뿐이다. Linux에서 `Map[str, int]`의 `contains`가 틀리게 답하는지 의심된다(추정, Linux에서 재현하지 않았다).
+- 요청: Linux에서 재현하고 고친 뒤 Latest Build를 다시 돌린다. 생성기의 문제면 고치고, Map의 문제면 그것이 결함이다.

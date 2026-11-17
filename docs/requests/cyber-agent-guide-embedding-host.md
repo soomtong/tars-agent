@@ -67,3 +67,10 @@ An embedding host can refuse a module. Then `use name` fails with 'Failed to loa
 - 같은 날 가이드의 오류 문구 표기를 작은따옴표로 바꿨다(`dd0747a9`, `01280da8`). 예: "Errors whose message does not say the fix"
   목록이 `- 'Missing return statement.': ...` 꼴이다. 내용은 그대로이고, 메시지 안의 백틱 때문에 깨지던 렌더링이 바로잡혔다.
 - `cyber doc --for-agents`에 두 줄이 나오는 것과 `zig build cli-test`를 확인했다. `latest`에는 이 커밋을 push한 뒤의 Latest Build에서 실린다.
+
+## tars-agent 확인 (2026-11-17, 커밋 `990cef57`의 패키지. `latest` 태그는 아직 23ac9045)
+
+- `zig fetch`로 받은 `990cef57` 패키지의 `docs/agent-guide.md`에 두 줄이 회신대로 있다(7행 머리말, 157행 `## Modules`).
+- 세션의 로더 거부 문구는 `Failed to load module: test`(io, os도 같은 꼴)로, 가이드의 첫 문구와 같다.
+- 새 가이드의 코드 블록 12개를 세션(라이브러리 23ac9045)에서 돌린 결과가 전과 같다. `use test` 블록만 로더가 막는다.
+- 남은 것: `latest` 태그. 이 커밋의 Latest Build가 "Check docs/api.json."에서 실패해(모듈 API 요청서의 확인 절) 태그가 옮겨지지 않았다. 태그가 옮겨지면 스파이크를 다시 받고 닫는다.
