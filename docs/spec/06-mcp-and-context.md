@@ -11,10 +11,10 @@
 
 Cyber 부분집합 안내
 
-- 원본은 이 저장소의 prompt/cyber-subset.md다. 안의 예제 10개는 테스트가 링크된 libcyber로 실제 실행한다. 런타임 버전이 바뀌어 예제가 깨지면 빌드가 실패한다.
+- 정본은 cyber 패키지의 docs/agent-guide.md이고(`cyber doc --for-agents`와 같다), tars-agent는 호스트 덧붙임을 붙인다(ADR 0022). 모으기 전까지 스파이크는 prompt/cyber-subset.md를 쓴다. 안내의 예제는 테스트가 링크된 libcyber로 실제 실행한다. 런타임 버전이 바뀌어 예제가 깨지면 빌드가 실패한다.
 - 가르치는 범위: :=, int, float, bool, str, []T, Map, struct, if, for, while, fn, !T와 오류 처리, 문자열 보간 %{}, str 메서드, 표준 모듈 json, toon, regex, peg, time(다섯 모두 로더가 싣는다, ADR 0024, 0025). 가르치지 않는 것: move, 빌림(&T), ^T, 제너레이터, spawn, 템플릿.
 - 안내의 문구는 평가(eval/)의 실패 유형에서만 고친다.
-- cyber CLI가 이 문서를 생성하게 하는 일(spec --for-agents)은 후속이다. 지금은 원본이 한 곳이면 충분하다.
+- 연 모듈의 API(함수 이름과 시그니처)는 안내에 싣지 않는다. cyber 패키지에서 받게 요청했다(docs/requests/cyber-module-api-for-agents.md). 프롬프트에 둘지 help(name)으로 꺼내게 할지는 본체의 능력 설계 때 정한다.
 
 ## 프로젝트 지시 파일
 

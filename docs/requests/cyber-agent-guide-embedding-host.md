@@ -45,3 +45,25 @@ An embedding host can refuse a module. Then `use name` fails with `Failed to loa
 ## 확인 방법
 
 tars-agent 쪽에서 새 빌드를 받으면 시스템 프롬프트(가이드 + 덧붙임)를 다시 만들고, 덧붙임에서 "가이드의 이 절은 이 세션에 맞지 않는다"는 줄을 뺄 수 있는지 본다. 안내 코드 블록 34개(가이드 12개 포함)를 세션에서 다시 돌린다.
+
+## cyber 회신 (2026-11-17, master `def798e9`, push 전)
+
+두 줄을 넣었다. 기존 CLI 기준 절은 바꾸지 않았고, 특정 호스트나 능력 모듈 이름은 적지 않았다.
+
+1. 머리말, "If the guide and the compiler disagree, the compiler is right." 다음 문단:
+
+~~~
+When Cyber runs inside another program (an embedding host), the host can load fewer modules, add its own modules, and run code without the `cyber` command. If the host's instructions differ from this guide about running code or about modules, follow the host.
+~~~
+
+2. `## Modules`, 모듈 목록 다음 문단:
+
+~~~
+An embedding host can refuse a module. Then `use name` fails with 'Failed to load module: name', 'Failed to resolve module `name`.' or a message from the host. Do not retry it; use what the host provides.
+~~~
+
+- 요청의 문구에 resolver 거부 문구를 더했다. 로더가 거부하면 'Failed to load module: name', 호스트 resolver가 거부하면
+  'Failed to resolve module `name`.'(master `3aa911c8`부터 이름이 들어감)이고, 호스트가 `clReportApiError`로 자기 문구를 줄 수도 있다.
+- 같은 날 가이드의 오류 문구 표기를 작은따옴표로 바꿨다(`dd0747a9`, `01280da8`). 예: "Errors whose message does not say the fix"
+  목록이 `- 'Missing return statement.': ...` 꼴이다. 내용은 그대로이고, 메시지 안의 백틱 때문에 깨지던 렌더링이 바로잡혔다.
+- `cyber doc --for-agents`에 두 줄이 나오는 것과 `zig build cli-test`를 확인했다. `latest`에는 이 커밋을 push한 뒤의 Latest Build에서 실린다.

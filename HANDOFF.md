@@ -64,6 +64,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - [x] 표준 모듈 다섯을 연다: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025). 스파이크 로더는 허용 목록이다(ADR 0026)
 - [ ] os 대신 능력으로 넓힐 후보(fs.mkdir, fs.remove, fs.copy, fs.move, env.get)를 언제 정할지 (04, ADR 0026)
 - [ ] 다섯 모듈의 예제를 안내에 넣을지 (TODO C1, C2의 남은 게이트)
+- [ ] 요청서 docs/requests/cyber-module-api-for-agents.md를 cyber에 전달 (모듈 API를 패키지와 `cyber doc`에서)
 - [ ] CodeAct 비교를 기준 빌드로 다시 돌릴지 (지금 수치는 0.4.12 회차)
 - [ ] 본체가 VM 충돌로 프로세스가 끝나는 경우를 어떻게 다룰지 (검토 문서 9절 17)
 - [ ] `print(!str)`가 작은 모델의 가장 흔한 오류다. 능력의 모양이나 안내로 줄일지 (본체의 능력 설계 때)
