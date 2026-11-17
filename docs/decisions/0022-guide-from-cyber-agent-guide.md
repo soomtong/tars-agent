@@ -22,7 +22,7 @@
 
 ## 선행 조건
 
-- cyber 패키지가 `docs/agent-guide.md`를 담고 있어야 한다. 기준 빌드의 패키지에 들어 있다. 모듈 API `docs/api.json`도 들어 있다(4d47ac76부터). 둘 다 s1 검사 0b가 빌드 때 읽는다.
+- cyber 패키지가 `docs/agent-guide.md`를 담고 있어야 한다. 기준 빌드의 패키지에 들어 있다. 모듈 API `docs/api.json`도 들어 있다(0.4.14부터). 둘 다 s1 검사 0b가 빌드 때 읽는다.
 
 아래 "열린 것"을 정하기 전까지 스파이크는 prompt/cyber-subset.en.md와 prompt/cyber-subset.md를 쓴다.
 

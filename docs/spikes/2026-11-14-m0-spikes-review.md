@@ -83,9 +83,9 @@ web.log: 23
 ### 3.1 링크
 
 - build.zig.zon의 의존은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#latest"`로 넣는다. zig가 `.url = "git+https://github.com/soomtong/cyber?ref=latest#<받은 커밋>"`과 `.hash`를 적는다. 태그가 움직여도 다시 받기 전에는 적힌 커밋을 쓴다.
-- `b.dependency("cyber", .{ .target = target, .optimize = .ReleaseFast, .static = true, .dev = true }).artifact("cyber")`를 `linkLibrary`로 링크한다(spike/s1/build.zig). ffi는 기본 false다.
+- `b.dependency("cyber", .{ .target = target, .optimize = .ReleaseFast, .static = true, .dev = false }).artifact("cyber")`를 `linkLibrary`로 링크한다(spike/s1/build.zig). ffi는 기본 false다.
 - cyber.h는 아티팩트의 include 경로로 따라온다. s1의 C 파일(src/inc_check.c)이 `#include "cyber.h"`로 컴파일되고, `CLEvalConfig`와 `CLCompileConfig`의 크기(12)가 translate-c 쪽과 같다(검사 0).
-- 버전 문자열은 `Cyber 0.4.13-DEV build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, `-DEV` 표시는 `dev` 인자로 정한다. 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
+- 버전 문자열은 `Cyber 0.4.14 build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, `-DEV` 표시는 `dev` 인자로 정한다. 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
 - Zig 0.17.1에는 `@cImport`가 없다. cyber.h를 Zig에서 쓰는 길은 둘이다: translate-c 패키지로 모듈을 만들거나, 쓰는 함수의 extern 선언을 손으로 쓴다. 스파이크는 앞의 것을 썼다. 본체의 추천은 9절.
 - 의존 패키지의 `docs/agent-guide.md`와 `docs/api.json`은 `addAnonymousImport`(`cyber.path(...)`)로 빌드 때 싣는다. 검사 0b가 api.json을 std.json으로 읽어 json, toon, regex, peg, time의 항목(함수 67, 타입 24)만 거른다.
 - libcyber.a(arm64, ReleaseFast)는 2.99 MB, 공개 `cl_` 함수는 140개다. 표준 모듈 json, toon, regex, peg, time이 들어 있고 각각의 `cl_mod_bind_*`가 있다. mimalloc 심볼은 없다(FFI를 끈 라이브러리 빌드에는 들어가지 않는다).
@@ -308,7 +308,7 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 
 ## 7. cyber에 남은 것
 
-스파이크는 cyber `latest`(0.4.13-DEV, 4d47ac76)를 받는다(ADR 0023). M0에서 낸 요청은 모두 닫혔다. 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서, ADR 0022)와 모듈 API `docs/api.json`(`cyber doc --api <module>`과 같은 소스)이 들어 있다.
+스파이크는 cyber 릴리스 `0.4.14`를 받는다(ADR 0023). M0에서 낸 요청은 모두 닫혔다. 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서, ADR 0022)와 모듈 API `docs/api.json`(`cyber doc --api <module>`과 같은 소스)이 들어 있다.
 
 모델이 모르는 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)은 인덱스, 슬라이스 경계, 대입 값 어디서든 인자 불일치 문구에 나오지 않는다. 대입 값이 원소 타입과 다르면 ``An element of `[]int` must be `int`, got `str`.``처럼 원소 타입을 말하고, `?T`와 `!T`이면 푸는 법을 붙인다(`Map`도 같다). 정수 원소 자리의 한 글자 리터럴(`xs[0] = 'a'`)은 오류가 아니라 코드 포인트(97)다. 타입이 정해진 자리의 한 글자 리터럴은 코드 포인트라는 언어 규칙이다.
 
@@ -322,7 +322,7 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 
 ## 8. 안내 문서 (prompt/cyber-subset*.md)
 
-영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.13`이다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(설치된 `/usr/local/bin/cyber`, `Cyber 0.4.13 build-945-1dee651`)와 세션(`s1 replay`)으로 확인한다.
+영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.14`다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(설치된 `/usr/local/bin/cyber`, `Cyber 0.4.14 build-960-a2b3365`)와 세션(`s1 replay`)으로 확인한다.
 
 확인 방법: 안내의 항목마다 탐침 스크립트를 만들어 기준 빌드의 CLI와 `replay`(같은 VM, persist_main, 검증 뒤 실행)로 돌리고 결과(출력이나 오류 첫 줄)를 맞춰 봤다. 오류 목록의 첫 줄, "없는 것" 목록, "있는 메서드" 목록, `int('abc')`, 정수 나눗셈, 음수 인덱스가 기준 빌드에서 그대로다. 세션에서만 다른 것은 최상위 빌림과 모듈이다. CLI는 `os`, `test`를 싣고, 스파이크의 세션은 `test`(와 `c`)를 호스트 로더가 막는다. 안내는 세션 쪽을 적는다. 코드 블록 11개는 CLI와 `replay` 양쪽에서 통과했다.
 
@@ -339,7 +339,7 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 | 참조의 연산자 | `n.* += 2`, `out.* += 'x'` |
 | 문자열 이스케이프 | `\n \t \r \0 \\ \' \" \xHH`. 그 밖은 컴파일 오류이고 백슬래시는 두 번 쓴다 |
 | 함수 선언 | 최상위에서만 |
-| 메서드 | str, []T, Map의 있는 메서드 전부(`trim()`, `trimLeft()`, `trimRight()`, `lastIndexOf` 포함)와 Python 이름의 대응 |
+| 메서드 | str, []T, Map의 있는 메서드 전부(`trim()`, `trim_left()`, `trim_right()`, `last_index` 포함)와 Python 이름의 대응 |
 | 없는 것 | `abs`, `sum`, `sorted`, `enumerate`, `zip`, `xs.map`, `xs.filter`. 모듈은 json, toon, regex, peg, time을 싣는다고 한 줄로 알린다 |
 | 오류 목록 | 문구가 고치는 법을 말하지 않거나 틀린 고치는 법을 말하는 오류만 (20줄). 나머지는 "문구대로 고친다" 한 줄 |
 

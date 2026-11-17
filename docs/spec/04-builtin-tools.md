@@ -30,9 +30,9 @@
 
 | os | 후보 |
 |---|---|
-| read_file, write_file, fileInfo, open_dir | 있음: fs.read, fs.write, fs.stat, fs.list |
-| createDir | fs.mkdir |
-| removeFile, removeDir | fs.remove (write 등급, 작업 디렉터리 안) |
+| read_file, write_file, file_info, open_dir | 있음: fs.read, fs.write, fs.stat, fs.list |
+| create_dir | fs.mkdir |
+| remove_file, remove_dir | fs.remove (write 등급, 작업 디렉터리 안) |
 | copy_file, 이름 바꾸기 | fs.copy, fs.move |
 | get_env | env.get (read 등급. deny 규칙으로 비밀 변수를 가린다) |
 | cwd | 시스템 프롬프트의 환경 줄 (06), 또는 fs.cwd |

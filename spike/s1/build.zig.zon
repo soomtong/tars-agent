@@ -6,8 +6,8 @@
     .dependencies = .{
         .cyber = .{
             // soomtong/cyber의 가장 새 릴리스 태그(ADR 0023). 갱신: zig fetch --save=cyber "git+https://github.com/soomtong/cyber#<태그>"
-            .url = "git+https://github.com/soomtong/cyber?ref=latest#4d47ac764fadf2c296de9f78fdc0ddf13df659a8",
-            .hash = "cyber-0.4.13-AW3fkBqxpQBYT7L9SW5FryHFxioLCgkpxy93BKzVsCp0",
+            .url = "git+https://github.com/soomtong/cyber?ref=0.4.14#a2b3365558b020d029dbe010b4ba9895890a242c",
+            .hash = "cyber-0.4.14-AW3fkJEIpgBaH50aRTVL5UPRNwk4iYmb31V4uQInZ7-v",
         },
         .translate_c = .{
             .url = "git+https://codeberg.org/ziglang/translate-c#02ff0c523fb92a38939b04d0145c4a9602a74d56",

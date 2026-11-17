@@ -2,7 +2,7 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the lists below first.
 
-The reference version is Cyber 0.4.13 of soomtong/cyber (`cyber version` prints a line starting with `Cyber 0.4.13`). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
+The reference version is Cyber 0.4.14 of soomtong/cyber (`cyber version` prints a line starting with `Cyber 0.4.14`). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
 
 Cyber is still gaining features. This document matches one build and can fall behind a newer one. Before you use or edit this document, check the following.
 
@@ -90,10 +90,10 @@ These are all the methods of the three types you use most. A Python method that 
 str (strings do not change; every method returns a new value):
 
 - `s.len()` bytes, `s.count()` characters
-- `s.contains(sub)`, `s.starts_with(p)`, `s.ends_with(p)`, `s.index(sub)` and `s.lastIndexOf(sub)` give `?int`
+- `s.contains(sub)`, `s.starts_with(p)`, `s.ends_with(p)`, `s.index(sub)` and `s.last_index(sub)` give `?int`
 - `s.split(sep)` gives `[]str`, `s.replace(old, new)`, `s.upper()`, `s.lower()`, `s.repeat(n)`, `s.concat(t)`
 - `s.trim()` cuts spaces, tabs and newlines at both ends. `s.trim({'-', '_'})` cuts the given characters.
-- `s.trimLeft()` and `s.trimRight()` cut only the start or only the end, by the same rule.
+- `s.trim_left()` and `s.trim_right()` cut only the start or only the end, by the same rule.
 - `s.last()` the last byte
 
 []T:
@@ -115,8 +115,8 @@ Python name to Cyber name:
 - `xs.find(x)` is `xs.index(x)`, which gives `?int`: `xs.index(x) ?else -1`
 - `xs.pop()` is `v := xs.last()` then `xs = xs.remove(xs.len() - 1)`
 - `s.startswith(p)` and `s.endswith(p)` are `s.starts_with(p)` and `s.ends_with(p)`
-- `s.strip()` is `s.trim()`, `s.lstrip()` is `s.trimLeft()` and `s.rstrip()` is `s.trimRight()`
-- `s.find(sub)` is `s.index(sub)` and `s.rfind(sub)` is `s.lastIndexOf(sub)`. Both give `?int`. For the last part of a path use `p.split('/').last()`
+- `s.strip()` is `s.trim()`, `s.lstrip()` is `s.trim_left()` and `s.rstrip()` is `s.trim_right()`
+- `s.find(sub)` is `s.index(sub)` and `s.rfind(sub)` is `s.last_index(sub)`. Both give `?int`. For the last part of a path use `p.split('/').last()`
 - `len(m)` is `m.size()`. `m.items()` is `for m |e|:`. `list(m)` is `m.keys()`
 - `sorted(xs)` is `xs.sort()`, which changes `xs`. `sorted(xs, reverse=True)` is `xs.sort(|a, b| a > b)`
 
