@@ -30,6 +30,7 @@
 - [0024 time 모듈 허용, clock.now 없음](docs/decisions/0024-allow-time-module.md) — time은 시계와 zoneinfo를 직접 읽는다. 시각 읽기는 세션 기록에 남지 않는다. 리플레이가 필요해지면 시계 함수 바꿔 끼우기나 cyber 요청
 - [0023 cyber 의존은 가장 새 빌드](docs/decisions/0023-cyber-follows-latest.md) — 커밋을 고정하지 않는다. 가장 새 릴리스 태그(앞서 있으면 `latest`)를 `zig fetch --save=cyber`로 받는다. 검사 0은 버전 문자열을 비교하지 않는다
 - [0022 안내는 cyber agent-guide.md에 호스트 덧붙임](docs/decisions/0022-guide-from-cyber-agent-guide.md) — 언어 설명의 정본은 cyber의 docs/agent-guide.md, tars-agent는 능력, 막는 모듈, 세션 규칙만 덧붙인다. 기준 빌드 패키지에 있다. 덧붙임은 가이드를 바로잡지 않는다. 언제 어떤 모양으로 모을지는 열려 있음
+- [0029 외부 프로토콜의 범위](docs/decisions/0029-protocol-scope.md) — MCP 클라이언트는 M6, MCP 서버 방향은 후속, ACP는 이벤트 타입의 대조 기준이고 어댑터는 M6 뒤, AHP는 agentd 설계 때 먼저 검토, A2A는 범위 밖
 
 ## 결정이 아닌 참고
 

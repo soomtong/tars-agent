@@ -85,3 +85,6 @@ tars-agent -p "프롬프트" [--output-format text|json|stream-json]
 7. agentd와 tars 통합: 여러 세션을 맡는 데몬, tars 터미널 제어 채널, tars.* 능력. tars-linux 쪽 설계가 먼저다.
 8. MCP 서버 방향: 능력 표의 JSON Schema를 그대로 노출한다. 같은 게이트를 지난다.
 9. MCP HTTP 전송, 다른 제공자 어댑터.
+10. ACP 어댑터: 헤드리스 프런트엔드 하나다. 코어 이벤트 타입은 ACP의 session/update와 session/request_permission으로 옮겨지게 정한다 (ADR 0029).
+
+외부 프로토콜의 범위는 ADR 0029에 있다. agentd의 클라이언트 프로토콜은 AHP를 먼저 검토하고, A2A는 범위 밖이다.
