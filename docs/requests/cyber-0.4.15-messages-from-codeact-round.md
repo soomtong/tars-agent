@@ -81,3 +81,15 @@ tars-agent 쪽에서 새 빌드를 받으면 위 세 스크립트를 CLI와 세�
 3. 원래 문구 뒤에 힌트를 붙인다. ``CompileError: Expected type `&>[]str`. Found `^[]str`. To change the value that `rows` points to, write `rows.*.append(...)`.`` `insert` · `remove` 등도 같은 꼴(``... when calling `fn insert(&>[]str, int, str) -> void`. To change the value that `rows` points to, write `rows.*.insert(...)`.``). 자동 역참조는 하지 않는다. 수신자 변환에서 `^T`를 `&&T`로 바꾸지 않는 것은 다른 참조가 같은 목록을 나눠 가질 수 있어서다.
 
 `prompt/cyber-subset.md` · `.en.md`의 참조 항목에 `out.*.append('x')` 꼴을 더했다. 다음 cyber 릴리스(또는 latest 빌드)로 확인 뒤 이 요청을 닫는다.
+
+## tars-agent 쪽 미리 확인 (2026-11-18, cyber 로컬 master `1ed147a7`)
+
+릴리스 전이라 s1을 `zig build --fork=<cyber 저장소>`로 스크래치에 빌드해 세션(`s1 replay`)에서 봤다. spike/의 의존은 0.4.15 그대로다.
+
+- 1: `fs.read(p)!`를 쓴 `-> int` 함수와 람다가 회신의 문구대로다(``The function `size` returns `int`, ...``, ``The lambda returns `int`, ...``).
+- 2: `line[idx.!]`이 ``Expected a choice case name after `.!` ... Unwrap an option with `.?`, ...``다.
+- 3: `rows.append('a')`, `rows.insert(0, 'a')`가 원래 문구 뒤에 ``To change the value that `rows` points to, write `rows.*.append(...)`.``(`insert`도 같은 꼴)를 붙인다.
+- 안내에 더한 줄의 꼴(`out.*.append('x')`, `out.*.remove(0)`)은 0.4.15와 master 모두에서 돈다.
+- 회귀: master 빌드에서 s1 47개, 안내 코드 블록 34개(세션)가 모두 통과한다.
+
+남은 것: 이 커밋이 든 릴리스(또는 latest 빌드)를 받아 같은 확인을 하고 요청서를 지운다.
