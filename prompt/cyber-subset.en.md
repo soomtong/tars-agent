@@ -163,6 +163,7 @@ This host loads the json, toon, regex, peg and time modules (`use json`).
 - Struct assignment copies. It is not shared like a Python object. `q := p; q.age = 9` does not change p.
 - To share, lift the value to the heap with `^`: `p := ^P{name='a', age=3}`. Read and write fields as `p.age`, and use `p.*` for the whole value.
 - An operator on a reference works on the value it points to only through `.*`: `n.* += 2`, `out.* += 'x'` for `out := ^[]str{}`.
+  The same holds for a method that changes the list in place: `out.*.append('x')`, `out.*.remove(0)`.
 - To let a function modify an argument, declare `fn inc(p &int)` and call `inc(&a)`.
 - `Array[T]` cannot be copied. Use `move a` to pass or relocate it. Using the original after a move is an error. For an ordinary list use `[]T`.
 - A closure can only capture variables of type `^T` or `&T`. In simple code use a plain function or a loop instead of a closure.

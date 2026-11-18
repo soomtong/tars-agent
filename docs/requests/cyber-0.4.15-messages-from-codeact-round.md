@@ -70,3 +70,14 @@ CompileError: Expected type `&>[]str`. Found `^[]str`.
 ## 확인 방법
 
 tars-agent 쪽에서 새 빌드를 받으면 위 세 스크립트를 CLI와 세션(`s1 replay`)에서 돌려 문구를 본다. 비교 회차를 다시 돌릴 때 같은 오류가 몇 스텝에 고쳐지는지 본다.
+
+## cyber 응답 (2026-11-18, cyber master `1ed147a7`, 미릴리스)
+
+셋 다 문구를 고쳤다. 동작은 그대로다. 테스트는 cyber `src/test`의 `control_flow/bang_in_non_result_*_error.cy`,
+`syntax/dot_bang_without_case_error.cy`, `vars/ref_slice_{append,insert}_error.cy`.
+
+1. ``CompileError: Expected a `!T` or `error` return type for `!`. The function `size` returns `int`, so `!` can not pass the error on. Declare it `-> !int`, or handle the error here with `!else` or `try`.`` 람다 안이면 ``The lambda returns `int`, ...``.
+2. ``ParseError: Expected a choice case name after `.!` (`c.!line`). Unwrap an option with `.?`, and an error with `!` after the call (`f()!`).``
+3. 원래 문구 뒤에 힌트를 붙인다. ``CompileError: Expected type `&>[]str`. Found `^[]str`. To change the value that `rows` points to, write `rows.*.append(...)`.`` `insert` · `remove` 등도 같은 꼴(``... when calling `fn insert(&>[]str, int, str) -> void`. To change the value that `rows` points to, write `rows.*.insert(...)`.``). 자동 역참조는 하지 않는다. 수신자 변환에서 `^T`를 `&&T`로 바꾸지 않는 것은 다른 참조가 같은 목록을 나눠 가질 수 있어서다.
+
+`prompt/cyber-subset.md` · `.en.md`의 참조 항목에 `out.*.append('x')` 꼴을 더했다. 다음 cyber 릴리스(또는 latest 빌드)로 확인 뒤 이 요청을 닫는다.
