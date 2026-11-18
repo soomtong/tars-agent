@@ -832,6 +832,48 @@ pub fn main(init: std.process.Init) !void {
         check("6m. 매개변수를 먼저 읽는 호스트 함수: 직접, 함수 포인터 값, 함수 union 값, sort가 부르는 함수", all, "{s}", .{got.items});
     }
 
+    // 6n. 오류 복구(0.4.15 재릴리스): 세션 VM의 검증이 오류를 모두 돌려주는가.
+    // 구문 오류는 모두, 구문 오류가 없으면 본문(main, 함수)마다 하나. 세션은 그대로 이어진다.
+    {
+        const vm = newVm();
+        defer c.cl_vm_deinit(vm);
+        const r0 = run(vm, "keep := 7\n", .{});
+        const syn = "a := )\nprint(1)\nb := (3\nc := 4\nif c > 1\n    print(c)\n";
+        const typ = "fn f() -> int:\n    return true\nfn g() int:\n    return 1\nfn h() -> str:\n    return totl\nprint(nope)\n";
+        const typ2 = "fn f() -> int:\n    return true\nfn h() -> str:\n    return totl\nprint(nope)\n";
+        _ = c.cl_vm_validate(vm, B(syn));
+        const n_off = c.cl_vm_compile_report_count(vm);
+        c.cl_vm_set_error_recovery(vm, true);
+        const vs = c.cl_vm_validate(vm, B(syn));
+        const n_syn = c.cl_vm_compile_report_count(vm);
+        var lines: [256]u8 = undefined;
+        var ll: usize = 0;
+        var k: usize = 0;
+        while (k < n_syn) : (k += 1) {
+            var rep: c.CLReport = undefined;
+            if (!c.cl_vm_compile_report(vm, k, &rep)) break;
+            const w = std.fmt.bufPrint(lines[ll..], "{d}:{d} ", .{ rep.line + 1, rep.col + 1 }) catch break;
+            ll += w.len;
+        }
+        _ = c.cl_vm_validate(vm, B(typ));
+        const n_typ_decl = c.cl_vm_compile_report_count(vm);
+        const vt = c.cl_vm_validate(vm, B(typ2));
+        const n_typ = c.cl_vm_compile_report_count(vm);
+        var msgs: [512]u8 = undefined;
+        var ml: usize = 0;
+        k = 0;
+        while (k < n_typ) : (k += 1) {
+            var rep: c.CLReport = undefined;
+            if (!c.cl_vm_compile_report(vm, k, &rep)) break;
+            const w = std.fmt.bufPrint(msgs[ml..], "[{d}] {s} ", .{ rep.line + 1, firstLine(S(rep.msg)) }) catch break;
+            ml += w.len;
+        }
+        const r1 = run(vm, "print(keep)\n", .{});
+        const out1 = std.mem.trim(u8, g_out.items, "\n");
+        const ok = r0.code == c.CL_SUCCESS and n_off == 1 and vs == c.CL_ERROR_COMPILE and n_syn >= 3 and vt == c.CL_ERROR_COMPILE and n_typ == 3 and r1.code == c.CL_SUCCESS and std.mem.eql(u8, out1, "7");
+        check("6n. 오류 복구: 검증이 구문 오류를 모두, 본문마다 오류 하나를 돌려주고 세션은 이어진다", ok, "끔={d} 구문={d}({s}) 선언 오류 섞임={d} 본문 셋={d} 세션 keep={s} | {s}", .{ n_off, n_syn, lines[0..ll], n_typ_decl, n_typ, out1, msgs[0..ml] });
+    }
+
     // 7. 샌드박스 경계
     {
         const vm = newVm();

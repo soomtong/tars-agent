@@ -5,13 +5,14 @@
 tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code이고, 다른 점은 모델이 JSON 도구 호출 대신 Cyber 스크립트를 써서 실행하는 CodeAct 방식이라는 것이다. 호스트는 Zig 0.17.1, 런타임은 libcyber(soomtong/cyber) 정적 링크. 본체 코드는 아직 없다. 버릴 스파이크 코드가 spike/에 있다.
 
 이번 세션(2026-11-18):
-- cyber 0.4.15(태그 `c13a207f`, 설치된 `/usr/local/bin/cyber`는 `Cyber 0.4.15 build-967-c13a207`)로 두 스파이크의 의존을 올렸다. 깨지는 변경은 `[]T`의 크기 바꾸기가 제자리가 된 것(`xs.append(v)`, 새 목록은 `appended`, `+`)이고, 안내 두 판은 전 세션에 먼저 고쳐 두었다.
+- cyber 0.4.15(태그 `93a9ca4f`, 설치된 `/usr/local/bin/cyber`는 `Cyber 0.4.15 build-969-93a9ca4`)로 두 스파이크의 의존을 올렸다. 깨지는 변경은 `[]T`의 크기 바꾸기가 제자리가 된 것(`xs.append(v)`, 새 목록은 `appended`, `+`)이고, 안내 두 판은 전 세션에 먼저 고쳐 두었다.
 - `test` 모듈을 연다(ADR 0028, 사용자 결정). 순수 Cyber 검사 함수이고 정본 안내가 `use test`를 가르친다. s1 검사 7a4, 로더 두 곳.
-- s1 46개 통과. 새 검사 7i가 `cl_vm_symbol_hints`(0.4.15에 더해진 C API)를 본다: 검증 뒤 쓰지 않는 지역과 `use`, 추론 타입을 받는다. 실패한 검증 뒤에는 unused가 없다. 세션의 최상위 지역도 unused로 나오므로 호스트가 걸러야 한다.
+- 0.4.15 태그가 다시 릴리스됐다(`c13a207f` → `93a9ca4f`, cyber-lsp가 구문 오류를 모두 진단). 같은 태그를 다시 받았다(zig fetch가 새 커밋과 해시를 적는다). 새 검사 6n: 세션 검증에서 `cl_vm_set_error_recovery`가 구문 오류를 모두, 본문마다 하나씩 돌려주고 세션이 남는다(검토 문서 9절 13).
+- s1 47개 통과. 새 검사 7i가 `cl_vm_symbol_hints`(0.4.15에 더해진 C API)를 본다: 검증 뒤 쓰지 않는 지역과 `use`, 추론 타입을 받는다. 실패한 검증 뒤에는 unused가 없다. 세션의 최상위 지역도 unused로 나오므로 호스트가 걸러야 한다.
 - 안내 두 판과 agent-guide.md의 코드 블록 34개: CLI와 세션 모두 통과(`test`를 연 뒤). 제자리 `Slice` 문구, 전역 take-and-restore 문구, `os` 옛 꼴 문구(CLI)를 탐침으로 확인했다.
-- `cyber-lsp`를 stdio(JSON-RPC)로 붙여 unused Warning, quick fix(`_` 붙이기, `use` 지우기, `file_exists`, `out.append(3)`), inlay hint(추론 타입, `waits for fibers`), `scope` 출구 Information, `--|` 문서 주석 hover를 확인했다. 진단은 첫 컴파일 오류에서 멈춘다.
-- s2 빌드, x86_64-linux-gnu 교차 빌드(s1, s2). libcyber.a arm64 3,050,440바이트, x86_64 3,613,076바이트, 공개 `cl_` 함수 142개. 새 표준 모듈은 없다.
-- 문서: 검토 문서(3.1, 3.5, 3.6, 6, 7, 8절, 9절 추천 5, 18), 03, 05, 08, deps, ADR 0017, 0019, 0022, 0023, 0025, 0026, 0028, 안내 기준 줄, TODO.
+- `cyber-lsp`를 stdio(JSON-RPC)로 붙여 unused Warning, quick fix(`_` 붙이기, `use` 지우기, `file_exists`, `out.append(3)`), inlay hint(추론 타입, `waits for fibers`), `scope` 출구 Information, `--|` 문서 주석 hover를 확인했다. 구문 오류는 전부 진단하고, 구문 오류가 없으면 본문(main 블록, 함수)마다 첫 오류 하나를 낸다.
+- s2 빌드, x86_64-linux-gnu 교차 빌드(s1, s2). libcyber.a arm64 3,058,056바이트, x86_64 3,620,340바이트, 공개 `cl_` 함수 142개. 새 표준 모듈은 없다.
+- 문서: 검토 문서(3.1, 3.5, 3.6, 6, 7, 8절, 9절 추천 5, 13, 18), 03, 05, 08, deps, ADR 0017, 0019, 0022, 0023, 0025, 0026, 0028, 안내 기준 줄, TODO.
 - CodeAct 비교는 다시 돌리지 않았다(비교 수치는 0.4.12 회차).
 
 앞선 세션(2026-11-16~17):
@@ -35,7 +36,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 - [x] 의존: spike/s1, s2의 build.zig.zon은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.15"`로 넣는다(`?ref=0.4.15#<커밋>`과 해시가 적힌다).
   - build.zig 의존 인자는 `.dev = false`뿐이다(릴리스). 버전 문자열은 `Cyber 0.4.15 build-0-local`이고 s1 검사 0은 `Cyber `로 시작하는지만 본다.
-- [x] s1 46개 통과(0.4.15), s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2).
+- [x] s1 47개 통과(0.4.15, `93a9ca4f`), s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2).
 - [x] 0.4.15로 옮김(2026-11-18): 위 "이번 세션"과 TODO의 해당 줄.
 - [x] 0.4.14로 옮김(2026-11-17 저녁): 두 스파이크의 의존을 릴리스 태그로, `dev = false`. s1 43개, 안내 두 판과 agent-guide.md의 코드 블록 34개(CLI 전부, 세션은 `use test` 블록만 로더가 막음), 새 이름(`trim_left`, `trim_right`, `last_index`) 탐침, s2 빌드, x86_64 교차 빌드를 확인했다. 옛 camelCase 이름은 `Did you mean ...?` 컴파일 오류다. 안내와 04, ADR 0026의 이름을 snake_case로 고쳤다
 - [x] 0.4.12 요청서의 네 건이 CLI와 세션에서 회신대로다.

@@ -10,7 +10,7 @@
 
 | 질문 | 답 | 근거 |
 |---|---|---|
-| Zig 호스트가 libcyber를 링크해 VM을 돌릴 수 있는가 | 된다 | 스파이크 1, 검사 46개 모두 통과 |
+| Zig 호스트가 libcyber를 링크해 VM을 돌릴 수 있는가 | 된다 | 스파이크 1, 검사 47개 모두 통과 |
 | cyber를 build.zig.zon 의존으로 쓸 수 있는가 | 된다. 태그를 따르는 의존의 `artifact("cyber")`로 받고 cyber.h가 따라온다 | 3.1 |
 | 능력이 `Future[!str]`을 돌려줄 수 있는가 (ADR 0011의 모양) | 된다. str 값이나 오류로 완료한다 | 3.2 |
 | 승인 대기를 VM 밖에서 하는 설계(ADR 0011, 0016)가 실제로 도는가 | 돈다. 승인, 거부, 취소, 동시 요청 모두 | 3.3 |
@@ -78,7 +78,7 @@ web.log: 23
 
 ## 3. 스파이크 1: 호스트 경계
 
-코드: spike/s1. 실행: `zig build && ./zig-out/bin/s1`. 검사 46개가 PASS/FAIL로 찍히고 모두 통과한다.
+코드: spike/s1. 실행: `zig build && ./zig-out/bin/s1`. 검사 47개가 PASS/FAIL로 찍히고 모두 통과한다.
 
 ### 3.1 링크
 
@@ -88,7 +88,7 @@ web.log: 23
 - 버전 문자열은 `Cyber 0.4.15 build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, `-DEV` 표시는 `dev` 인자로 정한다. 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
 - Zig 0.17.1에는 `@cImport`가 없다. cyber.h를 Zig에서 쓰는 길은 둘이다: translate-c 패키지로 모듈을 만들거나, 쓰는 함수의 extern 선언을 손으로 쓴다. 스파이크는 앞의 것을 썼다. 본체의 추천은 9절.
 - 의존 패키지의 `docs/agent-guide.md`와 `docs/api.json`은 `addAnonymousImport`(`cyber.path(...)`)로 빌드 때 싣는다. 검사 0b가 api.json을 std.json으로 읽어 json, toon, regex, peg, time의 항목(함수 67, 타입 24)만 거른다.
-- libcyber.a(arm64, ReleaseFast)는 3.05 MB(3,050,440바이트), 공개 `cl_` 함수는 142개다(0.4.15에 `cl_vm_symbol_hints`가 더해졌다). 표준 모듈 json, toon, regex, peg, time이 들어 있고 각각의 `cl_mod_bind_*`가 있다. mimalloc 심볼은 없다(FFI를 끈 라이브러리 빌드에는 들어가지 않는다).
+- libcyber.a(arm64, ReleaseFast)는 3.06 MB(3,058,056바이트), 공개 `cl_` 함수는 142개다(0.4.15에 `cl_vm_symbol_hints`가 더해졌다). 표준 모듈 json, toon, regex, peg, time이 들어 있고 각각의 `cl_mod_bind_*`가 있다. mimalloc 심볼은 없다(FFI를 끈 라이브러리 빌드에는 들어가지 않는다).
 
 ### 3.2 능력 바인딩
 
@@ -146,6 +146,7 @@ ADR 0011과 0016의 설계는 고칠 것 없이 돈다.
 - reset: VM의 첫 컴파일이 실패하면 `cl_vm_reset_pending`이 true이고 다음 eval부터 세션이 이어진다(6l). 컴파일러나 지역 이월 중의 할당 실패 뒤도 같다(cyber.h). 호스트는 CL_SUCCESS가 아닌 eval과 검증 뒤에 이것을 묻는다. s2는 true면 머리말을 다시 돌리고 모델에게 "the session was reset"을 알린다.
 - 목록 참조의 `+=`(`out := ^[]str{}` 뒤 `out += 'x'`)는 검증이 잡는 컴파일 오류이고, 문구가 `out.* += ...`를 알려 준다(6h).
 - 최상위 빌림(`c := &x`)은 다음 eval로 넘길 수 없어 ``Cannot persist local `c` of borrow type `&int` across evals.``다. CLI에서는 나지 않는 오류라 안내의 조언은 세션에서 확인해야 한다(8절).
+- 오류 모아 받기(0.4.15, 검사 6n): 세션 VM에서 `cl_vm_set_error_recovery(vm, true)`를 켜고 검증하면 `cl_vm_compile_report`가 구문 오류를 모두 준다(세 줄의 구문 오류가 셋으로 온다. 끄면 하나). 구문 오류가 없으면 본문(main 블록, 함수)마다 첫 오류 하나다(main, 함수 둘에 하나씩이면 셋, main의 것이 먼저 온다). 선언 오류(`fn g() int:`처럼 시그니처가 틀린 것)가 섞이면 하나에서 끝난다. 실패한 검증 뒤에도 앞선 eval의 최상위 지역이 남는다. 결과는 여전히 CL_ERROR_COMPILE이고 아무것도 실행되지 않는다.
 - 편집기용 힌트(0.4.15, 검사 7i): `cl_vm_set_symbol_info(vm, true)`를 켜고 검증하면 `cl_vm_symbol_hints`가 추론된 지역 타입, `scope` 블록 출구, 쓰지 않는 지역과 `use`를 위치순으로 준다. `cyber-lsp`의 Warning과 inlay hint가 이 표에서 나온다. `_`로 시작하는 이름은 빠지고, 실패한 검증 뒤에는 쓰지 않는 이름을 내지 않는다. 세션에서 주의할 점: 최상위 지역(`top := f()`)도 unused로 나온다. 다음 eval이 쓸 수 있는 값이므로 호스트가 모델에게 넘길 때는 함수 안 지역만 고르거나 최상위를 거른다.
 - 비용: validate 200회 1~2ms, eval 200회 2ms. VM 생성과 첫 eval은 개당 2~3ms, VM 하나가 쥔 메모리 약 2.6 MiB(2700 KiB).
 
@@ -302,7 +303,7 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 
 ## 6. 스파이크 3: 교차 빌드
 
-- `zig build -Dtarget=x86_64-linux-gnu`가 macOS arm64에서 s1, s2 모두 된다(패키지를 받은 뒤 s1 23초, s2 23초). cyber는 의존의 아티팩트로 같은 대상에 맞춰 빌드된다(libcyber.a 3.61 MB, 3,613,076바이트). 산출물은 glibc 동적 링크 ELF다.
+- `zig build -Dtarget=x86_64-linux-gnu`가 macOS arm64에서 s1, s2 모두 된다(패키지를 받은 뒤 s1 23초, s2 23초). cyber는 의존의 아티팩트로 같은 대상에 맞춰 빌드된다(libcyber.a 3.62 MB, 3,620,340바이트). 산출물은 glibc 동적 링크 ELF다.
 - tars 게스트(QEMU)에서의 실행은 이 빌드로 하지 않았다. tars-linux의 산출물(커널, initrd)이 필요하다. 게스트를 모는 스크립트는 spike/s3/guest.py에 있다: initrd 사본 뒤에 바이너리를 담은 gzip cpio를 이어 붙여 부팅하고, 시리얼을 유닉스 소켓으로 열어 명령을 보낸다(셸이 fish라 Enter는 CR).
 
 보지 못한 것: tars 게스트에서의 실행, 실기 노트북, tars 터미널 패널 안에서의 화면 출력, Landlock(M5).
@@ -321,13 +322,13 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 
 `os` 파일 함수의 옛 꼴이 새 이름을 말한다(0.4.12 요청의 남은 회신). `os.read_file_str(p)`는 ``Use `os.read_file`. It returns `str`.``, `os.write_file_bytes(p, 'abc')`는 ``Write text with `os.write_file`.``, `os.read_file(p)!`을 담은 지역을 `[]byte` 자리에 쓰면 ``Read bytes with `os.read_file_bytes`.``다. CLI에서 확인했다. 스파이크의 세션은 `os`를 싣지 않으므로(ADR 0026) 모델에게는 ``Failed to load module: os``가 간다. 이 문구들은 tars-agent에서는 CLI로 cyber를 쓰는 사람에게만 닿는다.
 
-언어 서버: 0.4.15의 `cyber-lsp`(설치 경로 `/usr/local/bin/cyber-lsp`)를 stdio로 붙여 확인했다(2026-11-18). 쓰지 않는 지역과 `use`는 Warning(태그 Unnecessary)이고 quick fix가 `_` 붙이기와 `use` 줄 지우기다. `scope` 블록 안의 `return`은 Information(``waits for the fibers of the `scope` block``)과 inlay hint `waits for fibers`다. 컴파일 오류의 고칠 이름(`os.fileExists` → `file_exists`, `out = out.append(3)` → `out.append(3)`)은 quick fix가 된다. hover가 선언 위의 `--|` 문서 주석을 보여 준다. 진단은 컴파일 오류 하나에서 멈춘다(오류 복구를 켜지 않은 CLI와 같다). tars-agent에는 두 갈래로 닿는다. 사람이 .cy 파일을 고칠 때의 편집기 도구이고, 같은 정보를 호스트가 C API로 받는다(3.5, 검사 7i). 모델에게 경고를 넘길지는 9절 18.
+언어 서버: 0.4.15의 `cyber-lsp`(설치 경로 `/usr/local/bin/cyber-lsp`)를 stdio로 붙여 확인했다(2026-11-18). 쓰지 않는 지역과 `use`는 Warning(태그 Unnecessary)이고 quick fix가 `_` 붙이기와 `use` 줄 지우기다. `scope` 블록 안의 `return`은 Information(``waits for the fibers of the `scope` block``)과 inlay hint `waits for fibers`다. 컴파일 오류의 고칠 이름(`os.fileExists` → `file_exists`, `out = out.append(3)` → `out.append(3)`)은 quick fix가 된다. hover가 선언 위의 `--|` 문서 주석을 보여 준다. 구문 오류는 전부 진단하고, 구문 오류가 없으면 본문(main 블록, 함수)마다 첫 오류를 낸다(오류 복구를 켠 검사. CLI는 첫 오류에서 멈춘다). tars-agent에는 두 갈래로 닿는다. 사람이 .cy 파일을 고칠 때의 편집기 도구이고, 같은 정보를 호스트가 C API로 받는다(3.5, 검사 7i). 모델에게 경고를 넘길지는 9절 18.
 
 표준 모듈: 기준 빌드에 json, toon, regex, peg, time이 있다(TODO의 C1, C2). 세션의 기본 로더가 다섯을 싣는다. 다섯 모두 s1과 s2의 호스트 로더가 싣는다(3.6, ADR 0024, 0025). tars-agent 쪽에 남은 것은 안내에 예제를 넣을지다(크기는 8절의 결정과 함께).
 
 ## 8. 안내 문서 (prompt/cyber-subset*.md)
 
-영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.15`다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(설치된 `/usr/local/bin/cyber`, `Cyber 0.4.15 build-967-c13a207`)와 세션(`s1 replay`)으로 확인한다.
+영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.15`다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(설치된 `/usr/local/bin/cyber`, `Cyber 0.4.15 build-969-93a9ca4`)와 세션(`s1 replay`)으로 확인한다.
 
 확인 방법: 안내의 항목마다 탐침 스크립트를 만들어 기준 빌드의 CLI와 `replay`(같은 VM, persist_main, 검증 뒤 실행)로 돌리고 결과(출력이나 오류 첫 줄)를 맞춰 봤다. 오류 목록의 첫 줄, "없는 것" 목록, "있는 메서드" 목록, `int('abc')`, 정수 나눗셈, 음수 인덱스가 기준 빌드에서 그대로다. 세션에서만 다른 것은 최상위 빌림과 모듈이다. CLI는 `os`를 싣고, 스파이크의 세션은 싣지 않는다(ADR 0026). `test`는 양쪽에서 실린다(ADR 0028). 안내는 세션 쪽을 적는다. 코드 블록 11개는 CLI와 `replay` 양쪽에서 통과했다. cyber의 agent-guide.md(`cyber doc --for-agents`)의 코드 블록 12개도 CLI에서 모두 통과하고, 세션에서도 모두 통과한다(2026-11-18, 0.4.15, `test`를 연 뒤. ADR 0028).
 
@@ -367,7 +368,7 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 | 10 | 메시지 모델은 스파이크의 모양(블록 넷, thinking에 불투명 칸)에서 시작한다 | 4.2 |
 | 11 | 끝난 이유와 사용량은 어댑터가 정규화한다. 사용량은 "전체 입력, 그중 캐시, 출력" 셋으로 맞춘다 | 4.1 |
 | 12 | SSE는 줄 버퍼에 기대지 않는 조각 단위 해석기로 쓴다 | 4.3 |
-| 13 | 검증에 `cl_vm_set_error_recovery`와 `cl_vm_compile_report`를 켜서 오류를 전부 돌려주는 것을 시험한다 | 모델은 한 스텝에 오류 하나씩 고친다(5절). 스파이크에서는 시험하지 않았다 |
+| 13 | 검증에 `cl_vm_set_error_recovery`를 켜고 `cl_vm_compile_report`의 오류를 모두 모델에게 돌려주는 것을 평가로 시험한다 | 모델은 한 스텝에 오류 하나씩 고친다(5절). 0.4.15에서 세션 검증이 구문 오류를 모두, 본문마다 하나씩 돌려주는 것은 확인했다(3.5, 검사 6n). 모델의 스텝 수에 주는 효과는 회차를 돌려야 안다 |
 | 14 | 안내 문서의 예제와 조언은 에이전트와 같은 조건(세션 VM, persist_main, 검증 뒤 실행)에서 확인한다. 안내 검사 도구를 둔다면 runtime 경계 위에서 돈다 | 3.5, 8 |
 | 15 | 안내는 회차에서 모델이 틀린 곳으로 고친다. 문구가 고치는 법을 말하는 오류는 안내에 넣지 않는다 | 5.1. 안내의 크기를 지키는 기준이 된다 |
 | 16 | 평가의 모델 목록에 크기가 다른 모델을 함께 넣는다 (DeepSeek-V4.1-Flash, qwen flash, qwen max). direct 모드는 대조군이면서 작은 모델용 기본값 후보로 본다 | 5 |
@@ -388,7 +389,7 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 
 | 경로 | 내용 | 실행 |
 |---|---|---|
-| spike/s1 | 호스트 경계 검사 46개, 세션 재생, 관찰 하나 | `zig build && ./zig-out/bin/s1`, `s1 replay <파일> [nv]` (스크립트를 `=====` 줄로 나눈다, 검증과 실행 결과, 출력, 오류 첫 줄을 찍는다. `nv`면 검증 없이 실행), `s1 spawn` (deny_spawn 없이) |
+| spike/s1 | 호스트 경계 검사 47개, 세션 재생, 관찰 하나 | `zig build && ./zig-out/bin/s1`, `s1 replay <파일> [nv]` (스크립트를 `=====` 줄로 나눈다, 검증과 실행 결과, 출력, 오류 첫 줄을 찍는다. `nv`면 검증 없이 실행), `s1 spawn` (deny_spawn 없이) |
 | spike/s2a | 두 형식의 원문 응답 받기 | `./run.sh`, 결과는 out/*.sse |
 | spike/s2 | 최소 에이전트 루프 (direct, codeact), 제공자 넷 | `./zig-out/bin/s2 --provider ds-anth --mode codeact "질문"`, `./compare.sh <제공자> [모델] [모드] [과제]` |
 | spike/s3 | tars 게스트 구동 스크립트 | 6절 |
