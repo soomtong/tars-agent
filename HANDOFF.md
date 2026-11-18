@@ -13,7 +13,8 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - `cyber-lsp`를 stdio(JSON-RPC)로 붙여 unused Warning, quick fix(`_` 붙이기, `use` 지우기, `file_exists`, `out.append(3)`), inlay hint(추론 타입, `waits for fibers`), `scope` 출구 Information, `--|` 문서 주석 hover를 확인했다. 구문 오류는 전부 진단하고, 구문 오류가 없으면 본문(main 블록, 함수)마다 첫 오류 하나를 낸다.
 - s2 빌드, x86_64-linux-gnu 교차 빌드(s1, s2). libcyber.a arm64 3,058,056바이트, x86_64 3,620,340바이트, 공개 `cl_` 함수 142개. 새 표준 모듈은 없다.
 - 문서: 검토 문서(3.1, 3.5, 3.6, 6, 7, 8절, 9절 추천 5, 13, 18), 03, 05, 08, deps, ADR 0017, 0019, 0022, 0023, 0025, 0026, 0028, 안내 기준 줄, TODO.
-- CodeAct 비교는 다시 돌리지 않았다(비교 수치는 0.4.12 회차).
+- CodeAct 비교를 0.4.15로 다시 돌렸다(0.4.12와 같은 표, 회차 14개, 과제 42개). 41개 통과(실패 하나는 `project/src/a.py`로 쓴 과제 해석), 죽은 실행 없음, 컴파일 오류 51건에서 41건. 제자리 `append`는 run 206개 중 29개가 썼고 그 꼴의 오류는 `^[]str`에 쓴 하나뿐이다. 새로 연 모듈은 한 번도 쓰이지 않았다. 집계 스크립트는 0.4.12 원자료로 5절의 표가 그대로 나오는 것을 먼저 확인했다. 검토 문서 5.3, 원자료 spike/s2/out/0.4.15/.
+- 고치는 법을 말하지 않는 문구 셋으로 cyber에 요청서를 냈다: docs/requests/cyber-0.4.15-messages-from-codeact-round.md(`!T`가 아닌 함수의 `!`가 `Result`를 말함, `idx.!`가 `Expected ident.`, `^[]str`의 `append`가 `&>[]str`를 드러냄).
 
 앞선 세션(2026-11-16~17):
 - cyber가 0.4.12 요청서의 네 건을 고쳤다.
@@ -79,7 +80,8 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - [ ] os 대신 능력으로 넓힐 후보(fs.mkdir, fs.remove, fs.copy, fs.move, env.get)를 언제 정할지 (04, ADR 0026)
 - [ ] 여섯 모듈의 예제를 안내에 넣을지 (TODO C1, C2의 남은 게이트)
 - [ ] 모듈 API(패키지의 `docs/api.json`, 여섯 모듈 약 7 KB)를 프롬프트에 둘지 help(name)으로 꺼내게 할지 (본체 능력 설계 때)
-- [ ] CodeAct 비교를 기준 빌드로 다시 돌릴지 (지금 수치는 0.4.12 회차)
+- [x] CodeAct 비교를 0.4.15로 다시 돌렸다 (검토 문서 5.3)
+- [ ] cyber 요청서(docs/requests/cyber-0.4.15-messages-from-codeact-round.md)의 회신 확인
 - [ ] 본체가 VM 충돌로 프로세스가 끝나는 경우를 어떻게 다룰지 (검토 문서 9절 17)
 - [ ] 검증 뒤 `cl_vm_symbol_hints`의 쓰지 않는 함수 안 지역을 모델에게 넘길지 (검토 문서 9절 18, 평가 때)
 - [ ] `print(!str)`가 작은 모델의 가장 흔한 오류다. 능력의 모양이나 안내로 줄일지 (본체의 능력 설계 때)
@@ -95,7 +97,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 핵심 파일
 
-- `docs/spikes/2026-11-14-m0-spikes-review.md` — 스파이크 검토. 1절 요약, 3절 호스트 경계, 5절 비교(0.4.12 회차), 7절 cyber에 남은 것, 11절 다시 돌리는 법
+- `docs/spikes/2026-11-14-m0-spikes-review.md` — 스파이크 검토. 1절 요약, 3절 호스트 경계, 5절 비교(0.4.12 회차, 5.3에 0.4.15 회차), 7절 cyber에 남은 것, 11절 다시 돌리는 법
 - `docs/decisions/0022-guide-from-cyber-agent-guide.md` — 안내의 정본과 열린 것
 - `docs/decisions/0017-m0-spike-findings.md`, `0019-fix-spike-defects-first.md`, `0020-docs-current-state-only.md`, `0021-borrow-from-pi-harness.md`
 - `docs/spec/08-cyber-implementation.md` — 기준 빌드의 사실
