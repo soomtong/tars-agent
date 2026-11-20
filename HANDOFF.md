@@ -1,10 +1,20 @@
-# HANDOFF: cyber 0.4.15로 옮김, cyber-lsp와 편집기 힌트 API 확인 (2026-11-18)
+# HANDOFF: fx 검토와 ADR 0030 반영 (2026-11-20)
 
 ## 목표
 
 tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code이고, 다른 점은 모델이 JSON 도구 호출 대신 Cyber 스크립트를 써서 실행하는 CodeAct 방식이라는 것이다. 호스트는 Zig 0.17.1, 런타임은 libcyber(soomtong/cyber) 정적 링크. 본체 코드는 아직 없다. 버릴 스파이크 코드가 spike/에 있다.
 
-이번 세션(2026-11-18):
+이번 세션(2026-11-20):
+- vercel-labs/fx(`5960bc93d`, 로컬 `~/Repository/_study/fx-agent`, Zig 0.17.1, Apache-2.0)를 검토했다. "minimal"이지만 Zig 약 87만 줄이다. 도구는 JSON 도구 호출이고 auto 모드는 모델 검토자에 기댄다. 검토 문서: docs/references/2026-11-20-fx-agent-review.md (참고할 곳 표, 배울 방법 9개, 차용 후보 A1~A13과 B1~B7, 가져오지 않을 것, 라이선스, 추천 순서).
+- 사용자가 추천 순서를 받았다. ADR 0030에 기록했다.
+  - 지금 받은 것: 세션 줄 머리(`v`, `seq`, `ts`, `type` 순서 고정, 끝에 `crc` CRC32C, 줄 4 MiB), 쓰기와 복구(write 한 번에 줄 하나, 턴을 닫는 줄 뒤에만 fsync, 임시 이름 뒤 rename, 찢긴 꼬리 자르기, 중간 손상은 재개 거부), 잠금(`<세션 ID>/lock` flock, 2초 재시도 뒤 pid를 말하고 거부), 헤드리스 json 객체(spec 06), Zig 0.17.1 지뢰(deps.md).
+  - 사용자 인터럽트의 종료 코드는 130이다(사용자가 Claude에게 맡김).
+  - 정할 때 함께 볼 것: 이벤트 타입의 도구 카드 수명과 결과 종류, 열린 카드 닫기, 승인 요청의 출처(A9). 능력 표의 reads_only, irreversible 술어(A10). 둘 다 사용자 편집 대상이다.
+  - 단계에서 다시 볼 것: A11 복구 순수 모듈(M1 provider), A8 steering 경계(M3), A6, A7 컴팩션 원문 유지와 접은 기록 다시 열기(M4), A5 크래시 뒤 스스로 이어 가기, B3 terminalSafe, B4 경계 검사 스크립트(M1 뼈대), B5~B7 fuzz, 크기와 시작 시간 예산, TLA+.
+- 고친 문서: ADR 0030(새), spec 06, 07, deps.md, TODO(M1 caps, provider, session, headless와 M3 steering 줄), ADR 0008 결과 한 줄, MEMORY 두 줄.
+- deps.md의 Zig 지뢰는 fx 메모에서 옮긴 것이고 우리 빌드에서 재현하지 않았다. 해당 코드를 쓸 때 재현하고 고친다.
+
+앞선 세션(2026-11-18): cyber 0.4.15로 옮김.
 - cyber 0.4.15(태그 `93a9ca4f`, 설치된 `/usr/local/bin/cyber`는 `Cyber 0.4.15 build-969-93a9ca4`)로 두 스파이크의 의존을 올렸다. 깨지는 변경은 `[]T`의 크기 바꾸기가 제자리가 된 것(`xs.append(v)`, 새 목록은 `appended`, `+`)이고, 안내 두 판은 전 세션에 먼저 고쳐 두었다.
 - `test` 모듈을 연다(ADR 0028, 사용자 결정). 순수 Cyber 검사 함수이고 정본 안내가 `use test`를 가르친다. s1 검사 7a4, 로더 두 곳.
 - 0.4.15 태그가 다시 릴리스됐다(`c13a207f` → `93a9ca4f`, cyber-lsp가 구문 오류를 모두 진단). 같은 태그를 다시 받았다(zig fetch가 새 커밋과 해시를 적는다). 새 검사 6n: 세션 검증에서 `cl_vm_set_error_recovery`가 구문 오류를 모두, 본문마다 하나씩 돌려주고 세션이 남는다(검토 문서 9절 13).
@@ -54,6 +64,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 시도했으나 실패한 접근
 
+- fx를 이름대로 작은 저장소로 보고 한 번에 읽기: 87만 줄이다. 영역(루프와 복구, 권한과 도구, 프로토콜, 시험과 Zig 관행)으로 나눠 읽었다. fx의 파일을 베끼지 않는다(Apache-2.0, ADR 0003). 재구현한다.
 - 회차 도중에 안내를 고치기: s2가 실행마다 안내를 읽어 회차가 섞인다. 회차 전에 안내를 먼저 확정한다.
 - 릴리스 CLI를 태그에서 스크래치로 빌드하기: 릴리스면 사용자가 설치한 `/usr/local/bin/cyber`를 쓴다. latest dev면 프리릴리스의 CLI를 받는다(`gh release download latest -R soomtong/cyber -p cyber-macos-arm64.tar.gz`, 스크래치에). 설치된 CLI는 지금 0.4.15다.
 - `latest` 태그만 따르기: 릴리스 빌드만 돌고 `latest` 프리릴리스가 갱신되지 않는 때가 있다(0.4.13 때). 가장 새 태그를 본다(ADR 0023).
@@ -90,6 +101,9 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 그 밖:
 
+- [ ] 이벤트 타입을 편집할 때 ADR 0030의 6(도구 카드 수명, 결과 종류, 열린 카드 닫기, 승인 요청의 출처)을 사용자 결정 거리로 올린다. 비교 자료는 fx 검토 문서 1절 첫 줄
+- [ ] 능력 표를 편집할 때 ADR 0030의 7(reads_only, irreversible 술어)을 사용자 결정 거리로 올린다
+- [ ] deps.md의 Zig 0.17.1 지뢰를 해당 코드(provider 스트림, 줄 편집기, 테스트 allocator)를 쓸 때 재현하고 고친다
 - [ ] 본체 첫 단계: 저장소 뼈대와 runtime 경계. 선행 조건으로 남은 결함은 없다(ADR 0019). 단계의 결정, 편집, 기능 표를 먼저 낸다
 - [ ] tars 게스트에서 기준 빌드로 스파이크 실행 (tars-linux 산출물 필요)
 - [ ] 평가: eval/ 과제 20개, CodeAct 대 direct, 판정을 docs/decisions에 기록
@@ -97,6 +111,11 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 핵심 파일
 
+- `docs/references/2026-11-20-fx-agent-review.md` — fx 검토. 1절 참고할 곳(fx 파일:줄), 3절 차용 후보, 6절 추천 순서
+- `docs/decisions/0030-borrow-from-fx.md` — 받은 것, 정할 때 볼 것, 가져오지 않을 것
+- `docs/spec/07-observability.md` — 세션 파일의 줄 머리, 쓰기와 복구, 잠금
+- `docs/spec/06-mcp-and-context.md` — 헤드리스 json 객체와 종료 코드(0, 1, 2, 3, 130)
+- `docs/deps.md` — Zig 0.17.1에서 피할 것
 - `docs/spikes/2026-11-14-m0-spikes-review.md` — 스파이크 검토. 1절 요약, 3절 호스트 경계, 5절 비교(0.4.12 회차, 5.3에 0.4.15 회차), 7절 cyber에 남은 것, 11절 다시 돌리는 법
 - `docs/decisions/0022-guide-from-cyber-agent-guide.md` — 안내의 정본과 열린 것
 - `docs/decisions/0017-m0-spike-findings.md`, `0019-fix-spike-defects-first.md`, `0020-docs-current-state-only.md`, `0021-borrow-from-pi-harness.md`
@@ -107,6 +126,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 다음 에이전트에게
 
+0. 직전 세션은 fx 검토(docs/references/2026-11-20-fx-agent-review.md)와 ADR 0030 반영이다. 본체 단계를 시작할 때 그 단계에 걸린 차용 후보(검토 문서 6절의 추천 순서)를 단계 표의 결정 칸에 함께 낸다.
 1. 사용자 규칙(~/.claude/CLAUDE.md):
    - 응답은 한국어로 한다.
    - 문서와 주석에 ** 강조를 쓰지 않는다.
