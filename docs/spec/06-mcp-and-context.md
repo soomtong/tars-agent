@@ -58,7 +58,34 @@ tars-agent -p "프롬프트" [--output-format text|json|stream-json]
            [--continue | --resume ID] [--max-steps N] [--model ID]
 ~~~
 
-- text: 마지막 답만. json: 결과, 세션 ID, 사용량, 비용을 객체 하나로. stream-json: 코어 이벤트를 줄마다.
+- text: 마지막 답만. json: 아래 객체 하나. stream-json: 코어 이벤트를 줄마다.
+- 결과는 stdout, 진행과 진단은 stderr에 쓴다. text와 json은 같은 결과에서 만든다.
+
+json 결과 (ADR 0030):
+
+~~~json
+{
+  "v": 1,
+  "result": "마지막 답",
+  "session_id": "...",
+  "exit_code": 0,
+  "stop": "end_turn",
+  "model": "...",
+  "steps": 3,
+  "runs": [
+    {"step": 1, "validate": "ok", "outcome": "ok", "ms": 120,
+     "caps": [{"name": "fs.read", "decision": "allow"}]},
+    {"step": 2, "validate": "compile_error", "outcome": "compile_error", "ms": 3, "caps": []}
+  ],
+  "usage": {"input": 0, "output": 0, "cache_write": 0, "cache_read": 0},
+  "cost_usd": 0.0
+}
+~~~
+
+- stop과 종료 코드: end_turn 0, error와 refusal과 interrupted 1, max_steps와 budget과 repeated_error 2, permission_denied 3. repeated_error는 같은 오류 5회로 끝난 턴이다 (02 한도).
+- outcome은 02의 실패 종류(ok, compile_error, panic, interrupted, denied, capability_error, crashed)다. caps의 decision은 07의 cap 줄과 같다(allow, ask_allowed, ask_denied, deny). 능력이 오류를 돌려주면 error에 오류 이름을 적는다.
+- 없는 값은 null로 쓰지 않고 필드를 뺀다. 실패하면 error {kind, message}가 붙는다.
+- 필드는 더하기만 한다. 빼거나 뜻을 바꿀 때만 v를 올린다.
 - stream-json은 코어와 프런트엔드 사이의 이벤트와 같은 것이다. 다른 프로그램(편집기, 후속의 데몬, tars 게이트 스크립트)이 이 형식으로 붙는다.
 - 종료 코드: 0 성공, 1 실행 오류, 2 한도 초과, 3 권한 거부로 중단.
 - stdin이 파이프면 프롬프트에 덧붙인다.

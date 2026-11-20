@@ -60,12 +60,12 @@
 
 - [ ] 저장소 뼈대: build.zig, cyber 의존(가장 새 빌드, ADR 0023), macOS와 linux 빌드, CI
 - [ ] runtime: cy.zig 래퍼, 로더, 상한, 결과 조립
-- [ ] caps: 능력 표와 생성기 (Cyber 선언, 바인딩, 프롬프트 사양, JSON Schema), fs.read, fs.list, fs.glob, fs.stat, help
-- [ ] provider: Messages API 스트리밍, 적응형 사고, effort, 캐시 지점, stop_reason 분기(end_turn, tool_use, max_tokens, refusal, pause_turn), 재시도. refusal의 서버 쪽 fallbacks 옵션 적용 여부 결정
+- [ ] caps: 능력 표와 생성기 (Cyber 선언, 바인딩, 프롬프트 사양, JSON Schema), fs.read, fs.list, fs.glob, fs.stat, help. 표를 편집할 때 행마다 reads_only, irreversible 술어를 둘지 정한다 (ADR 0030의 7)
+- [ ] provider: 스트림을 끊을 때 Zig 0.17.1의 HTTP 정리 멈춤을 피한다(deps.md). Messages API 스트리밍, 적응형 사고, effort, 캐시 지점, stop_reason 분기(end_turn, tool_use, max_tokens, refusal, pause_turn), 재시도. refusal의 서버 쪽 fallbacks 옵션 적용 여부 결정
 - [ ] prompt: 조립기, rules.md
 - [ ] loop: validate, eval, 실패 분류, 한도. 벽시계는 VM 안의 시간만 잰다(바인딩 층이 능력 호출 동안 타이머를 멈춘다). 실패 결과에 능력 호출 목록 (ADR 0021)
-- [ ] session: JSONL 쓰기 (07의 형식)
-- [ ] headless: -p, text와 stream-json 출력
+- [ ] session: JSONL 쓰기 (07의 형식). 줄 머리와 crc, write 한 번에 줄 하나, 턴을 닫는 줄 뒤 fsync, 임시 이름 뒤 rename, 찢긴 꼬리 자르기, flock 잠금 (ADR 0030)
+- [ ] headless: -p, text, json(06의 객체, ADR 0030), stream-json 출력
 - [ ] 테스트: 모의 provider와 시나리오 재생, 능력 단위 테스트(누수 검사 allocator), 샌드박스 탈출 시도(raw 포인터, use c, 무한 루프, 폭주 재귀, 메모리 폭주)가 모두 결과로 끝나는지
 
 게이트: tars-agent -p "이 저장소의 빌드 방법을 설명해" 가 파일을 읽고 답한다. 탈출 시도 테스트가 모두 통과한다.
@@ -88,7 +88,7 @@
 - [ ] 스트리밍 표시, 코드 접기와 펼치기, 상태 줄
 - [ ] 승인 프롬프트 (숫자 키, diff 표시, 승인 기억을 settings.local.json에). CL_AWAIT 경로로 루프 바닥에서 묻는다 (ADR 0011)
 - [ ] 인터럽트 (Esc, Ctrl-C), 취소 플래그를 능력에 연결
-- [ ] 실행 중 입력(steering): 코어의 큐, 스텝마다 하나씩, 턴 끝에 남은 입력은 다음 턴, 인터럽트 때 입력 줄로 돌려주기. 코어-프런트엔드 이벤트와 명령 타입은 사용자가 편집한다 (ADR 0021)
+- [ ] 실행 중 입력(steering): 코어의 큐, 스텝마다 하나씩, 턴 끝에 남은 입력은 다음 턴, 인터럽트 때 입력 줄로 돌려주기. 코어-프런트엔드 이벤트와 명령 타입은 사용자가 편집한다 (ADR 0021). 편집할 때 도구 카드의 수명과 결과 종류, 열린 카드 닫기, 승인 요청의 출처를 함께 정한다 (ADR 0030의 6)
 - [ ] 모드 전환 (Shift+Tab, /mode)과 system 메시지
 - [ ] AGENTS.md 읽기, 프로젝트 설정 수락 절차
 - [ ] 슬래시 명령: /help /clear /mode /model /cost /permissions /quit

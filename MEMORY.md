@@ -31,9 +31,11 @@
 - [0023 cyber 의존은 가장 새 빌드](docs/decisions/0023-cyber-follows-latest.md) — 커밋을 고정하지 않는다. 가장 새 릴리스 태그(앞서 있으면 `latest`)를 `zig fetch --save=cyber`로 받는다. 검사 0은 버전 문자열을 비교하지 않는다
 - [0022 안내는 cyber agent-guide.md에 호스트 덧붙임](docs/decisions/0022-guide-from-cyber-agent-guide.md) — 언어 설명의 정본은 cyber의 docs/agent-guide.md, tars-agent는 능력, 막는 모듈, 세션 규칙만 덧붙인다. 기준 빌드 패키지에 있다. 덧붙임은 가이드를 바로잡지 않는다. 언제 어떤 모양으로 모을지는 열려 있음
 - [0029 외부 프로토콜의 범위](docs/decisions/0029-protocol-scope.md) — MCP 클라이언트는 M6, MCP 서버 방향은 후속, ACP는 이벤트 타입의 대조 기준이고 어댑터는 M6 뒤, AHP는 agentd 설계 때 먼저 검토, A2A는 범위 밖
+- [0030 fx에서 가져온 것](docs/decisions/0030-borrow-from-fx.md) — 세션 줄 머리(v, seq, ts, type, crc), 턴을 닫는 줄 뒤 fsync, 찢긴 꼬리 자르기, flock 잠금, 헤드리스 json 결과, Zig 0.17.1 지뢰(deps.md). 이벤트 타입의 도구 수명과 능력 표의 두 술어는 편집할 때 정함
 
 ## 결정이 아닌 참고
 
 - [초기 요구사항 대조](docs/spec/09-legacy-requirements.md) — 이력, 재검토에서 바꾼 것과 닫은 질문
 - [code mode와 cyber 설계 검토](docs/references/2026-11-15-code-mode-and-cyber-design.md) — 다른 하네스의 code mode 구현(Claude Code 공식 문서, pi 확인, 나머지 전언)과 CodeAct 비교, cyber PR #7 중 우리에게 닿는 것(표준 오류 어휘가 첫째)
+- [fx 검토](docs/references/2026-11-20-fx-agent-review.md) — vercel-labs/fx(Zig 0.17.1, JSON 도구 호출, 모델 검토자 auto)에서 참고할 곳, 배울 방법, 차용 후보 A1~A13과 B1~B7. 받은 것은 ADR 0030
 - [M0 스파이크 검토 결과](docs/spikes/2026-11-14-m0-spikes-review.md) — cyber 0.4.13(비교 회차는 0.4.12): 에이전트가 도는 법, 스파이크별 실측, direct 대 CodeAct, 모델이 틀리는 곳, 안내, 아키텍처 추천
