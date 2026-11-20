@@ -82,12 +82,12 @@ json 결과 (ADR 0030):
 }
 ~~~
 
-- stop과 종료 코드: end_turn 0, error와 refusal과 interrupted 1, max_steps와 budget과 repeated_error 2, permission_denied 3. repeated_error는 같은 오류 5회로 끝난 턴이다 (02 한도).
+- stop과 종료 코드: end_turn 0, error와 refusal 1, max_steps와 budget과 repeated_error 2, permission_denied 3, interrupted 130. repeated_error는 같은 오류 5회로 끝난 턴이다 (02 한도).
 - outcome은 02의 실패 종류(ok, compile_error, panic, interrupted, denied, capability_error, crashed)다. caps의 decision은 07의 cap 줄과 같다(allow, ask_allowed, ask_denied, deny). 능력이 오류를 돌려주면 error에 오류 이름을 적는다.
 - 없는 값은 null로 쓰지 않고 필드를 뺀다. 실패하면 error {kind, message}가 붙는다.
 - 필드는 더하기만 한다. 빼거나 뜻을 바꿀 때만 v를 올린다.
 - stream-json은 코어와 프런트엔드 사이의 이벤트와 같은 것이다. 다른 프로그램(편집기, 후속의 데몬, tars 게이트 스크립트)이 이 형식으로 붙는다.
-- 종료 코드: 0 성공, 1 실행 오류, 2 한도 초과, 3 권한 거부로 중단.
+- 종료 코드: 0 성공, 1 실행 오류, 2 한도 초과, 3 권한 거부로 중단, 130 사용자 인터럽트(SIGINT, 셸 관례 128+2).
 - stdin이 파이프면 프롬프트에 덧붙인다.
 
 ## 컨텍스트 비용
