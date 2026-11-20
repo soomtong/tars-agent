@@ -17,7 +17,7 @@ frontend    repl (대화형) / headless (-p, text | json | stream-json)
 core
    +-- session      히스토리, 기록(JSONL), 재개, 컴팩션
    +-- loop         모델 호출 - 검증 - 실행 반복 (02)
-   +-- provider     전송 형식 둘: Anthropic Messages, OpenAI Chat Completions (ADR 0014). SSE 스트리밍, 재시도
+   +-- provider     자체 메시지 모델, 형식별 어댑터 둘(Anthropic Messages, OpenAI Chat Completions), 제공자 설정, SSE 스트리밍, 재시도 (10)
    +-- prompt       시스템 프롬프트 조립: 규칙, Cyber 안내, 능력 사양, 환경, AGENTS.md
    +-- runtime      libcyber VM: 로더, validate, eval, 연료(fuel), 스택/메모리 상한, 중단
    +-- caps         능력 표 (단일 소스) 와 본체 (03, 04)
@@ -49,7 +49,7 @@ direct 모드는 같은 표를 API 도구 여럿으로 노출하고 VM을 쓰지
 
 - 스크립트는 능력으로만 세계에 닿는다. 로더는 os 모듈을 모르고, 호스트 로더는 허용 목록이며, c 모듈은 deny_raw_ptrs와 -Dffi=false로 무력하다 (05, ADR 0026).
 - 프런트엔드는 입출력과 승인 화면만 그린다. 정책 판단은 코어에 둔다. 코어는 터미널을 직접 만지지 않고 이벤트를 낸다.
-- provider는 제공자 차이를 흡수한다. 코어는 내부 메시지 형식만 본다. 단 히스토리의 assistant 블록은 받은 그대로 보관한다 (02). 코어가 보는 것은 자체 메시지 모델이고, 형식마다 어댑터가 있고, 제공자는 설정 데이터다 (ADR 0015). 받은 원문은 블록의 불투명 칸에 실어 같은 형식 안에서 그대로 되돌린다.
+- provider는 제공자 차이를 흡수한다. 코어는 자체 메시지 모델만 본다. 형식마다 어댑터가 있고, 제공자는 설정 데이터다 (ADR 0015, 10). assistant 블록은 받은 그대로 보관하고(02), 형식마다 다른 원문은 블록의 불투명 칸에 실어 같은 형식 안에서 그대로 되돌린다.
 - libcyber는 runtime 모듈 밖으로 새지 않는다. cl_* C ABI를 runtime/cy.zig 한 파일이 감싼다. fork에 Zig 전용 표면을 만들지 않는다.
 - Cyber 컴파일러에 남은 abort 경로는 fork의 버그로 다룬다. 프로세스가 죽으면 그 스크립트가 세션 디렉터리에 남아 재현 사례가 되고, 세션은 --continue로 잇는다. 실행 프로세스 분리는 죽는 비율을 재 본 뒤 판단한다.
 

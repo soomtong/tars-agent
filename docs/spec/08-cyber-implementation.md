@@ -1,6 +1,6 @@
 # Cyber 런타임 사실과 제약
 
-출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber 0.4.14 (ADR 0023), 확인일 2026-11-17. 구현을 시작하기 전에 다시 확인한다.
+출처: soomtong/cyber의 src/include/cyber.h, docs/docs.md, docs/decisions (project_tars_agent_runtime_review, project_embedding_agent_loop, project_vm_interrupt, project_stack_limit, project_memory_limit, project_compile_alloc_failure, project_spawn_nested_await, project_compiler_limits, project_coroutines, project_sigils, project_compile_error_report, project_fmt, project_sort_closures). 기준은 soomtong/cyber 0.4.15 (ADR 0023, docs/deps.md), 확인일 2026-11-18. 구현을 시작하기 전에 다시 확인한다.
 
 ## 확인된 사실
 

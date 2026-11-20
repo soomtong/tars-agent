@@ -55,8 +55,11 @@ Cyber 부분집합 안내
 ~~~text
 tars-agent -p "프롬프트" [--output-format text|json|stream-json]
            [--permission-mode M] [--allow 규칙]... [--profile P]
-           [--continue | --resume ID] [--max-steps N] [--model ID]
+           [--continue | --resume ID] [--max-steps N] [--max-budget-usd X]
+           [--model ID]
 ~~~
+
+인자의 뜻과 정의한 문서, 대화형 인자는 11에 있다.
 
 - text: 마지막 답만. json: 아래 객체 하나. stream-json: 코어 이벤트를 줄마다.
 - 결과는 stdout, 진행과 진단은 stderr에 쓴다. text와 json은 같은 결과에서 만든다.
@@ -82,12 +85,11 @@ json 결과 (ADR 0030):
 }
 ~~~
 
-- stop과 종료 코드: end_turn 0, error와 refusal 1, max_steps와 budget과 repeated_error 2, permission_denied 3, interrupted 130. repeated_error는 같은 오류 5회로 끝난 턴이다 (02 한도).
+- exit_code는 프로세스의 종료 코드와 같다. stop 값과 종료 코드의 대응(end_turn 0, error와 refusal 1, max_steps와 budget과 repeated_error 2, permission_denied 3, interrupted 130)은 11의 종료 코드 표가 정본이다.
 - outcome은 02의 실패 종류(ok, compile_error, panic, interrupted, denied, capability_error, crashed)다. caps의 decision은 07의 cap 줄과 같다(allow, ask_allowed, ask_denied, deny). 능력이 오류를 돌려주면 error에 오류 이름을 적는다.
 - 없는 값은 null로 쓰지 않고 필드를 뺀다. 실패하면 error {kind, message}가 붙는다.
 - 필드는 더하기만 한다. 빼거나 뜻을 바꿀 때만 v를 올린다.
 - stream-json은 코어와 프런트엔드 사이의 이벤트와 같은 것이다. 다른 프로그램(편집기, 후속의 데몬, tars 게이트 스크립트)이 이 형식으로 붙는다.
-- 종료 코드: 0 성공, 1 실행 오류, 2 한도 초과, 3 권한 거부로 중단, 130 사용자 인터럽트(SIGINT, 셸 관례 128+2).
 - stdin이 파이프면 프롬프트에 덧붙인다.
 
 ## 컨텍스트 비용
@@ -95,7 +97,7 @@ json 결과 (ADR 0030):
 - 코드 실행이 기본 절감이다. 중간 결과는 스크립트 안에서 줄이고 필요한 것만 출력한다.
 - 넘침 파일: 큰 결과는 파일로 보내고 머리와 꼬리만 싣는다 (03).
 - 지연 사양: 예산을 넘는 능력은 한 줄만 싣고 help로 조회한다.
-- 프롬프트 캐싱: 접두부 고정과 중간 system 메시지 (02). 요청마다 usage의 cache_read_input_tokens를 기록하고, 0이 이어지면 경고한다.
+- 프롬프트 캐싱: 접두부 고정과 하네스 알림 (02, 10). 요청마다 사용량의 캐시 읽기 토큰을 기록하고, 0이 이어지면 경고한다. 캐시 필드를 주지 않는 제공자에서는 경고하지 않는다 (10).
 - 컴팩션 (02).
 - 능력별 결과 크기 통계를 모아 상한을 조정한다 (07).
 
