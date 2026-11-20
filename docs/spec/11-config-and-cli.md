@@ -1,25 +1,27 @@
 # 설정과 명령행
 
-이 문서는 다른 문서에 흩어진 설정 키, 명령행 인자, 환경 변수, 파일 위치, 종료 코드를 한곳에 모은 색인이다. 뜻의 정본은 각 행이 가리키는 문서다. 제공자 설정(항목의 칸, 키 변수, 힌트 옵션)은 10을 본다.
+이 문서는 다른 문서에 흩어진 설정 키, 명령행 인자, 환경 변수, 파일 위치, 종료 코드를 한곳에 모은 색인이다. 뜻의 정본은 각 행이 가리키는 문서다. 제공자 항목의 칸과 키 읽기는 10 "제공자 설정"과 "키"를 본다.
 
 ## 파일 위치
 
+사용자 설정 디렉터리는 $XDG_CONFIG_HOME/tars-agent 하나다($XDG_CONFIG_HOME이 없으면 ~/.config). settings.json, credentials, AGENTS.md가 모두 이 디렉터리를 따르고, 05의 보호 규칙과 기본 deny 규칙도 같은 디렉터리를 가리킨다.
+
 | 위치 | 내용 | 정의 |
 |---|---|---|
-| $XDG_CONFIG_HOME/tars-agent/settings.json (기본 ~/.config) | 사용자 설정 | 05 |
-| ~/.config/tars-agent/credentials | API 키 파일. 권한 0600이 아니면 읽지 않는다 | 05 비밀, 10 |
-| ~/.config/tars-agent/AGENTS.md | 사용자 지시 파일 | 06 |
+| $XDG_CONFIG_HOME/tars-agent/settings.json | 사용자 설정 | 05 |
+| $XDG_CONFIG_HOME/tars-agent/credentials | API 키 파일. `KEY_ENV이름=값` 줄의 모음. 권한 0600이 아니면 읽지 않는다 | 05 비밀, 10 |
+| $XDG_CONFIG_HOME/tars-agent/AGENTS.md | 사용자 지시 파일 | 06 |
 | <프로젝트>/.tars-agent/settings.json | 프로젝트 설정. 저장소에 커밋한다 | 05 |
 | <프로젝트>/.tars-agent/settings.local.json | 개인 설정. 승인 선택지 3의 규칙이 쌓인다 | 05 |
 | <프로젝트>/.tars-agent/commands/*.md | 사용자 슬래시 명령 (후속) | 06 |
 | 작업 디렉터리에서 저장소 루트까지의 AGENTS.md | 프로젝트 지시 파일. 바깥에서 안쪽 순서로 읽는다 | 06 |
-| $XDG_STATE_HOME/tars-agent/sessions/<작업 디렉터리 해시>/<세션 ID>.jsonl (기본 ~/.local/state) | 세션 파일. 권한 0600 | 07 |
+| $XDG_STATE_HOME/tars-agent/trust.json (기본 ~/.local/state) | 프로젝트 설정 수락. 프로젝트 경로마다 수락한 내용의 해시 | 05 2층 |
+| $XDG_STATE_HOME/tars-agent/sessions/<작업 디렉터리 해시>/<세션 ID>.jsonl | 세션 파일. 권한 0600 | 07 |
 | 위 디렉터리의 <세션 ID>/out/, files/, crash/ | 넘침 파일, 쓰기 전 보관본, 죽기 직전의 스크립트 | 03, 07 |
 | 위 디렉터리의 <세션 ID>/lock | 세션 쓰기 잠금 (flock, pid) | 07 |
-| 세션 임시 디렉터리 | 샌드박스가 작업 디렉터리 밖에서 쓰기를 허용하는 곳. 위치는 정하지 않았다 (열린 것 7) | 05 3층 |
+| $TMPDIR/tars-agent-<세션 ID> ($TMPDIR가 없으면 /tmp) | 세션 임시 디렉터리. 샌드박스가 작업 디렉터리 밖에서 쓰기를 허용하는 곳. 권한 0700, 세션이 끝나면 지운다 | 05 3층 |
 
-- 05는 settings.json에 대해서만 XDG_CONFIG_HOME을 존중한다고 적었다. credentials와 AGENTS.md는 ~/.config로 적혀 있다 (열린 것 6).
-- <프로젝트>가 작업 디렉터리인지 위로 올라가 찾은 디렉터리인지는 정하지 않았다 (열린 것 5).
+<프로젝트>는 작업 디렉터리에서 위로 올라가며 처음 만나는 .tars-agent/ 디렉터리를 가진 곳이다. 올라가는 끝은 저장소 루트(그것도 본다)이고, 저장소 밖이면 작업 디렉터리만 본다. 찾지 못하면 <프로젝트>는 저장소 루트, 저장소 밖이면 작업 디렉터리다(승인 선택지 3이 여기에 settings.local.json을 만든다). 세션 디렉터리의 해시는 작업 디렉터리 기준이다(07).
 
 ## 환경 변수
 
@@ -28,9 +30,10 @@
 | 변수 | 쓰임 | 정의 |
 |---|---|---|
 | XDG_CONFIG_HOME | 사용자 설정 디렉터리의 바탕. 없으면 ~/.config | 05 |
-| XDG_STATE_HOME | 세션 디렉터리의 바탕. 없으면 ~/.local/state | 07 |
+| XDG_STATE_HOME | 세션 디렉터리와 수락 기록의 바탕. 없으면 ~/.local/state | 07 |
+| TMPDIR | 세션 임시 디렉터리의 바탕. 없으면 /tmp | 05 3층 |
 | HOME | ~ 풀이 (설정 파일 위치, 규칙의 ~/) | 05 |
-| 제공자 항목의 key_env가 가리키는 변수 | API 키. 지금은 DEEPSEEK_API_KEY, OPENROUTER_API_KEY. 모든 항목의 변수를 자식 환경에서 지운다 | 05 비밀, 10 |
+| 제공자 항목의 key_env가 가리키는 변수 | API 키. 지금은 DEEPSEEK_API_KEY, OPENROUTER_API_KEY. 변수를 먼저 보고 없으면 credentials 파일을 본다. 모든 항목의 변수를 자식 환경에서 지운다 | 05 비밀, 10 |
 
 스크립트가 간접으로 읽는 것
 
@@ -42,81 +45,97 @@
 
 ## 설정 파일
 
-형식은 JSON이다 (ADR 0007). 세 층이고 아래일수록 우선한다. 규칙 목록은 합친다. 정본은 05 2층이다.
+형식은 JSON이다 (ADR 0007). 세 층이고 아래일수록 우선한다. 정본은 05 2층이다.
 
 ~~~text
-~/.config/tars-agent/settings.json        사용자 (XDG_CONFIG_HOME 존중)
-<프로젝트>/.tars-agent/settings.json       프로젝트 (저장소에 커밋)
-<프로젝트>/.tars-agent/settings.local.json 개인 (승인 기억이 여기에 쌓인다)
+$XDG_CONFIG_HOME/tars-agent/settings.json  사용자 (기본 ~/.config)
+<프로젝트>/.tars-agent/settings.json        프로젝트 (저장소에 커밋)
+<프로젝트>/.tars-agent/settings.local.json  개인 (승인 기억이 여기에 쌓인다)
 ~~~
 
-- 값 하나짜리 키는 아래 층이 이긴다. permissions의 allow, ask, deny 목록은 층을 합친다. 판정은 합친 목록에서 deny, ask, allow 순서로 하므로 어느 층의 deny든 다른 층의 allow보다 먼저 걸린다 (05).
-- 프로젝트 파일의 allow 규칙과 프로파일 정의는 그 디렉터리를 처음 열 때 사용자에게 보이고 수락을 받는다 (05).
+- 값 하나짜리 키는 아래 층이 이긴다. 객체 키(permissions, limits, profiles)는 필드마다 합치고, 각 필드는 값 하나짜리 키처럼 아래 층이 이긴다. permissions의 allow, ask, deny 목록은 층을 이어 붙인다. providers는 name마다 합치고 같은 name이면 항목을 통째로 덮는다(10).
+- 판정은 합친 목록에서 deny 규칙을 먼저 보므로 어느 층의 deny든 다른 층의 allow보다 먼저 걸린다 (05).
+- 명령행 인자는 모든 층보다 우선한다. --allow는 합친 allow 목록에 더하므로 설정의 deny를 풀지 못한다.
+- 프로젝트 파일(settings.json)이 넓히는 값(allow 규칙, profiles와 profile, permissions.default_mode, providers와 provider)은 그 디렉터리를 처음 열 때 사용자에게 보이고 수락을 받는다. 수락은 trust.json에 프로젝트 경로와 수락한 내용의 해시로 기억하고, 내용이 바뀌면 다시 묻는다. 헤드리스는 묻지 못하므로 수락되지 않은 값을 빼고 시작한다 (05).
 - bypass 모드는 설정 파일로 켤 수 없다. 명령행의 --dangerously-bypass로만 켠다 (05).
-- 명령행 인자와 설정 파일 사이의 우선순위는 열린 것 2.
+- 해석할 수 없는 파일(JSON 문법, 해석할 수 없는 규칙, 모르는 모드 이름, permissions.default_mode의 bypass)은 시작을 거부하고 파일과 위치(줄, 열)를 stderr에 말한다. 권한 규칙이 든 파일을 건너뛰면 deny가 빠진 채 돌기 때문이다.
+- 모르는 키는 stderr에 경고 한 줄을 쓰고 넘어간다. 새 판의 설정을 옛 판이 읽을 수 있다.
 
 ## 설정 키
 
-이름이 정해진 키
-
 | 키 | 형식 | 기본값 | 정의 |
 |---|---|---|---|
-| model | 문자열 (모델 ID) | 10 열린 것 8 | 02, 10 |
-| effort | 문자열 (사고 강도 힌트) | 10 열린 것 4 | 02, 10 |
+| provider | 문자열 (providers 항목의 name) | ds-anth | 10 |
+| providers | 제공자 항목 배열. 칸은 name, format, url(전체 주소), auth, key_env, model | 내장 ds-anth, ds-oai, or-anth, or-oai | 10 "제공자 설정" |
+| model | 문자열 (모델 ID). 고른 항목의 model을 덮는다 | 고른 항목의 model. 평가의 기본 모델은 13 | 02, 10, 13 |
+| effort | 문자열 (사고 강도 힌트) | 보내지 않는다 | 02, 10 |
+| max_tokens | 정수 | 4096 | 10 |
+| profile | 문자열 (프로파일 이름) | 대화형 full, 헤드리스 readonly | 05 |
+| profiles | 객체. 프로파일 이름마다 능력 이름 배열 | 내장 full, readonly | 05 |
 | permissions.allow | 규칙 문자열 배열 | 빈 배열 | 05 |
 | permissions.ask | 규칙 문자열 배열 | 빈 배열 | 05 |
 | permissions.deny | 규칙 문자열 배열 | 빈 배열. 05 비밀의 기본 deny 규칙이 함께 걸린다 | 05 |
-| 제공자 항목의 칸 (name, format, url, auth, key_env, model) | 10 참고 | 10 참고 | 10 |
+| permissions.default_mode | 모드 이름 (plan, default, accept-edits, auto). bypass는 받지 않는다 | default | 05 |
+| limits.max_steps | 정수. 턴당 스텝 수 | 50 | 02 한도 |
+| limits.step_wall_seconds | 정수. 스텝당 벽시계 (VM 안의 시간만) | 120 | 02 한도 |
+| limits.session_tokens | 정수. 세션 토큰 예산 | 없음 | 02 한도 |
+| limits.max_budget_usd | 수. 세션 비용 상한. 넘으면 stop이 budget이다 | 없음 | 02 한도, 06 |
 
-10이 11에 맡긴 것 가운데 어느 제공자 항목을 쓸지 고르는 키와 max_tokens를 덮는 키는 이름이 정해지지 않았다 (열린 것 13). 제공자 항목의 자리(내장 표, settings.json)는 10 열린 것 4, max_tokens와 effort의 기본값도 그곳에서 함께 정한다.
+- 시작 모드를 설정에 두는 것은 plan이나 accept-edits로 늘 시작하는 사용자를 위해서다. auto는 샌드박스가 없으면 accept-edits로 내려간다 (05).
+- providers의 내장 항목과 키 읽기는 10 "제공자 설정"과 "키"에 있다.
 
-이름이 정해지지 않은 설정 (문서가 설정에 둔다고 적은 것)
+이름이 정해지지 않은 설정
 
 | 값 | 형식 | 기본값 | 정의 |
 |---|---|---|---|
-| 프로파일 정의 (이름 미정) | 프로파일 이름과 능력 집합 | 내장 full, readonly | 05 |
-| 모델별 가격표 (이름 미정) | 모델 ID마다 토큰 종류별 단가 | 정하지 않음 | 07 |
+| 모델별 가격표 | 모델 ID마다 토큰 종류별 단가 | 정하지 않음 | 07 |
 
-기본값만 정해진 값 (설정 키로 열지, 이름을 무엇으로 할지 미정. 열린 것 1)
+설정 키로 열지 않는 값 (상수)
 
-| 값 | 기본값 | 명령행 | 정의 |
-|---|---|---|---|
-| 턴당 스텝 수 | 50 | --max-steps | 02 한도 |
-| 스텝당 연료(fuel) | 정하지 않음 | | 02 한도, 05 1층 |
-| 스텝당 벽시계 (VM 안의 시간만) | 120초 | | 02 한도 |
-| 세션 토큰 예산 | 없음 (선택) | | 02 한도 |
-| 세션 비용 상한 | 없음 | --max-budget-usd (헤드리스) | 02 한도 |
-| 같은 코드의 같은 오류: 경고, 턴 끝 | 3회, 5회 | | 02 한도 |
-| 제공자 오류 재시도 | 5회 (retry-after 존중) | | 02 |
-| 컴팩션 임계치 | 컨텍스트 창의 80% | | 02 |
-| 스크립트 결과 상한 | 20,000자. 넘치면 앞 200줄, 뒤 50줄 | | 03 |
-| 능력 반환값 상한 | 1 MiB. 넘치면 앞뒤 512 KiB | | 03 |
-| VM 스택 상한 | 8 MiB | | 05 1층 |
-| VM 메모리 상한 | 256 MiB | | 05 1층 |
-| net.fetch 본문 상한 | 100,000자 | | 04 |
-| memo 값 상한 | 10,000자 | | 04 |
-| AGENTS.md 합계 상한 | 40,000자 | | 06 |
-| 시작 모드 | 05에 명시 없음 | --permission-mode | 05, 열린 것 11 |
-| 시작 프로파일 | full. 헤드리스를 설정 없이 실행하면 readonly | --profile | 05 |
+아래 값은 모델과 하네스의 계약(사양 문구, 넘침 규칙)에 묶여 있거나 사용자가 바꿀 일이 없어 상수로 둔다.
+
+| 값 | 기본값 | 정의 |
+|---|---|---|
+| 스텝당 연료(fuel) | M1 runtime 단계에서 재서 정한다 | 02 한도, 05 1층 |
+| 같은 코드의 같은 오류: 경고, 턴 끝 | 3회, 5회 | 02 한도 |
+| 제공자 오류 재시도 | 5회 (retry-after 존중) | 02 |
+| 컴팩션 임계치 | 컨텍스트 창의 80% | 02 |
+| 스크립트 결과 상한 | 20,000자. 넘치면 앞 200줄, 뒤 50줄 | 03 |
+| 능력 반환값 상한 | 1 MiB. 넘치면 앞뒤 512 KiB | 03 |
+| VM 스택 상한 | 8 MiB | 05 1층 |
+| VM 메모리 상한 | 256 MiB | 05 1층 |
+| net.fetch 본문 상한 | 100,000자 | 04 |
+| memo 값 상한 | 10,000자 | 04 |
+| AGENTS.md 합계 상한 | 40,000자 | 06 |
 
 ## 명령행
 
 대화형
 
 ~~~text
-tars-agent                          새 세션
+tars-agent [공통 인자]               새 세션
 tars-agent --continue               이 디렉터리의 마지막 세션을 잇는다
 tars-agent --resume ID              세션 ID로 잇는다
 tars-agent --dangerously-bypass     bypass 모드로 시작한다
 ~~~
 
+첫 프롬프트를 위치 인자로 받지 않는다. -p와 헷갈린다.
+
+공통 인자 (대화형과 헤드리스가 함께 받는다)
+
 | 인자 | 뜻 | 정의 |
 |---|---|---|
 | --continue | 작업 디렉터리의 마지막 세션을 잇는다. 잠금을 잡지 못하면 거부한다 | 02, 07 |
 | --resume ID | 세션 ID로 잇는다. 대화형 안에서는 /resume이 고르기를 보인다 | 02, 06 |
-| --dangerously-bypass | bypass 모드. 설정 파일로는 켤 수 없다 | 05 |
-
-헤드리스 인자(--model, --profile, --permission-mode, --allow, --max-steps)를 대화형도 받는지는 정하지 않았다 (열린 것 3).
+| --dangerously-bypass | bypass 모드. 설정 파일과 --permission-mode로는 켤 수 없다 | 05 |
+| --permission-mode M | 시작 모드. 값은 plan, default, accept-edits, auto. bypass는 받지 않는다. permissions.default_mode를 덮는다 | 05 |
+| --allow 규칙 | allow 규칙을 합친 allow 목록에 더한다. 여러 번 준다 | 05 |
+| --profile P | 프로파일. full, readonly, profiles로 정의한 이름. 프로파일은 세션 시작에만 정해지므로 대화형에서도 고르는 길이 이것이다 | 05 |
+| --provider NAME | provider 키와 같은 값 | 10 |
+| --model ID | model 키와 같은 값 | 02, 10 |
+| --max-steps N | limits.max_steps와 같은 값 | 02 |
+| --tool-mode M | codeact(기본) 또는 direct. direct는 같은 능력 표를 API 도구 여럿으로 노출하고 VM을 쓰지 않는다. 평가가 둘을 대조한다 | 01, 13, ADR 0006 |
+| --help, --version | 사용법, 판 번호를 stdout에 쓰고 0으로 끝난다 | |
 
 헤드리스
 
@@ -124,32 +143,33 @@ tars-agent --dangerously-bypass     bypass 모드로 시작한다
 tars-agent -p "프롬프트" [--output-format text|json|stream-json]
            [--permission-mode M] [--allow 규칙]... [--profile P]
            [--continue | --resume ID] [--max-steps N] [--max-budget-usd X]
-           [--model ID]
+           [--provider NAME] [--model ID] [--tool-mode codeact|direct]
+           [--dangerously-bypass]
 ~~~
+
+헤드리스만 받는 인자
 
 | 인자 | 뜻 | 정의 |
 |---|---|---|
 | -p 프롬프트 | 헤드리스로 한 번 실행한다. stdin이 파이프면 프롬프트에 덧붙인다 | 06 |
-| --output-format | text(마지막 답), json(결과 객체 하나), stream-json(코어 이벤트를 줄마다). 기본값은 정하지 않았다 (열린 것 4) | 06 |
-| --permission-mode M | 시작 모드. 값은 05의 모드 이름(plan, default, accept-edits, auto). bypass를 받는지는 05 열린 것 13 | 05 |
-| --allow 규칙 | allow 규칙을 더한다. 여러 번 준다 | 05 |
-| --profile P | 프로파일. full, readonly, 설정으로 정의한 이름 | 05 |
-| --continue, --resume ID | 대화형과 같다 | 02 |
-| --max-steps N | 턴당 스텝 수 | 02 |
-| --max-budget-usd X | 비용 상한. 넘으면 stop이 budget이다 | 02, 06 |
-| --model ID | model 키와 같은 값 | 02 |
+| --output-format | text(마지막 답, 기본값), json(결과 객체 하나), stream-json(코어 이벤트를 줄마다) | 06 |
+| --max-budget-usd X | limits.max_budget_usd와 같은 값 | 02, 06 |
 
 - 결과는 stdout, 진행과 진단은 stderr에 쓴다 (06).
-- 헤드리스에서 ask는 deny로 처리한다. 권한 판정의 헤드리스 규칙은 05 헤드리스.
-- --permission-mode가 bypass를 받는지, 헤드리스에서 --dangerously-bypass를 받는지는 05 열린 것 13.
+- 헤드리스에서 ask는 deny로 처리한다. 설정의 profile 키도 --profile도 없으면 프로파일은 readonly다. 권한 판정의 헤드리스 규칙은 05 헤드리스.
 
 하위 명령
+
+~~~text
+tars-agent stats [세션 ID] [--all] [--json]
+~~~
 
 | 명령 | 뜻 | 정의 |
 |---|---|---|
 | tars-agent stats | 세션 파일들을 읽어 능력별 호출 수, 오류율, 평균과 최대 결과 크기, 실패 종류별 스텝 비율을 낸다. 잠그지 않는다. 깨진 줄은 건너뛰고 그 수를 보인다 | 07 |
 
-stats의 인자(대상 범위, 출력 형식)는 정하지 않았다 (열린 것 8).
+- 기본 대상은 작업 디렉터리의 세션들이다(세션 디렉터리가 작업 디렉터리 해시로 나뉜다, 07). --all은 모든 디렉터리의 세션, 세션 ID를 주면 그 세션 하나다.
+- 출력은 표이고 --json은 평가 도구가 읽는 기계 형식이다.
 
 ## 슬래시 명령
 
@@ -176,63 +196,12 @@ stats의 인자(대상 범위, 출력 형식)는 정하지 않았다 (열린 것
 | 코드 | 뜻 | stop |
 |---|---|---|
 | 0 | 성공 | end_turn |
-| 1 | 실행 오류 | error, refusal |
+| 1 | 실행 오류, 시작하기 전의 실패 | error, refusal |
 | 2 | 한도 초과 | max_steps, budget, repeated_error |
 | 3 | 권한 거부로 중단 | permission_denied |
 | 130 | 사용자 인터럽트 (SIGINT, 셸 관례 128+2) | interrupted |
 
 - repeated_error는 같은 코드가 같은 오류로 5회 실패해 끝난 턴이다 (02 한도).
-- 대화형의 종료 코드와, 시작하기 전의 실패(인자 오류, 설정 해석 실패, 세션 잠금 실패, 키 없음)의 종료 코드는 정하지 않았다 (열린 것 9).
-- 헤드리스에서 permission_denied로 끝나는 조건은 05 열린 것 13.
-
-## 열린 것
-
-구조에 관한 것이라 사용자가 정한다. 각 항목에 선택지, 추천, 근거를 적는다.
-
-1. 기본값만 정해진 값 가운데 어느 것을 설정 키로 열고 이름을 무엇으로 할지.
-   - 선택지: (a) 모두 연다. (b) 사용자가 실제로 바꿀 것만 연다: 스텝 수, 벽시계, 토큰 예산, 비용 상한, 시작 모드. 나머지는 상수로 둔다. (c) 지금은 하나도 열지 않고 필요가 드러날 때 연다.
-   - 추천: (b). 이름은 한도를 한 객체(예: limits) 아래에 모으는 꼴.
-   - 근거: 결과 상한, 메모리 상한, 재시도 횟수는 모델과 하네스의 계약(사양, 넘침 규칙)에 묶여 있어 사용자가 바꾸면 사양 문구와 어긋난다. 키가 적을수록 검증과 문서가 작다. 연료는 기본값부터 M1 runtime 단계에서 재서 정한다.
-2. 명령행 인자와 설정 파일의 우선순위, --allow의 자리.
-   - 선택지: (a) 명령행이 모든 층보다 우선하고 --allow는 합친 allow 목록에 더한다. (b) --allow를 가장 높은 층으로 보고 설정의 deny를 이긴다.
-   - 추천: (a).
-   - 근거: 판정 순서가 deny 먼저라 (a)면 사용자 설정의 deny(예: **/.env)를 명령행이 풀지 못한다. 평가와 자동화에서 실수로 보호를 푸는 길이 줄어든다.
-3. 대화형이 헤드리스 인자(--model, --profile, --permission-mode, --allow, --max-steps)를 받는지, 첫 프롬프트를 위치 인자로 받는지.
-   - 선택지: (a) 공통 인자로 둘 다 받는다. (b) 헤드리스 전용으로 둔다.
-   - 추천: (a), 위치 인자는 받지 않는다.
-   - 근거: 프로파일은 세션 시작에만 정해지므로(05) 대화형에서 고를 길이 명령행뿐이다. 위치 인자 프롬프트는 -p와 헷갈린다.
-4. --output-format의 기본값, --help와 --version의 유무.
-   - 추천: 기본 text. --help, --version을 둔다.
-   - 근거: text와 json은 같은 결과에서 만들고(06), 사람이 셸에서 부를 때 text가 맞다. --help, --version은 관례라 설명할 것이 없다.
-5. <프로젝트>를 어떻게 정하는지.
-   - 선택지: (a) 작업 디렉터리. (b) 작업 디렉터리에서 위로 올라가 처음 만나는 .tars-agent/. (c) 저장소 루트.
-   - 추천: (b), 올라가는 끝은 저장소 루트.
-   - 근거: AGENTS.md는 이미 저장소 루트까지 올라가며 읽는다(06). 하위 디렉터리에서 시작해도 프로젝트 규칙이 걸려야 deny가 빠지지 않는다. 세션 디렉터리의 해시는 작업 디렉터리 기준 그대로다(07).
-6. XDG_CONFIG_HOME을 credentials와 사용자 AGENTS.md에도 적용하는지.
-   - 추천: 적용한다. 사용자 설정 디렉터리 하나($XDG_CONFIG_HOME/tars-agent, 기본 ~/.config/tars-agent)로 모은다. 보호 규칙의 자기 설정 경로(05)도 같은 디렉터리를 가리킨다.
-   - 근거: 한 디렉터리 안의 파일이 서로 다른 바탕을 따르면 보호 규칙과 기본 deny 규칙이 어긋난다. 평가는 격리된 HOME이나 XDG 변수로 돈다.
-7. 세션 임시 디렉터리의 위치.
-   - 선택지: (a) 세션 곁 디렉터리 안(<세션 ID>/tmp). (b) 세션 디렉터리 밖($TMPDIR 아래 tars-agent-<세션 ID>).
-   - 추천: (b), 세션이 끝나면 지운다.
-   - 근거: 세션 디렉터리는 보호 규칙상 쓰기가 항상 ask다(05). (a)면 샌드박스 안의 자식은 묻지 않고 그 안에 쓰게 되어 넘침 파일, 보관본, crash/ 옆을 건드릴 수 있다.
-8. tars-agent stats의 인자.
-   - 추천: 기본 대상은 작업 디렉터리의 세션들, --all로 전체, 세션 ID를 위치 인자로 받는다. 출력은 표이고 --json을 둔다.
-   - 근거: 세션 디렉터리가 작업 디렉터리 해시로 나뉘어 있다(07). 평가 도구가 읽을 수 있게 기계 형식이 필요하다.
-9. 대화형의 종료 코드와 시작 전 실패의 종료 코드.
-   - 선택지: (a) 시작 전 실패도 1. (b) 사용법 오류에 따로 2를 쓰는 관례를 따른다.
-   - 추천: (a). 대화형 /quit와 Ctrl+C 두 번은 0.
-   - 근거: 2는 이미 한도 초과다. 같은 숫자가 두 뜻을 가지면 평가와 tars 게이트 스크립트가 가르지 못한다. 시작 전 실패는 stderr의 문구로 가른다.
-10. 설정 파일의 해석 실패와 모르는 키.
-    - 추천: 해석 실패는 시작을 거부하고 파일과 위치를 말한다. 모르는 키는 경고 한 줄로 넘어간다.
-    - 근거: 권한 규칙이 든 파일을 조용히 건너뛰면 deny가 빠진 채 돈다. 모르는 키를 오류로 하면 새 판의 설정을 옛 판이 읽지 못한다.
-11. 시작 모드를 설정으로 정할지.
-    - 선택지: (a) 늘 default로 시작하고 명령행으로만 바꾼다. (b) 설정 키를 둔다. bypass는 받지 않는다.
-    - 추천: (b).
-    - 근거: plan이나 accept-edits로 늘 시작하는 사용자가 매번 Shift+Tab을 누르지 않게 한다. bypass를 막는 규칙(05)은 그대로다. auto는 샌드박스가 없으면 accept-edits로 내려간다(05).
-12. 프로젝트 설정 수락을 어디에 기억할지 (05 "처음 열 때 수락").
-    - 추천: 사용자 쪽 상태($XDG_STATE_HOME/tars-agent)에 프로젝트 경로와 수락한 내용의 해시를 둔다. 내용이 바뀌면 다시 묻는다.
-    - 근거: 저장소 안(settings.local.json)에 두면 저장소가 수락을 미리 심어 올 수 있다. 해시가 없으면 수락 뒤 규칙을 바꿔 끼울 수 있다.
-13. 제공자 항목을 고르는 키와 힌트를 덮는 키의 이름 (10이 11에 맡겼다).
-    - 선택지: (a) 평평한 키: provider(항목 name), model, effort, max_tokens. (b) 한 객체 아래: 고른 항목과 덮는 값을 모은다.
-    - 추천: (a). --model과 같은 꼴로 --provider를 둔다.
-    - 근거: model은 이미 문서에 있는 평평한 키다(02). 세 층 합치기는 값 하나짜리 키가 아래 층이 이기는 규칙이라, 평평하면 키마다 따로 덮을 수 있다. 객체 하나면 객체째 덮는지 필드별로 합치는지를 또 정해야 한다.
+- permission_denied는 ask를 deny로 바꾼 호출이 나와 그 스크립트 뒤에 턴을 끝낸 것이다 (05 헤드리스). deny 규칙과 모드의 deny는 턴을 끝내지 않는다.
+- 시작하기 전의 실패(인자 오류, 설정 해석 실패, 세션 잠금 실패, 키 없음)는 대화형과 헤드리스 모두 1이다. json을 쓰지 않고 stderr의 문구로 가른다. 사용법 오류에 2를 쓰는 관례는 따르지 않는다. 2는 이미 한도 초과라 평가와 tars 게이트 스크립트가 가르지 못한다.
+- 대화형은 /quit와 Ctrl+C 두 번으로 끝나면 0이다.

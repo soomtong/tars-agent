@@ -4,13 +4,13 @@
 
 ## 결정
 
-승인이 필요한 능력은 승인을 기다리지 않는다. 미완료 Future를 바로 돌려주고, 머리말의 Cyber 래퍼가 그 Future를 await한다. 스크립트가 미완료 Future에서 멈추면 eval이 CL_AWAIT로 돌아오고, 루프가 승인을 받고 실제 작업을 한 뒤 Future를 완료시키고 cl_vm_resume으로 이어 간다.
+승인이 필요한 능력은 승인을 기다리지 않는다. 미완료 Future를 바로 돌려주고, 호스트 모듈 소스의 Cyber 래퍼가 그 Future를 await한다. 스크립트가 미완료 Future에서 멈추면 eval이 CL_AWAIT로 돌아오고, 루프가 승인을 받고 실제 작업을 한 뒤 Future를 완료시키고 cl_vm_resume으로 이어 간다.
 
 ~~~cy
 -- 호스트 모듈. 모델에게는 보이지 않는 이름
 #[bind] fn write_async(path str, text str) -> Future[!void]
 
--- 머리말의 래퍼. 모델이 보는 API는 동기다
+-- 같은 모듈 소스의 래퍼. 모델이 보는 API는 동기다
 fn write(path str, text str) -> !void:
     return write_async(path, text).await()
 ~~~
@@ -20,6 +20,7 @@ fn write(path str, text str) -> !void:
 - 사용자가 거부하면 Future를 error.Denied로 완료하고 resume한다. 02의 denied 행(VM 유지, 오류 값으로 돌아간다)과 같다.
 - 사용자가 취소(Esc)하면 resume하지 않고 멈춘 eval을 버린다. 결과는 interrupted와 같다(지역 변수 초기화).
 - 벽시계(wall-clock) 상한은 eval이 도는 동안만 센다. 멈춘 동안 타이머는 멈춘다.
+- ui.ask의 질문도 같은 경로다. 능력이 미완료 Future를 돌려주고, 루프의 바닥에서 질문을 이벤트로 내고, 답으로 완료한 뒤 resume한다. 취소는 resume하지 않고 버린다. ADR 0031에서 정했다(03).
 
 ## 근거
 
@@ -57,6 +58,6 @@ fn write(path str, text str) -> !void:
 
 - 01의 승인 대기는 이 결정을 따른다: 능력 함수 안에서 블록하지 않는다.
 - M3의 승인 프롬프트와 인터럽트가 이 경로를 쓴다.
-- 같은 경로는 오래 막히는 다른 능력(proc 대기, net.fetch)에도 쓸 수 있다. v1에서는 승인만 옮기고, 나머지는 취소 플래그 확인으로 둔다.
+- 같은 경로는 오래 막히는 다른 능력(proc 대기, net.fetch)에도 쓸 수 있다. v1에서는 승인과 ui.ask의 질문을 옮기고(ADR 0031에서 정했다), 나머지는 취소 플래그 확인으로 둔다.
 - cyber에는 Future.wait_any와 cl_vm_pending_futures도 있다. 능력의 비동기 판(Future를 돌려주는 것)을 모델에게 보이면 스크립트가 여러 능력을 동시에 돌릴 수 있다. v1은 보이지 않는다: 안내는 동기 래퍼만 가르치고, 동시 실행은 0009의 spawn 행이 말한 "호스트 쪽 병렬 능력" 자리에서 평가 결과를 보고 판단한다.
 - 능력은 Future를 만들 때 요청 번호(1부터)를 태그로 준다. 루프는 cl_future_tag로 요청을 찾고 포인터를 보관하지 않는다. 스크립트가 버린 Future의 주소가 재사용되어 포인터 대조가 틀리는 일이 없다. 태그가 0이면 우리 Future가 아니므로 abandon한다. v1은 eval이 지금 기다리는 Future만 완료시키므로 retain을 쓰지 않는다.

@@ -13,9 +13,9 @@
 - [x] 명세 재검토와 열린 질문 결정 (ADR 0004~0009, 2026-11-10)
 - [x] cyber 기준 빌드 반영: 0.4.15. 스파이크 의존은 가장 새 빌드를 따르고(ADR 0023), s1, 안내의 코드 블록과 오류 문구를 설치된 CLI와 세션에서 확인했다. CodeAct 비교를 0.4.15로 다시 돌렸다(검토 문서 5.3). 스파이크의 호스트 로더는 허용 목록이다(ADR 0026) (2026-11-18)
 
-## M0 증명과 판정
+## M0 증명
 
-코드를 쓰기 전에 세 가지를 증명하고 한 가지를 판정한다. 산출물은 버려도 되는 스파이크와 남기는 평가 도구(eval/)다.
+코드를 쓰기 전에 세 가지를 증명한다. 산출물은 버려도 되는 스파이크와 검토 결과다. CodeAct 판정은 본체의 헤드리스와 direct 모드가 선 뒤 E 단계에서 한다 (13, ADR 0031).
 
 스파이크는 Claude가 혼자 검토, 구현하고 결정도 위임받았다 (ADR 0012의 덧붙임, 2026-11-13). 코드는 spike/에, 상세한 검토 결과는 docs/spikes/에 둔다. 사용자는 검토 결과로 아키텍처의 감을 잡고, 본체 구현은 페어로 한다.
 
@@ -24,19 +24,14 @@
 - [x] 스파이크 1에서 동시 승인 확인 (ADR 0016): scope 블록으로 요청 둘을 걸고 번호 순으로 하나씩 완료, 중첩 블록, 하나를 거부하면 나머지가 버려지고 요청 표가 비는지
 - [x] 스파이크 2, 제공자: 전송 형식 둘(Anthropic Messages, OpenAI Chat Completions)을 DeepSeek으로 확인 (ADR 0014). Zig std.http로 스트리밍 요청, SSE 해석, run 도구 한 번 왕복. TLS와 CA 묶음은 macOS에서 된다
 - [x] 스파이크 검토 결과: docs/spikes/2026-11-14-m0-spikes-review.md, 발견과 추천은 ADR 0017. 스파이크 코드(spike/)는 사용자가 검토한 뒤 지운다
-- [ ] 평가는 json 모듈을 안내에 넣은 뒤 돌린다(json은 기준 빌드에 있다). 안내에 가르칠 모듈과 크기는 사용자가 정한다
 - [~] 스파이크 3, 교차 빌드: x86_64-linux-gnu 교차 빌드는 확인. tars 게스트(QEMU)에서의 실행은 기준 빌드로 확인할 것 (tars-linux 산출물 필요)
 - [x] cyber 0.4.15로 옮기기 (2026-11-18): 두 스파이크의 의존을 태그 `0.4.15`(`93a9ca4f`)로 올렸다. s1 47개 통과(새 검사 7i: `cl_vm_symbol_hints`, 7a4: `use test`, 6n: 오류 복구), s2 빌드, x86_64 교차 빌드. 안내 두 판과 agent-guide.md의 코드 블록 34개가 CLI와 세션에서 모두 통과한다(`test`를 연 뒤, ADR 0028). 제자리 `Slice`의 문구(`xs = xs.append(3)`, `ys := xs.append(3)`, 전역 `g.append(g.len())`)를 CLI와 세션에서, `os` 옛 꼴의 문구를 CLI에서 탐침으로 확인했다(세션은 `os`를 싣지 않는다). 세션의 마지막 줄 `xs.append(4)`는 결과 없는 문장, `xs.appended(3)`은 eval 결과다. `cyber-lsp`를 stdio로 붙여 unused 경고, quick fix, inlay hint, `scope` 출구 알림, 문서 주석 hover를 확인했다. 검토 문서 3.5, 7, 8절, 9절 18
 - [x] CodeAct 비교를 0.4.15로 다시 돌림 (2026-11-18): 0.4.12와 같은 표(회차 14개, 과제 42개). 41개 통과, 실패 하나는 과제 해석, 죽은 실행 없음, 컴파일 오류 51건에서 41건. 원자료 spike/s2/out/0.4.15/, 검토 문서 5.3
 - [ ] cyber 요청: 0.4.15 회차에서 고치는 법을 말하지 않은 문구 셋(`!T`가 아닌 함수의 `!`, `.!`, `^[]T`의 제자리 메서드). docs/requests/cyber-0.4.15-messages-from-codeact-round.md. 회신을 받으면 새 빌드에서 세 스크립트를 CLI와 세션으로 확인한다
 - [ ] cyber 0.4.15 다음 빌드에서 안내 고치기: 전역의 제자리 메서드가 인자를 먼저 평가한다(cyberscript `docs/releases/unreleased.md` "0.4.14..0.4.15 코드 리뷰에서 나온 수정"). `g.append(g.len())`가 컴파일되고, 오류는 같은 전역의 빌림(`g.append(g.span())`)뿐이며 문구가 'so this argument can not read'로 바뀐다. `g += f()!`가 error일 때 전역이 비던 결함과 `g += h`(목록)가 컴파일되지 않던 회귀도 고쳐졌다. 의존을 올릴 때 prompt/cyber-subset.md · cyber-subset.en.md 105행의 '인자가 같은 전역을 읽으면 컴파일 오류' 문장을 고친다. 0.4.15에서는 지금 문장이 맞으므로 그 전에는 두지 않는다
-- [ ] 검증 뒤 `cl_vm_symbol_hints`의 쓰지 않는 함수 안 지역을 모델에게 넘길지 (검토 문서 9절 18, 세션의 최상위 지역은 거른다). 평가 때 정한다
 - [ ] Cyber 부분집합 안내 (prompt/cyber-subset*.md, 예제 10개). 기준 빌드로 다시 썼고 예제와 조언을 CLI와 세션(persist_main) 양쪽에서 확인했다 (검토 문서 8절). 남은 것: 크기가 4,000토큰 목표를 넘는다(검토 문서 8절의 수치). 목표를 바꿀지 안내를 줄일지 사용자가 정한다
-- [ ] eval/: 과제 20개와 채점기. 과제는 실제 쓰임에서 고른다 (파일 찾아 고치기, 여러 파일 집계, 명령 실행 후 출력 가공, 오류 처리, JSON 꺼내기 등). 과제마다 3회 실행
-- [ ] 평가 실행: CodeAct 대 direct(같은 능력을 JSON 도구로), 모델은 DeepSeek과 OpenRouter의 Qwen 계열 (ADR 0014, 목록은 평가 설계 때 정한다). 기록: 첫 시도 validate 통과율, 과제 성공률, 스텝 수, 토큰, 실패 유형
-- [ ] 판정 (ADR 0006): 기본 모델에서 첫 시도 validate 통과 70% 이상이고 과제 성공률이 direct보다 5%p 넘게 낮지 않으면 CodeAct를 기본으로 간다. 못 미치면 안내를 고쳐 한 번 더 재고, 그래도 못 미치면 direct를 기본으로 하고 CodeAct는 선택 모드로 둔다
 
-게이트: 평가 표와 판정을 docs/decisions에 기록하고 사용자에게 보고한다.
+게이트: 스파이크 검토 결과를 사용자에게 보고하고, 교차 빌드가 tars 게스트(QEMU)에서 실행된다.
 
 ## C cyber 쪽 작업 줄기 (ADR 0010)
 
@@ -58,15 +53,18 @@
 
 ## M1 최소 루프 (헤드리스, 읽기 전용)
 
-- [ ] 저장소 뼈대: build.zig, cyber 의존(가장 새 빌드, ADR 0023), macOS와 linux 빌드, CI
-- [ ] runtime: cy.zig 래퍼, 로더, 상한, 결과 조립
+- [ ] 저장소 뼈대: build.zig, cyber 의존(가장 새 빌드, ADR 0023), macOS와 linux 빌드, CI. 모듈 경계 검사 스크립트(libcyber는 runtime/cy.zig 밖으로 새지 않고 caps/는 정문만, ADR 0030의 8 B4). CI에 실행 파일 크기와 시작 시간 예산(B6)
+- [ ] runtime: cy.zig 래퍼, 로더, 상한, 결과 조립. 첫 검사: 구조체(`Future[!ExecResult]`, `!Stat`)와 `Future[![]str]`의 완료, 호스트 모듈 소스의 오버로드와 옵션 구조체(03). 안 되면 cyber에 요청한다 (ADR 0010, 0019)
 - [ ] caps: 능력 표와 생성기 (Cyber 선언, 바인딩, 프롬프트 사양, JSON Schema), fs.read, fs.list, fs.glob, fs.stat, help. 표를 편집할 때 행마다 reads_only, irreversible 술어를 둘지 정한다 (ADR 0030의 7)
-- [ ] provider: 스트림을 끊을 때 Zig 0.17.1의 HTTP 정리 멈춤을 피한다(deps.md). Messages API 스트리밍, 적응형 사고, effort, 캐시 지점, stop_reason 분기(end_turn, tool_use, max_tokens, refusal, pause_turn), 재시도. refusal의 서버 쪽 fallbacks 옵션 적용 여부 결정
+- [ ] provider: 스트림을 끊을 때 Zig 0.17.1의 HTTP 정리 멈춤을 피한다(deps.md). Messages API와 OpenAI Chat Completions 어댑터(개발 기본 제공자 DeepSeek, ADR 0014, 0015), 스트리밍, 적응형 사고, effort, 캐시 지점, stop_reason 분기(end_turn, tool_use, max_tokens, refusal, pause_turn), 재시도. refusal의 서버 쪽 fallbacks 옵션 적용 여부 결정
 - [ ] prompt: 조립기, rules.md
 - [ ] loop: validate, eval, 실패 분류, 한도. 벽시계는 VM 안의 시간만 잰다(바인딩 층이 능력 호출 동안 타이머를 멈춘다). 실패 결과에 능력 호출 목록 (ADR 0021)
 - [ ] session: JSONL 쓰기 (07의 형식). 줄 머리와 crc, write 한 번에 줄 하나, 턴을 닫는 줄 뒤 fsync, 임시 이름 뒤 rename, 찢긴 꼬리 자르기, flock 잠금 (ADR 0030)
-- [ ] headless: -p, text, json(06의 객체, ADR 0030), stream-json 출력
+- [ ] headless: -p, text, json(06의 객체, ADR 0030), stream-json 출력. 터미널에 그리기 전 terminalSafe (ADR 0030의 8 B3)
 - [ ] 테스트: 모의 provider와 시나리오 재생, 능력 단위 테스트(누수 검사 allocator), 샌드박스 탈출 시도(raw 포인터, use c, 무한 루프, 폭주 재귀, 메모리 폭주)가 모두 결과로 끝나는지
+- [ ] 테스트: 이름 붙인 시나리오(잘린 응답, run 둘, 실패 결과의 능력 목록, reset 알림, 같은 오류 5회, 429 재시도), 두 형식의 녹화된 SSE 재생과 스트림 중단
+- [ ] 테스트: 세션 손상(찢긴 꼬리, crc 불일치, 잠금 경합, 더 새 v), 프롬프트 조립 결과의 골든 테스트
+- [ ] 테스트: 안내 예제 빌드 검사(예제를 링크된 libcyber로 실행해 깨지면 빌드 실패, 06), 디코더 fuzz(SSE, provider JSON, 세션 JSONL, ADR 0030의 8 B5)
 
 게이트: tars-agent -p "이 저장소의 빌드 방법을 설명해" 가 파일을 읽고 답한다. 탈출 시도 테스트가 모두 통과한다.
 
@@ -77,10 +75,24 @@
 - [ ] 결과 상한과 넘침 파일: 스크립트 결과 20,000자, 능력 반환 1 MiB (ADR 0021)
 - [ ] permission: 프로파일, 모드 다섯, 규칙 맞춤(경로 glob, 인자 앞부분, 도메인), 설정 파일 세 층, 보호 규칙
 - [ ] 비밀: 자격 파일 권한 검사, 자식 환경에서 지우기, 기록 가리기
-- [ ] 헤드리스 권한 옵션 (--permission-mode, --allow, --profile), json 출력, 종료 코드
-- [ ] 테스트: 규칙 맞춤 표, 경로 정규화와 심볼릭 링크, 보호 규칙, 헤드리스 종단
+- [ ] 헤드리스 권한 옵션 (--permission-mode, --allow, --profile), json 출력, 종료 코드. 한도 --max-budget-usd와 세션 토큰 예산 (02)
+- [ ] 테스트: 규칙 맞춤 표, 경로 정규화와 심볼릭 링크, 보호 규칙, 모드 표(모드와 등급마다 판정), 비밀(자격 파일 권한, 자식 환경, 기록 가림), 헤드리스 종단(한도 포함)
+- [ ] 루프 상태 기계의 TLA+ 모델을 둘지 판단 (ADR 0030의 8 B7)
 
 게이트: 헤드리스가 규칙 파일 아래에서 파일을 고치고 테스트 명령을 돌린다. 규칙 밖의 쓰기는 거부로 기록된다.
+
+## E 평가와 판정 (M2 뒤, 13)
+
+평가는 본체의 헤드리스 위에서 바깥 OS 샌드박스와 bypass 모드로 돈다 (13, ADR 0031).
+
+- [ ] direct 모드: 같은 능력 표를 API 도구 여럿으로 (ADR 0006 결정 2). json에는 도구 호출 하나를 능력 호출 하나짜리 run으로 적는다 (06)
+- [ ] 평가는 json 모듈을 안내에 넣은 뒤 돌린다(json은 기준 빌드에 있다). 안내에 가르칠 모듈과 크기는 사용자가 정한다
+- [ ] eval/: 과제 20개와 채점기. 과제마다 디렉터리(prompt, fixture, check), 파이썬 표준 라이브러리. 첫 과제 둘을 만든 뒤 사용자에게 보인다. 과제마다 3회
+- [ ] 평가 실행: CodeAct 대 direct, 판정 모델 DeepSeek-V4.1-Flash와 OpenRouter의 Qwen 둘(시작하는 날 날짜가 붙은 ID로 고정). 기록은 13
+- [ ] 검증 뒤 `cl_vm_symbol_hints`의 쓰지 않는 함수 안 지역을 모델에게 넘길지, 오류 모아 받기를 켤지 (검토 문서 9절 13, 18, 세션의 최상위 지역은 거른다)
+- [ ] 판정 (ADR 0006, 13): 첫 시도 validate 통과 70% 이상이고 과제 성공률이 direct보다 5%p 넘게 낮지 않으면 CodeAct를 기본으로 간다. 못 미치면 안내를 고쳐 한 번 더 재고, 그래도 못 미치면 direct를 기본으로 하고 CodeAct는 선택 모드로 둔다. 모델 사이의 차이가 판정을 가르면 모델마다 판정한다
+
+게이트: 평가 표와 판정을 docs/decisions에 기록하고 사용자에게 보고한다.
 
 ## M3 대화형
 
@@ -88,13 +100,14 @@
 - [ ] 스트리밍 표시, 코드 접기와 펼치기, 상태 줄
 - [ ] 승인 프롬프트 (숫자 키, diff 표시, 승인 기억을 settings.local.json에). CL_AWAIT 경로로 루프 바닥에서 묻는다 (ADR 0011)
 - [ ] 인터럽트 (Esc, Ctrl-C), 취소 플래그를 능력에 연결
-- [ ] 실행 중 입력(steering): 코어의 큐, 스텝마다 하나씩, 턴 끝에 남은 입력은 다음 턴, 인터럽트 때 입력 줄로 돌려주기. 코어-프런트엔드 이벤트와 명령 타입은 사용자가 편집한다 (ADR 0021). 편집할 때 도구 카드의 수명과 결과 종류, 열린 카드 닫기, 승인 요청의 출처를 함께 정한다 (ADR 0030의 6)
+- [ ] 실행 중 입력(steering): 코어의 큐, 스텝마다 하나씩, 턴 끝에 남은 입력은 다음 턴, 인터럽트 때 입력 줄로 돌려주기. 코어-프런트엔드 이벤트와 명령 타입은 사용자가 편집한다 (ADR 0021). 편집할 때 도구 카드의 수명과 결과 종류, 열린 카드 닫기, 승인 요청의 출처, 승인 요청과 나란한 ui.ask 질문 요청을 함께 정한다 (ADR 0030의 6, 03)
 - [ ] 모드 전환 (Shift+Tab, /mode)과 system 메시지
 - [ ] AGENTS.md 읽기, 프로젝트 설정 수락 절차
 - [ ] 슬래시 명령: /help /clear /mode /model /cost /permissions /quit
-- [ ] ui.ask, ui.todo, memo
+- [ ] ! 셸 접두 (06): 사용자 권한 실행, 결과 상한, user 줄 기록
+- [ ] ui.ask(승인과 같은 CL_AWAIT 경로, 03), ui.todo, memo
 - [ ] os 대신 능력으로: fs.mkdir, fs.remove, fs.copy, fs.move, env.get 후보를 평가를 보고 정한다 (04, ADR 0026)
-- [ ] net.fetch와 외부 입력 표시
+- [ ] net.fetch와 외부 입력 표시. 테스트: 표시가 선 뒤의 권한 판정
 
 게이트: macOS 터미널과 tars 패널(QEMU)에서 대화로 파일을 고친다. 승인, 거부, 인터럽트가 한글 입력 상태에서도 동작한다.
 
@@ -104,9 +117,10 @@
 - [ ] 컴팩션: 자동 임계치와 /compact, 요약 요청 형식과 요약의 틀, 파일 목록 누적, 두 번째부터 요약 고치기 (02)
 - [ ] 확인: 컴팩션에서 최근 구간을 원문으로 남길 때, 앞부분이 바뀐 대화에 남긴 사고 블록을 제공자가 받는지. 결과로 남길지 정한다 (ADR 0021 열어 둔 것)
 - [ ] 캐시 점검: cache_read가 0으로 이어지면 경고
-- [ ] 비용 계산과 tars-agent stats
+- [ ] 비용 계산과 tars-agent stats. 확인: 녹화한 세션으로 토큰과 비용, stats의 능력별 호출 수, 오류율, 결과 크기, 실패 종류별 비율을 맞춘다
 - [ ] 지연 사양 (예산을 넘는 능력은 한 줄 요약과 help)
 - [ ] 죽은 세션: crash/ 보관, 재개 때 crashed 결과 채우기, 재개 안내 (02)
+- [ ] 프로세스가 죽는 비율 재기(평가 회차와 crash/ 수), 그 값으로 실행을 별도 프로세스로 뗄지 판단 (01, ADR 0017 추천 10)
 
 게이트: 컨텍스트 창을 넘기는 작업 하나를 컴팩션을 거쳐 끝낸다. 중간에 프로세스를 죽이고 이어서 끝낸다.
 
@@ -117,6 +131,7 @@
 - [ ] 커널 설정 CONFIG_SECURITY_LANDLOCK 확인과 추가 요청
 - [ ] sandbox/landlock.zig: 쓰기 범위, TCP 제한, ABI 버전 확인, 없을 때의 내려가기
 - [ ] auto 모드 (샌드박스가 있을 때만)
+- [ ] 테스트: 범위 밖 쓰기와 TCP 연결이 막히는지, Landlock이 없을 때 알리고 샌드박스 없이 도는지, 샌드박스가 실패를 낸 명령을 밖에서 다시 돌릴 때 승인을 묻는지
 - [ ] tars 게이트 체인 make check CHAIN=agent: QEMU에서 헤드리스 stream-json으로 요청, 스크립트, 승인, 파일 생성을 로그로 판정하고 대화형은 픽셀로 본다
 - [ ] 사용자 문서: 설치, 키 설정, 권한 규칙, 모드
 - [ ] tars.conf에 둘 키가 있는지 판단 (없으면 두지 않는다. 에이전트 설정은 settings.json에 있다)
@@ -132,7 +147,7 @@
 - [ ] agentd와 tars 터미널 제어 채널, tars.* 능력: 자기 조작(명령 실행, 콘솔 입력). tars-linux 쪽 설계와 개선도 이 프로젝트의 일이다 (ADR 0013). 앞당길 자리는 능력 표 설계 때 정한다. agentd의 클라이언트 프로토콜은 AHP를 먼저 검토한다 (ADR 0029)
 - [ ] MCP 서버 방향, MCP HTTP 전송
 - [ ] ACP 어댑터: 헤드리스 프런트엔드 하나로 얹는다 (ADR 0029)
-- [ ] 다른 제공자 어댑터
+- [ ] 두 전송 형식(Messages, Chat Completions) 밖의 제공자 어댑터
 - [ ] 안내를 cyber의 docs/agent-guide.md와 호스트 덧붙임으로 만든다 (ADR 0022). 기준 빌드의 패키지에 이 파일이 있다. 언제, 어떤 모양으로 모을지는 ADR 0022의 "열린 것"이고 사용자가 정한다
 - [ ] fiber 안 Future.await의 양보(cyber에 있다): agentd에서 한 스레드에 여러 세션을 돌릴 때 쓸지 판단
 

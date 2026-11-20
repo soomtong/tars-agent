@@ -33,6 +33,8 @@
 - [0029 외부 프로토콜의 범위](docs/decisions/0029-protocol-scope.md) — MCP 클라이언트는 M6, MCP 서버 방향은 후속, ACP는 이벤트 타입의 대조 기준이고 어댑터는 M6 뒤, AHP는 agentd 설계 때 먼저 검토, A2A는 범위 밖
 - [0030 fx에서 가져온 것](docs/decisions/0030-borrow-from-fx.md) — 세션 줄 머리(v, seq, ts, type, crc), 턴을 닫는 줄 뒤 fsync, 찢긴 꼬리 자르기, flock 잠금, 헤드리스 json 결과, Zig 0.17.1 지뢰(deps.md). 이벤트 타입의 도구 수명과 능력 표의 두 술어는 편집할 때 정함
 
+- [0031 스펙 검토의 열린 것](docs/decisions/0031-spec-review-open-items.md) — 메시지 모델과 하네스 알림, 제공자 항목, 권한 판정 순서와 규칙 문법, 읽기 범위, 설정 키와 명령행, 능력의 생략 인자, ui.ask 경로, 평가 모델과 단계 E. 사용자가 추천안을 받음
+
 ## 결정이 아닌 참고
 
 - [초기 요구사항 대조](docs/spec/09-legacy-requirements.md) — 이력, 재검토에서 바꾼 것과 닫은 질문

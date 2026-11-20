@@ -4,7 +4,7 @@
 
 ## 결정
 
-표준 모듈 `json`, `toon`, `regex`, `peg`를 스크립트에 연다. `time`(ADR 0024)과 함께 다섯 모듈이 열린다. 호스트 로더가 막는 것은 `c`(FFI와 raw 메모리)와 `test`다(2026-11-18 덧붙임: `test`는 ADR 0028로 열었다).
+표준 모듈 `json`, `toon`, `regex`, `peg`를 스크립트에 연다. `time`(ADR 0024)과 함께 다섯 모듈이 열린다. 호스트 로더는 허용 목록이다(ADR 0026): core, meta, c, math, json, toon, regex, peg, time, path(ADR 0027), test(ADR 0028)와 호스트 능력 모듈. 기본 로더가 아는 것 가운데 싣지 않는 것은 `io`, `cy`다.
 
 ## 근거
 
@@ -14,6 +14,6 @@
 
 ## 적용
 
-- spike/s1, s2의 호스트 로더에서 막는 목록을 지웠다. 세션에서 다섯 모듈이 실린다.
+- spike/s1, s2의 호스트 로더가 다섯 모듈을 싣는다(허용 목록, ADR 0026).
 - 연다는 것과 가르친다는 것은 다르다. 모듈의 쓰는 법은 cyber의 agent-guide.md(ADR 0022)와 API 문서가 정본이다. tars-agent 안내에 예제를 넣을지와 크기는 안내를 모을 때(ADR 0022 "열린 것", 8절의 크기 결정) 정한다.
-- 본체의 로더는 허용 목록으로 쓴다(core, math, json, toon, regex, peg, time, 그리고 우리 능력 모듈). 기본 로더가 주는 그 밖의 모듈(`io`, `os` 등)은 따로 정한다.
+- 본체의 로더는 허용 목록으로 쓴다(core, meta, c, math, json, toon, regex, peg, time, path, test, 그리고 우리 능력 모듈. ADR 0026, 0027, 0028). meta와 c는 다른 모듈의 의존이다. 기본 로더가 주는 그 밖의 모듈(`io`, `cy`)은 싣지 않고, `os`, `libc`, `cli`는 라이브러리의 기본 로더에 없다(08).

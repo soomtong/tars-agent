@@ -22,11 +22,13 @@
 ## 바뀌는 것
 
 - 명세 01의 provider: 어댑터가 둘이다 (provider/anthropic.zig, provider/openai.zig).
-- TODO M0 평가의 모델: Claude 셋에서 DeepSeek과 OpenRouter의 Qwen으로 바꾼다. 정확한 목록과 CodeAct 판정의 "기본 모델"은 평가를 설계할 때 정한다.
+- TODO M0 평가의 모델: Claude 셋에서 DeepSeek과 OpenRouter의 Qwen으로 바꾼다. 정확한 목록과 CodeAct 판정의 "기본 모델"은 spec/13에 있다.
 - 스파이크 2는 두 형식을 모두 본다.
 
-## 열린 질문 (방향은 ADR 0015가 정했다. 세부는 페어의 메시지 모델 단계에서 정한다)
+## 두 형식의 메시지와 사고
 
-- 명세 02는 assistant 응답을 받은 그대로 보관하고 되돌려 보낸다. 형식이 둘이면 "받은 그대로"가 형식마다 다르다. 내부 형식 하나로 정규화할지, 형식별 원문을 함께 둘지, 세션 중간에 제공자를 바꿀 수 있게 할지.
-- 사고(thinking, reasoning) 블록을 두 형식에서 어떻게 보관하고 되돌릴지. DeepSeek과 Qwen은 reasoning_content 필드를 쓴다.
-- Anthropic 전용 기능(적응형 사고, effort, 캐시 지점)의 자리: 공통 설정으로 올릴 것과 어댑터 안에 둘 것
+방향은 ADR 0015가, 세부는 ADR 0031에서 정했다. 상세는 spec/10.
+
+- 응답은 자체 메시지 모델(블록 넷) 하나로 정규화한다. 형식별 원문은 thinking 블록의 원문 칸에만 출처 형식과 함께 둔다. 세션 중간에 형식을 바꿀 수 있고, 그때 다른 형식의 사고는 빠진다.
+- 사고는 같은 형식으로 보낼 때 늘 되돌린다. Anthropic 형식은 signature와 함께, OpenAI 형식은 `reasoning_content` 필드로 되돌린다. OpenRouter의 `reasoning_details`는 되돌리지 않는다.
+- Anthropic 전용 기능(적응형 사고, effort, 캐시 지점)은 어댑터 안의 힌트 옵션이다. 공통 설정으로 올린 것은 max_tokens와 effort이고, 기본값은 max_tokens 4096, effort는 보내지 않는다.

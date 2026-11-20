@@ -4,7 +4,7 @@
 
 ## v1 목록
 
-표의 시그니처는 모델이 보는 시그니처다. `= 값`은 생략할 수 있는 인자와 그 값을 뜻하는 표기다. Cyber에는 기본값 매개변수가 없어 이 표기를 그대로 선언할 수 없고, 어떤 선언(인자 수가 다른 래퍼, 옵션 구조체 등)으로 만들지는 03 "모델이 보는 시그니처와 바인딩"의 열린 것이다. 반환의 `!T`도 모델이 보는 것이고 바인딩은 `Future[!T]`를 돌려준다(03). 구조체 반환(`!Stat`, `!ExecResult`, `!HttpResult`)의 Future 완료는 확인하지 않았다.
+표의 시그니처는 모델이 보는 시그니처다. `= 값`은 생략할 수 있는 인자와 그 값을 뜻하는 표기다. Cyber에는 기본값 매개변수가 없으므로, 생략할 인자가 하나면 인자 수가 다른 래퍼 둘로, 둘 이상(fs.read, fs.search, net.fetch)이면 필수 인자만 받는 꼴과 옵션 구조체를 받는 꼴로 선언한다(03 "모델이 보는 시그니처와 바인딩"). 반환의 `!T`도 모델이 보는 것이고 바인딩은 `Future[!T]`를 돌려준다(03). 구조체 반환(`!Stat`, `!ExecResult`, `!HttpResult`)과 `![]str`의 Future 완료는 runtime 단계의 첫 검사로 확인한다(03, TODO M1).
 
 | 능력 | 등급 | 요약 |
 |---|---|---|
@@ -15,9 +15,9 @@
 | fs.search(pattern, path = '.', glob = '', max = 200) -> !str | read | 내용 검색. path:line: text |
 | fs.edit(path, old, new, replace_all = false) -> !str | write | 문자열 정확 치환 |
 | fs.write(path, content) -> !str | write | 신규 생성 또는 전체 교체 |
-| proc.exec(argv, timeout_ms = 120000) -> !ExecResult | exec | 셸 없이 실행. stdout, stderr, code |
-| proc.sh(cmd, timeout_ms = 120000) -> !ExecResult | exec | /bin/sh -c. 파이프와 리다이렉션이 필요할 때만 |
-| proc.start(argv) -> !int | exec | 백그라운드 작업 ID |
+| proc.exec(argv, timeout_ms = 120000, sandbox = true) -> !ExecResult | exec | 셸 없이 실행. stdout, stderr, code. sandbox = false는 늘 ask (05) |
+| proc.sh(cmd, timeout_ms = 120000, sandbox = true) -> !ExecResult | exec | /bin/sh -c. 파이프와 리다이렉션이 필요할 때만 |
+| proc.start(argv, sandbox = true) -> !int | exec | 백그라운드 작업 ID |
 | proc.output(id) -> !str | read | 새 출력과 상태 |
 | proc.kill(id) -> !str | exec | 하네스가 시작한 작업만 |
 | net.fetch(url, method = 'GET', body = '') -> !HttpResult | net | 상태, 본문(상한) |
@@ -74,7 +74,7 @@ net.fetch
 - 이 능력이 한 번이라도 불리면 세션에 외부 입력 표시가 선다 (05 프롬프트 인젝션).
 
 ui.ask
-- 승인과 별개의 질문 채널이다. 선택지 2~4개와 직접 입력. 헤드리스에서는 오류 값을 돌려준다.
+- 승인과 별개의 질문 채널이다. 선택지 2~4개와 직접 입력. 대기는 승인과 같은 CL_AWAIT 경로이고 루프의 바닥에서 묻는다(03, ADR 0011). 헤드리스에서는 오류 값을 돌려준다.
 
 ui.todo
 - 목록 전체를 받는다. 항목은 내용과 상태(pending, doing, done). 프런트엔드가 그리고, 컴팩션 요약과 재개에 실린다.
@@ -89,12 +89,14 @@ memo
 
 | 모듈 | 내용 | 상태 |
 |---|---|---|
-| core, math | 문자열, Array, Map, 수학 | 있음 |
-| json | parse, stringify, 값 트리 타입과 접근 함수 | 있음 (0.4.13). 허용 (ADR 0025) |
-| toon | encode, decode, JSON과 변환. 값 트리는 json의 것 | 있음 (0.4.13). 허용 (ADR 0025) |
-| regex | 컴파일, 찾기, 모두 찾기, 치환, 나누기. 역추적 없는 엔진 | 있음 (0.4.13). 허용 (ADR 0025) |
-| peg | 파싱 표현 문법(PEG)의 컴파일과 매치 | 있음 (0.4.13). 허용 (ADR 0025) |
-| time | 시계(`now`, `monotonic`), 유닉스 시각과 달력 날짜 변환, IANA 시간대, ISO 8601 형식과 해석, 기간 계산 | 있음 (0.4.13). 허용 (ADR 0024) |
+| core, math | 문자열, Array, Map, 수학 | 있음. 허용 (ADR 0026) |
+| json | parse, stringify, 값 트리 타입과 접근 함수 | 있음. 허용 (ADR 0025) |
+| toon | encode, decode, JSON과 변환. 값 트리는 json의 것 | 있음. 허용 (ADR 0025) |
+| regex | 컴파일, 찾기, 모두 찾기, 치환, 나누기. 역추적 없는 엔진 | 있음. 허용 (ADR 0025) |
+| peg | 파싱 표현 문법(PEG)의 컴파일과 매치 | 있음. 허용 (ADR 0025) |
+| time | 시계(`now`, `monotonic`), 유닉스 시각과 달력 날짜 변환, IANA 시간대, ISO 8601 형식과 해석, 기간 계산 | 있음. 허용 (ADR 0024) |
+| path | join, base, dir, ext, stem, normalize, is_absolute. 경로 문자열만 다루고 파일 시스템을 보지 않는다 | 있음. 허용 (ADR 0027) |
+| test | assert, eq, eq_type, eq_slice, eq_span, eq_near, fail. 실패한 검사는 panic이다 | 있음. 허용 (ADR 0028) |
 
 - 시그니처는 cyber 쪽 설계에서 정한다. 기준은 모델이 다른 언어에서 익힌 모양에 가깝게 하는 것이다.
 - 시계 읽기는 능력이 아니다. `time`이 시계와 zoneinfo를 직접 읽는다. 시각 읽기는 세션 기록에 남지 않는다 (ADR 0024).
