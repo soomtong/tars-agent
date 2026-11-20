@@ -1,13 +1,13 @@
 # 초기 요구사항(legacy) 대조
 
-이 문서는 이력이다. 현재 설계의 정본은 00~08 문서와 docs/decisions이고, 아래 "그대로 채택" 가운데 2026-11-10 재검토에서 바뀐 항목은 맨 아래 "재검토에서 바꾼 것" 절에 있다.
+이 문서는 이력이다. 현재 설계의 정본은 이 문서를 뺀 docs/spec의 문서와 docs/decisions이고, 아래 "그대로 채택" 가운데 2026-11-10 재검토에서 바뀐 항목은 맨 아래 "재검토에서 바꾼 것" 절에 있다.
 
 초기 요구사항 지시서(tars-linux 내장 에이전트 시스템)를 현재 명세와 대조한 결과다. 지시서는 Cyber 0.3과 Zig 0.12~0.13 세대를 가정해 쓰였다. soomtong/cyber의 검토 문서(project_tars_agent_runtime_review.md, 2026-11-01)가 이미 차이를 확인했고, 여기서는 이 저장소의 결정으로 정리한다.
 
 ## 그대로 채택
 
 - 형태: CodeAct + 능력(capability) 기반 런타임. 스크립트는 능력 함수로만 세계에 닿는다.
-- 구현은 Zig 0.17 (minimum_zig_version = 0.17.0), glibc 동적 링크, musl 정적 링크 금지, GPL 계열 의존 금지, BSD 호환 라이선스만.
+- 구현은 Zig 0.17.1 (cyber의 minimum_zig_version, ADR 0002), glibc 동적 링크, musl 정적 링크 금지, GPL 계열 의존 금지, BSD 호환 라이선스만.
 - agentd: Zig 데몬. session manager, model client, runtime pool, capability broker, mcp client, mcp server. 호스트 방식은 A(Zig + libcyber)로 확정한다.
 - 능력 등록 형식: 이름 + 타입 시그니처 + 설명 + 위험 등급. 등급은 최소 read, write, exec, net, ui.
 - 세션별 능력 집합: 허용되지 않은 능력은 거부가 아니라 이름 자체가 주입되지 않는다.
@@ -30,12 +30,12 @@
 - 취소: "파이버를 버린다" 대신 cl_vm_interrupt + 연료(fuel) 상한 + 호스트 함수 자체의 취소 확인. 호스트 함수 안에서 막힌 호출은 함수가 직접 풀어야 한다.
 - 언어 버전: 기준 빌드는 08 문서에 있다 (정적 타입 + 소유권, 점진적 타입 아님, 보간은 %{}). 시스템 프롬프트에는 복사 가능한 타입(int, str, []T)만 쓰는 부분집합을 가르친다.
 - Zig 업그레이드: 이미 끝났다 (fork가 0.17 사용). 첫 작업은 업그레이드가 아니라 호스트 경계 증명(방식 A)이다.
-- JIT: 코드까지 제거됐다. FFI는 -Dffi=false 빌드 옵션이 있고 라이브러리는 기본 꺼짐이다. 임의 모듈 로딩은 고정 표 일곱 모듈(core, meta, math, cy, c, io, test)이 막는다.
-- 남은 구멍: c 모듈(raw 포인터)과 use c 없이 쓰는 as[Ptr[int]] 캐스트. 로더에서 c를 거르고 deny_raw_ptrs 를 켠다.
-- 표준 라이브러리: JSON, 정규식, 날짜 계산이 없다. 순수 라이브러리로 새로 쓰거나(Cyber 쪽) 호스트가 제공한다. 시계 읽기는 능력.
-- 런타임 이름과 포크: 별도 이름의 두 번째 포크를 만들지 않는다. 런타임은 soomtong/cyber 한 곳에서 유지하고, 에이전트 프로파일은 빌드 옵션과 로더 구성으로 나눈다 (cyber 검토 권고). 제품명과 라이브러리명을 따로 두는 안은 열린 질문.
-- 링크 방식: 지시서는 Zig->Zig 소스 링크를 요구한다. 현재 공개 API는 export fn cl_* (C ABI) 모양이다. Zig 모듈 import는 가능하나 표면이 C 스타일이다. Zig 전용 표면을 만들지는 열린 질문.
-- 메모리 목표(유휴 5 MB 이하): VM당 약 2 MB로 충족, 첫 VM만 약 7 MB.
+- JIT: 코드까지 제거됐다. FFI는 -Dffi=false 빌드 옵션이 있고 라이브러리는 기본 꺼짐이다. 임의 모듈 로딩은 없다. 기본 로더는 고정 표의 표준 모듈 열셋만 알고(08), 호스트 로더가 그중 허용 목록만 싣는다(05 1층).
+- 남은 구멍: c 모듈(raw 포인터)과 use c 없이 쓰는 as[Ptr[int]] 캐스트. c는 math가 쓰므로 로더에서 거르지 않고, deny_raw_ptrs와 -Dffi=false로 무력하게 둔다 (05 1층, 08 없는 것).
+- 표준 라이브러리: 지시서는 JSON, 정규식, 날짜 계산이 없다고 봤다. cyber 표준 모듈 json, regex, time으로 만들었고 기준 빌드에 있다. 시계 읽기도 time 모듈이 하고 능력이 아니다 (ADR 0010, 0024, 0025).
+- 런타임 이름과 포크: 별도 이름의 두 번째 포크를 만들지 않는다. 런타임은 soomtong/cyber 한 곳에서 유지하고, 에이전트 프로파일은 빌드 옵션과 로더 구성으로 나눈다 (cyber 검토 권고). 제품명과 라이브러리명은 아래 "닫은 질문"에 있다.
+- 링크 방식: 지시서는 Zig->Zig 소스 링크를 요구한다. 현재 공개 API는 export fn cl_* (C ABI) 모양이다. Zig 모듈 import는 가능하나 표면이 C 스타일이다. C ABI를 runtime/cy.zig 한 파일로 감싸고 Zig 전용 표면은 만들지 않는다 (아래 "닫은 질문", 01 경계 규칙).
+- 메모리 목표(유휴 5 MB 이하): 하네스 전체는 재지 않았다. VM 하나가 쥔 메모리는 약 2.6 MiB다 (08, 스파이크 1). 하네스 프로세스 전체는 01 열린 것 4와 12 R-NF-MEM-01에서 다룬다.
 - 호스트 방식 B(순수 Cyber CLI)는 제품 후보에서 내리고, 루프와 프롬프트 형태를 빨리 보는 일회성 스파이크로만 쓴다.
 
 ## 재검토에서 바꾼 것 (2026-11-10)
@@ -45,16 +45,16 @@
 | 지시서 | 지금 | 근거 |
 |---|---|---|
 | agentd 데몬 (session manager, runtime pool, mcp client, mcp server) | v1은 세션당 프로세스 하나. 데몬은 후속 | ADR 0004 |
-| 능력 이름 fs.*, proc.exec, net.http, tars.*, ui.ask, mcp.call | fs.*, proc.exec와 proc.sh, net.fetch, ui.ask, ui.todo, memo.*, json.*, time.*. tars.*와 mcp.*는 후속 | 04 문서, ADR 0007 |
+| 능력 이름 fs.*, proc.exec, net.http, tars.*, ui.ask, mcp.call | fs.*, proc.*, net.fetch, ui.ask, ui.todo, memo.*, help. JSON과 시각은 능력이 아니라 cyber 표준 모듈이다. tars.*와 mcp.*는 후속 | 04 문서, ADR 0007, 0010, 0024 |
 | 허용되지 않은 능력은 주입되지 않는다 | 프로파일에는 그대로 적용. 세션 중 모드는 게이트로 판정 | ADR 0007 |
 | 승인 UI는 tars 패널 안 | 패널 하나에서 도는 줄 단위 REPL의 인라인 프롬프트. 패널 API가 필요 없다 | 06 문서 |
 | tars.* 능력은 모의 구현으로 시작 | 모의는 만들지 않는다. 제어 채널 설계 뒤로 미룬다 | ADR 0009 |
-| MCP 양방향 | 후속 (M6). 능력 표가 JSON Schema를 내므로 구조는 준비돼 있다 | ADR 0006 |
+| MCP 양방향 | 클라이언트는 M6, 서버 방향은 그 뒤. 능력 표가 JSON Schema를 내므로 구조는 준비돼 있다 | ADR 0006, 0029 |
 | 감사 로그와 세션 히스토리 | JSONL 파일 하나로 합친다 | ADR 0008 |
-| 에이전트용 언어 문서를 런타임 CLI가 생성 (new, spec --for-agents) | 원본은 이 저장소의 prompt/cyber-subset.md. 4,000 토큰, 예제 10개, 예제 테스트는 유지 | ADR 0009 |
+| 에이전트용 언어 문서를 런타임 CLI가 생성 (new, spec --for-agents) | 정본은 cyber 패키지의 docs/agent-guide.md(`cyber doc --for-agents`와 같다)이고 tars-agent는 호스트 덧붙임을 붙인다. 모으기 전까지 prompt/cyber-subset*.md를 쓴다. 예제 10개와 예제 테스트는 유지한다. 4,000 토큰 목표는 사용자가 정할 것으로 남아 있다(06, 12) | ADR 0009, 0022 |
 | 설정은 tars.conf | 에이전트 설정은 settings.json 세 층. tars.conf에는 필요가 생길 때만 키를 둔다 | ADR 0007 |
 | 산출 문서 design.md, fork-plan.md, deps.md | deps.md만 둔다 | ADR 0009 |
-| JSON, 정규식, 날짜를 새로 쓴다 | 그대로 채택. cyber 표준 모듈로 만든다. 시계 읽기만 능력 | ADR 0010 |
+| JSON, 정규식, 날짜를 새로 쓴다 | cyber 표준 모듈(json, regex, time)로 만들었고 기준 빌드에 있다. 시계 읽기도 time 모듈이다 | ADR 0010, 0024, 0025 |
 
 지시서가 없다고 본 것 가운데 지금 cyber에 있는 것: 비-main 스레드의 await(프로세스를 죽이지 않는다), 메모리 상한(cl_vm_set_memory_limit)과 스택 상한(cl_vm_set_stack_limit), 구조화된 컴파일 오류(cl_vm_compile_error), 포매터(cl_vm_format), fiber, intrinsic의 스크립트 사용 금지, CL_AWAIT와 Future.wait_any. 08 문서가 정본이다.
 
@@ -71,6 +71,6 @@
 | agentd의 저장소 | 이 저장소 | ADR 0005 |
 | 승인 대기의 스레드 점유 | 세션당 프로세스 하나라 문제가 아니다 | ADR 0004 |
 | tars 패널 API 존재 여부 | 없다. v1은 필요로 하지 않는다 | 00, 06 문서 |
-| 실행 프로세스 분리 | 하지 않는다. 죽는 비율을 재서 다시 본다 | ADR 0009 |
+| 실행 프로세스 분리 | 하지 않는다. 죽는 비율을 재서 다시 본다 (TODO M4) | ADR 0009, 0017 추천 10 |
 
-남은 불확실성은 질문이 아니라 측정할 것이다: 모델의 Cyber 정확도 (M0 평가), cyber를 Zig 의존으로 링크하는 방법 (M0 스파이크 1), Zig std의 TLS (M0 스파이크 2), tars 커널의 Landlock (M5).
+남은 불확실성은 질문이 아니라 측정할 것이다: 모델의 Cyber 정확도 (평가 E, 13), tars 게스트에서의 실행 (M0 스파이크 3), tars 커널의 Landlock (M5). cyber를 Zig 의존으로 링크하는 방법과 Zig std의 TLS는 스파이크 1, 2에서 확인했다 (ADR 0017).

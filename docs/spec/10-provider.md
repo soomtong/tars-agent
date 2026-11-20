@@ -111,7 +111,7 @@ Zig의 내부 종류는 `enum { end_turn, tool_use, max_tokens, refusal, pause_t
 
 ## 사고의 보관과 되돌리기
 
-- assistant의 사고는 thinking 블록으로 히스토리에 남고, 같은 형식으로 보낼 때는 늘 되돌린다 (02 "받은 그대로"). 어댑터는 raw.format이 자기 형식인 thinking만 싣는다.
+- assistant의 사고는 thinking 블록으로 히스토리에 남고, 같은 형식으로 보낼 때는 늘 되돌린다 (02 "메시지와 히스토리"). 어댑터는 raw.format이 자기 형식인 thinking만 싣는다.
 - Anthropic 형식: thinking 블록의 글과 signature를 그대로 되돌린다. signature는 raw에 든다. DeepSeek의 Anthropic 형식에서 signature에는 메시지 id가 들어 있었다. 사고 글이 빈 thinking 블록도 온다(쉬운 질문).
 - OpenAI 형식: DeepSeek은 `reasoning_content`, OpenRouter는 `reasoning`과 `reasoning_details`로 준다. 사고 글을 assistant 메시지의 `reasoning_content` 필드로 되돌린다. 스파이크에서 거절(400)은 없었다. `reasoning_details`는 담지도 되돌리지도 않는다. 그것이 필요한 모델이 나오면 thinking의 raw에 담는다.
 - 다른 형식으로 보낼 때는 사고를 뺀다. raw.format이 다른 thinking 블록은 요청에 싣지 않는다 (ADR 0015).
@@ -236,3 +236,12 @@ OPENROUTER_API_KEY=sk-or-v1-...
 - Claude 모델. 키가 없다.
 - 컴팩션에서 최근 구간을 원문으로 남길 때, 앞부분이 바뀐 대화에 남긴 사고 블록을 제공자가 받는지 (ADR 0021, TODO M4).
 - deps.md의 Zig 주의 둘(HTTP 정리, connect panic)은 우리 빌드에서 재현하지 않았다.
+
+## 열린 것
+
+구조에 닿으므로 사용자가 정한다 (ADR 0012). 추천은 Claude의 것이다.
+
+1. refusal의 서버 쪽 fallbacks 옵션 (TODO M1 provider)
+   - 사실: TODO M1 provider에 "refusal의 서버 쪽 fallbacks 옵션 적용 여부"가 있다. 옵션의 이름과 요청 모양, 어느 제공자와 모델이 받는지는 확인하지 않았다. 이 저장소에는 Claude 키가 없다(위 "힌트 옵션"). 02는 refusal이면 거절 범주를 보이고 턴을 끝낸다.
+   - 선택지: (a) 쓰지 않는다. 02의 지금 처리 그대로. (b) 힌트 옵션으로 둔다. 지원하는 어댑터만 싣고 나머지는 무시한다(위 "힌트 옵션"의 규칙). 응답이 다른 모델에서 올 수 있으므로 응답의 모델을 assistant 줄에 남기고, 사고 블록의 raw를 그 모델의 것으로 다룬다. (c) 하네스 쪽 대체: refusal이면 설정한 다른 제공자 항목으로 같은 요청을 다시 보낸다.
+   - 추천: (a). 근거: 개발과 평가의 제공자(DeepSeek, OpenRouter)에서 옵션을 확인하지 않았다. 거절된 요청을 다른 모델로 잇는 것은 사용자가 정할 정책이고, 저절로 하면 사용자가 고르지 않은 모델로 일이 이어진다. (b)는 힌트 옵션 표에 한 줄을 더하는 일이라 Claude 모델을 쓸 때 더해도 버릴 것이 없다.

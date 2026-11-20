@@ -20,7 +20,7 @@
 스파이크는 Claude가 혼자 검토, 구현하고 결정도 위임받았다 (ADR 0012의 덧붙임, 2026-11-13). 코드는 spike/에, 상세한 검토 결과는 docs/spikes/에 둔다. 사용자는 검토 결과로 아키텍처의 감을 잡고, 본체 구현은 페어로 한다.
 
 - [x] 스파이크 1, 호스트 경계: build.zig.zon으로 cyber를 받아 Zig에서 링크. 능력 2개(fs.read, proc.exec), 호스트 로더(허용 목록), deny_raw_ptrs, 연료(fuel), 벽시계(wall-clock) interrupt, 스택과 메모리 상한, persist_main 반복 eval, validate, 능력 안에서 블록 후 반환
-- [x] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인한 것"). 검사 44개 모두 통과
+- [x] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인한 것"). 검사 47개 모두 통과
 - [x] 스파이크 1에서 동시 승인 확인 (ADR 0016): scope 블록으로 요청 둘을 걸고 번호 순으로 하나씩 완료, 중첩 블록, 하나를 거부하면 나머지가 버려지고 요청 표가 비는지
 - [x] 스파이크 2, 제공자: 전송 형식 둘(Anthropic Messages, OpenAI Chat Completions)을 DeepSeek으로 확인 (ADR 0014). Zig std.http로 스트리밍 요청, SSE 해석, run 도구 한 번 왕복. TLS와 CA 묶음은 macOS에서 된다
 - [x] 스파이크 검토 결과: docs/spikes/2026-11-14-m0-spikes-review.md, 발견과 추천은 ADR 0017. 스파이크 코드(spike/)는 사용자가 검토한 뒤 지운다
@@ -53,7 +53,12 @@
 
 ## M1 최소 루프 (헤드리스, 읽기 전용)
 
-- [ ] 저장소 뼈대: build.zig, cyber 의존(가장 새 빌드, ADR 0023), macOS와 linux 빌드, CI. 모듈 경계 검사 스크립트(libcyber는 runtime/cy.zig 밖으로 새지 않고 caps/는 정문만, ADR 0030의 8 B4). CI에 실행 파일 크기와 시작 시간 예산(B6)
+- [ ] 14의 열린 것(모의 provider의 자리, 시계와 ID 주입, 시나리오의 모양, 골든 갱신, 녹화 SSE, CI 장소, Linux 러너, 경계 검사 구현, fuzz 실행)을 사용자가 정한다. 앞의 둘은 loop와 provider의 모양에 닿으므로 뼈대 전에 정한다
+- [ ] 저장소 뼈대: build.zig, cyber 의존(가장 새 빌드, ADR 0023), macOS와 linux 빌드. zig build 단계 test, check, e2e, measure (14)
+- [ ] CI (14 "CI"): 매 커밋에 aarch64 macOS(test, check, e2e, measure, x86_64-linux-gnu 교차 빌드)와 x86_64 Linux(test, e2e). 키 없음, Zig 배포본 sha256 대조, 제3자 action 없음. ci.build
+- [ ] 정적 검사 (14): check.boundary(libcyber는 runtime/cy.zig 밖으로 새지 않고 caps/는 정문만, frontend와 core의 경계, 네트워크 import, ADR 0030의 8 B4), check.no-panic, check.link(tcc, mimalloc 없음, glibc 동적), check.deps
+- [ ] 측정 (14 "비기능 예산을 재는 법"): measure.size, measure.startup, measure.memory를 CI 작업 요약에 기록한다(B6). 수치와 넘을 때의 처리는 아래 줄과 01 열린 것 4
+- [ ] 비기능 예산: 첫 빌드에서 실행 파일 크기, 시작 시간, 유휴 메모리를 macOS arm64와 x86_64-linux-gnu로 잰다. 01 열린 것 4의 후보로 예산을 정하고, 릴리스 빌드의 최적화 모드와 strip을 함께 정한다
 - [ ] runtime: cy.zig 래퍼, 로더, 상한, 결과 조립. 첫 검사: 구조체(`Future[!ExecResult]`, `!Stat`)와 `Future[![]str]`의 완료, 호스트 모듈 소스의 오버로드와 옵션 구조체(03). 안 되면 cyber에 요청한다 (ADR 0010, 0019)
 - [ ] caps: 능력 표와 생성기 (Cyber 선언, 바인딩, 프롬프트 사양, JSON Schema), fs.read, fs.list, fs.glob, fs.stat, help. 표를 편집할 때 행마다 reads_only, irreversible 술어를 둘지 정한다 (ADR 0030의 7)
 - [ ] provider: 스트림을 끊을 때 Zig 0.17.1의 HTTP 정리 멈춤을 피한다(deps.md). Messages API와 OpenAI Chat Completions 어댑터(개발 기본 제공자 DeepSeek, ADR 0014, 0015), 스트리밍, 적응형 사고, effort, 캐시 지점, stop_reason 분기(end_turn, tool_use, max_tokens, refusal, pause_turn), 재시도. refusal의 서버 쪽 fallbacks 옵션 적용 여부 결정
@@ -61,10 +66,12 @@
 - [ ] loop: validate, eval, 실패 분류, 한도. 벽시계는 VM 안의 시간만 잰다(바인딩 층이 능력 호출 동안 타이머를 멈춘다). 실패 결과에 능력 호출 목록 (ADR 0021)
 - [ ] session: JSONL 쓰기 (07의 형식). 줄 머리와 crc, write 한 번에 줄 하나, 턴을 닫는 줄 뒤 fsync, 임시 이름 뒤 rename, 찢긴 꼬리 자르기, flock 잠금 (ADR 0030)
 - [ ] headless: -p, text, json(06의 객체, ADR 0030), stream-json 출력. 터미널에 그리기 전 terminalSafe (ADR 0030의 8 B3)
-- [ ] 테스트: 모의 provider와 시나리오 재생, 능력 단위 테스트(누수 검사 allocator), 샌드박스 탈출 시도(raw 포인터, use c, 무한 루프, 폭주 재귀, 메모리 폭주)가 모두 결과로 끝나는지
-- [ ] 테스트: 이름 붙인 시나리오(잘린 응답, run 둘, 실패 결과의 능력 목록, reset 알림, 같은 오류 5회, 429 재시도), 두 형식의 녹화된 SSE 재생과 스트림 중단
-- [ ] 테스트: 세션 손상(찢긴 꼬리, crc 불일치, 잠금 경합, 더 새 v), 프롬프트 조립 결과의 골든 테스트
-- [ ] 테스트: 안내 예제 빌드 검사(예제를 링크된 libcyber로 실행해 깨지면 빌드 실패, 06), 디코더 fuzz(SSE, provider JSON, 세션 JSONL, ADR 0030의 8 B5)
+- [ ] 테스트 도구 (14 "재료"): test/support에 모의 provider(07 리플레이의 줄), 각본 프런트엔드, localhost 가짜 HTTP 서버, 시계와 ID와 잠자기 주입, resize를 거부하는 allocator 감싸개(fx 검토 B2). 스파이크 1의 검사 목록(08 "M0에서 확인한 것")을 runtime 테스트로 다시 쓴다
+- [ ] 테스트 (14): unit.runtime.*, esc.*(탈출 시도 열둘이 모두 결과로 끝나고 VM이 남는다), unit.caps.*의 M1 줄(누수), unit.caps.nonempty, oom.*
+- [ ] 테스트 (14): scn.*의 M1 줄(잘린 응답, run 둘, 실패 결과의 능력 목록, reset 알림, 같은 오류 5회, 재시도, 기록 순서, 리플레이), sse.*, fake.stream-abort, fake.retry-http
+- [ ] 테스트 (14): unit.session.*(찢긴 꼬리, crc 불일치, 더 새 v, fsync 지점), e2e.session-lock, e2e.killed-run(죽은 run을 세는 재료, 01 "죽는 비율을 재는 법"), gold.prompt.system, gold.caps, gold.request, gold.headless.*, e2e.headless-io, e2e.exit-codes
+- [ ] 테스트 (14): guide.examples(예제를 링크된 libcyber로 실행해 깨지면 빌드 실패, 06), fuzz.*의 M1 줄(SSE, provider JSON, 세션 JSONL, run 인자, 명령행, terminalSafe, ADR 0030의 8 B5), unit.fe.terminal-safe(B3)
+- [ ] live 탐침 (14, 손으로, 키 필요): live.formats, live.record(test/sse/의 원문을 녹화하고 가린다), live.probes(10 "확인하지 않은 것"), live.prompt-tokens(안내와 능력 사양의 토큰 수)
 
 게이트: tars-agent -p "이 저장소의 빌드 방법을 설명해" 가 파일을 읽고 답한다. 탈출 시도 테스트가 모두 통과한다.
 
@@ -76,7 +83,7 @@
 - [ ] permission: 프로파일, 모드 다섯, 규칙 맞춤(경로 glob, 인자 앞부분, 도메인), 설정 파일 세 층, 보호 규칙
 - [ ] 비밀: 자격 파일 권한 검사, 자식 환경에서 지우기, 기록 가리기
 - [ ] 헤드리스 권한 옵션 (--permission-mode, --allow, --profile), json 출력, 종료 코드. 한도 --max-budget-usd와 세션 토큰 예산 (02)
-- [ ] 테스트: 규칙 맞춤 표, 경로 정규화와 심볼릭 링크, 보호 규칙, 모드 표(모드와 등급마다 판정), 비밀(자격 파일 권한, 자식 환경, 기록 가림), 헤드리스 종단(한도 포함)
+- [ ] 테스트 (14): unit.perm.*(판정 순서, 규칙 맞춤 표, 모드 표, 보호 규칙, 기본 deny, 프로파일), unit.caps.*의 M2 줄(경로 정규화와 심볼릭 링크, 넘침, 파일 상태, fs.search, fs.edit, proc), unit.config.layers, unit.secret.*, fuzz.config, fuzz.rule, fuzz.edit-normalize, e2e.headless-readonly, e2e.headless-ask-deny, e2e.limits, e2e.bypass-cli
 - [ ] 루프 상태 기계의 TLA+ 모델을 둘지 판단 (ADR 0030의 8 B7)
 
 게이트: 헤드리스가 규칙 파일 아래에서 파일을 고치고 테스트 명령을 돌린다. 규칙 밖의 쓰기는 거부로 기록된다.
@@ -85,10 +92,11 @@
 
 평가는 본체의 헤드리스 위에서 바깥 OS 샌드박스와 bypass 모드로 돈다 (13, ADR 0031).
 
-- [ ] direct 모드: 같은 능력 표를 API 도구 여럿으로 (ADR 0006 결정 2). json에는 도구 호출 하나를 능력 호출 하나짜리 run으로 적는다 (06)
+- [ ] direct 모드: 같은 능력 표를 API 도구 여럿으로 (ADR 0006 결정 2). json에는 도구 호출 하나를 능력 호출 하나짜리 run으로 적는다 (06). 테스트: e2e.direct-mode (14)
 - [ ] 평가는 json 모듈을 안내에 넣은 뒤 돌린다(json은 기준 빌드에 있다). 안내에 가르칠 모듈과 크기는 사용자가 정한다
 - [ ] eval/: 과제 20개와 채점기. 과제마다 디렉터리(prompt, fixture, check), 파이썬 표준 라이브러리. 첫 과제 둘을 만든 뒤 사용자에게 보인다. 과제마다 3회
 - [ ] 평가 실행: CodeAct 대 direct, 판정 모델 DeepSeek-V4.1-Flash와 OpenRouter의 Qwen 둘(시작하는 날 날짜가 붙은 ID로 고정). 기록은 13
+- [ ] 평가 실행기가 신호로 끝난 회차(json 결과 없음)를 죽은 회차로 세고, 그 회차의 세션 파일에서 죽은 run을 검증 중과 실행 중으로 나눠 센다 (01 "죽는 비율을 재는 법"). 그 값으로 실행 분리를 정한다 (01 열린 것 1)
 - [ ] 검증 뒤 `cl_vm_symbol_hints`의 쓰지 않는 함수 안 지역을 모델에게 넘길지, 오류 모아 받기를 켤지 (검토 문서 9절 13, 18, 세션의 최상위 지역은 거른다)
 - [ ] 판정 (ADR 0006, 13): 첫 시도 validate 통과 70% 이상이고 과제 성공률이 direct보다 5%p 넘게 낮지 않으면 CodeAct를 기본으로 간다. 못 미치면 안내를 고쳐 한 번 더 재고, 그래도 못 미치면 direct를 기본으로 하고 CodeAct는 선택 모드로 둔다. 모델 사이의 차이가 판정을 가르면 모델마다 판정한다
 
@@ -107,7 +115,8 @@
 - [ ] ! 셸 접두 (06): 사용자 권한 실행, 결과 상한, user 줄 기록
 - [ ] ui.ask(승인과 같은 CL_AWAIT 경로, 03), ui.todo, memo
 - [ ] os 대신 능력으로: fs.mkdir, fs.remove, fs.copy, fs.move, env.get 후보를 평가를 보고 정한다 (04, ADR 0026)
-- [ ] net.fetch와 외부 입력 표시. 테스트: 표시가 선 뒤의 권한 판정
+- [ ] net.fetch와 외부 입력 표시
+- [ ] 테스트 (14): scn.*의 M3 줄(승인 대기, 동시 승인, ui.ask, 인터럽트, steering, 하네스 알림, todo, 시스템 프롬프트 고정), unit.perm.external-input(표시가 선 뒤의 권한 판정), unit.perm.approval-options, unit.config.trust, unit.prompt.agents-md, unit.caps.*의 M3 줄, unit.fe.*, fake.net-fetch, pty.*, Linux에서 linux.termios
 
 게이트: macOS 터미널과 tars 패널(QEMU)에서 대화로 파일을 고친다. 승인, 거부, 인터럽트가 한글 입력 상태에서도 동작한다.
 
@@ -120,19 +129,20 @@
 - [ ] 비용 계산과 tars-agent stats. 확인: 녹화한 세션으로 토큰과 비용, stats의 능력별 호출 수, 오류율, 결과 크기, 실패 종류별 비율을 맞춘다
 - [ ] 지연 사양 (예산을 넘는 능력은 한 줄 요약과 help)
 - [ ] 죽은 세션: crash/ 보관, 재개 때 crashed 결과 채우기, 재개 안내 (02)
-- [ ] 프로세스가 죽는 비율 재기(평가 회차와 crash/ 수), 그 값으로 실행을 별도 프로세스로 뗄지 판단 (01, ADR 0017 추천 10)
+- [ ] 테스트 (14): scn.compact, scn.context-overflow, scn.cache-warning, gold.compact, gold.stats(죽은 run의 셈 포함), unit.obs.cost, unit.session.crash-fill, e2e.crash-resume, e2e.resume
+- [ ] 프로세스가 죽는 비율 재기: tars-agent stats가 세션 파일의 죽은 run(재개하지 않은 결과 없는 run 줄 포함)을 센다. E에서 실행 분리를 정하지 않았으면 이 값으로 정한다 (01 열린 것 1, ADR 0017 추천 10)
 
 게이트: 컨텍스트 창을 넘기는 작업 하나를 컴팩션을 거쳐 끝낸다. 중간에 프로세스를 죽이고 이어서 끝낸다.
 
 ## M5 tars-linux 통합
 
-- [ ] 릴리스: 태그를 밀면 CI가 x86_64-linux-gnu 산출물과 sha256을 올린다
+- [ ] 릴리스: 태그를 밀면 CI가 x86_64-linux-gnu 산출물과 sha256을 올린다 (ci.release, 14)
 - [ ] tars-linux devlayer/manifest.toml 등록 (tars-linux 쪽 작업, 그 저장소의 절차를 따른다)
 - [ ] 커널 설정 CONFIG_SECURITY_LANDLOCK 확인과 추가 요청
 - [ ] sandbox/landlock.zig: 쓰기 범위, TCP 제한, ABI 버전 확인, 없을 때의 내려가기
 - [ ] auto 모드 (샌드박스가 있을 때만)
-- [ ] 테스트: 범위 밖 쓰기와 TCP 연결이 막히는지, Landlock이 없을 때 알리고 샌드박스 없이 도는지, 샌드박스가 실패를 낸 명령을 밖에서 다시 돌릴 때 승인을 묻는지
-- [ ] tars 게이트 체인 make check CHAIN=agent: QEMU에서 헤드리스 stream-json으로 요청, 스크립트, 승인, 파일 생성을 로그로 판정하고 대화형은 픽셀로 본다
+- [ ] 테스트 (14): linux.sandbox(범위 밖 쓰기와 TCP 연결이 막히는지, ABI 6의 신호 범위), unit.sandbox.fallback(Landlock이 없을 때 알리고 샌드박스 없이 도는지), unit.perm.sandbox-false(샌드박스 밖 실행은 승인을 묻는지). Linux 러너 커널에 Landlock이 없으면 linux.sandbox는 체인에서 돈다
+- [ ] tars 게이트 체인 make check CHAIN=agent (chain.agent, 14): QEMU에서 헤드리스 stream-json으로 요청, 스크립트, 승인, 파일 생성을 로그로 판정하고 대화형은 픽셀로 본다. agent 체인은 tars-linux 쪽 작업이라 요청서(docs/requests/)를 먼저 쓴다. 산출물을 받는 길과 승인 단계를 로그로 판정할 길(이벤트 타입)을 요청서에서 정한다
 - [ ] 사용자 문서: 설치, 키 설정, 권한 규칙, 모드
 - [ ] tars.conf에 둘 키가 있는지 판단 (없으면 두지 않는다. 에이전트 설정은 settings.json에 있다)
 

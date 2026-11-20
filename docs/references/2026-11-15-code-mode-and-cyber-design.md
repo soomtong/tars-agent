@@ -1,6 +1,6 @@
 # 참고: 다른 하네스의 code mode와 cyber 설계 검토
 
-결정 문서가 아니다. 2026-11-15 논의를 정리한 참고 자료다. 채택할 것은 docs/decisions에 따로 정한다.
+결정 문서가 아니다. 2026-11-15 논의를 정리한 참고 자료다. 채택할 것은 docs/decisions에 따로 정한다. 결론마다 지금 어디에 반영됐는지는 README.md의 추적 표에 있다.
 
 다루는 것은 둘이다.
 
@@ -60,8 +60,8 @@ tars-agent에 없는 것: 실행 전에 스크립트 전체를 보는 검토. �
 
 비용
 
-- 모델이 Cyber를 모른다. 시스템 프롬프트가 direct 331바이트, CodeAct 20,867바이트다(검토 문서 docs/spikes/2026-11-14-m0-spikes-review.md 5절).
-- 작은 모델은 과제당 컴파일 오류를 1.7번 낸다. 대부분 Python 습관이다.
+- 모델이 Cyber를 모른다. 시스템 프롬프트가 direct 331바이트, CodeAct 20,913바이트다(검토 문서 docs/spikes/2026-11-14-m0-spikes-review.md 5절, 8절).
+- 작은 모델(qwen3.8-flash)은 과제당 컴파일 오류를 2.2번 낸다(검토 문서 5.3). 대부분 Python 습관이다.
 
 이득
 
@@ -76,7 +76,7 @@ tars-agent에 없는 것: 실행 전에 스크립트 전체를 보는 검토. �
 
 ### 2.1 출처
 
-soomtong/cyber PR #7 "Review Nimony design principles against Cyber", 문서 docs/study/11-design-principles-review.md. 2026-11-15 기준 열린 PR이다. 결정 문서가 아니고, cyber는 채택할 항목마다 결정을 따로 쓴다. 1절은 Nim 3.0(Nimony), 2절은 Nim 2 · Lean 4 · Koka의 마지막 사용 분석이다.
+soomtong/cyber PR #7 "Review Nimony design principles against Cyber", 문서 docs/study/11-design-principles-review.md. 지금은 cyber master에 들어 있다(로컬 사본으로 확인, 2026-11-20). 결정 문서가 아니고, cyber는 채택할 항목마다 결정을 따로 쓴다. 1절은 Nim 3.0(Nimony), 2절은 Nim 2 · Lean 4 · Koka의 마지막 사용 분석이다.
 
 ### 2.2 우리에게 닿는 정도
 
@@ -87,7 +87,7 @@ CodeAct에서 모델은 Cyber를 쓰는 사람이다. 비용은 컴파일 오류
 | 1.4 A 표준 오류 이름(errno · Windows · HTTP 매핑) | 모델이 오류 이름으로 분기한다. 같은 실패가 함수마다 다른 이름이거나 `Unknown`이면 분기가 틀린다. 능력 표의 오류 어휘를 같은 집합으로 맞출 수 있다. 스파이크의 능력은 이미 `error.NotFound`를 쓴다 | 높음 |
 | 2.4 C 빌림의 비어휘적 수명 | 매뉴얼은 `elem := &a[2]; a << 4`가 된다고 하지만 거절된다. 모델은 매뉴얼대로 쓴다 | 중간 |
 | 2.4 D · E 암시적 이동 | 마지막 사용이면 `move` 없이 이동한다. 작은 모델의 컴파일 오류 턴이 준다 | 중간, cyber 0.5 뒤 |
-| 2.4 B `Slice` 값 의미 | 지금은 컴파일되고 결과가 틀린다. 모델이 틀린 결과로 다음 판단을 한다 | 중간, 빈도는 모른다 |
+| 2.4 B `Slice` 값 의미 | 기준 빌드(0.4.15)에서 크기를 바꾸는 메서드는 제자리이고, 그 결과를 받는 꼴(`b := a.size_down(0)`)은 고치는 법을 말하는 컴파일 오류다. 새 목록 메서드(`removed`)는 원래 목록을 그대로 둔다(설치된 CLI로 확인, 2026-11-20) | 낮음, 이미 맞음 |
 | 1.4 C 1단계 특수화 경로를 붙인 오류 문구 | `let x := 1`이 고치는 법을 말하는 오류 문구와 같은 줄기 | 중간 |
 | 1.3.3 OOM은 panic, VM 재사용 | 세션 VM 구조와 맞는다 | 이미 맞음 |
 | 1.4 D 구조적 병렬 루프 | 세션 VM은 deny_spawn이다 | 낮음 |
@@ -96,5 +96,5 @@ CodeAct에서 모델은 Cyber를 쓰는 사람이다. 비용은 컴파일 오류
 ### 2.3 후속 후보
 
 - 능력 표를 설계할 때 오류 어휘를 cyber의 표준 집합과 함께 정한다. 따로 정하면 두 번 고친다.
-- PR 1.7의 결정 1(A를 0.4.12에 넣을지)에 tars-agent의 근거를 요청서로 보낸다.
+- cyber 검토 문서 1.7의 결정 1(A를 언제 넣을지)에 tars-agent의 근거를 요청서로 보낸다.
 - eval에서 `move`와 빌림 관련 컴파일 오류의 빈도를 센다. 2.4 C · D의 우선순위 근거가 된다.

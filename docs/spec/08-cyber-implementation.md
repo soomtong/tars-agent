@@ -41,14 +41,14 @@
   - 모델이 쓰는 코드의 함정: out.* += fut.await()는 await 전에 out.*를 읽어 여러 fiber가 같은 값에 더하면 덮어쓴다(v := fut.await() 뒤에 out.* += v). suspend만 반복하는 fiber와 Future를 기다리는 fiber가 한 블록에 섞이면 eval이 나가지 않고 연료 상한까지 돈다. @deinit 안에서 suspend, await를 쓰지 않는다.
   - Fiber.cancel(), Fiber.waiting(), Fiber.wait_ready(), Scope(new, start, join, active, abort). 진행 중인 fiber의 소멸은 panic이 아니라 취소다(들어가 있는 호출이 바로 반환하고 값은 해제, @deinit 포함). ^T 참조의 @deinit 안에서 멈춘 fiber는 취소할 수 없고 소멸은 panic이다.
 - spawn 스레드의 await는 main과 같이 블록한다. 연료는 스레드마다 따로 센다. CLEvalConfig, CLCompileConfig의 deny_spawn을 켜면 표준 모듈이 아닌 chunk의 spawn이 컴파일 오류이고 호스트 함수는 eval 스레드에서만 불린다. fiber와 scope 블록은 그대로 쓴다.
-- 심볼 조회(cl_vm_set_symbol_info, cl_vm_symbol_at 등)는 언어 서버용이다. tars-agent는 쓰지 않는다.
+- 심볼 조회(cl_vm_set_symbol_info, cl_vm_symbol_at 등)는 언어 서버용이다. tars-agent가 쓸 수 있는 것은 검증 뒤의 cl_vm_symbol_hints(쓰지 않는 함수 안 지역)이고, 모델에게 넘길지는 평가로 정한다(아래 "M0에서 확인한 것", 검토 9절 18, TODO E). 그 밖의 조회는 쓰지 않는다.
 - CLI는 표준 모듈을 실행 파일에 내장해 cyber 파일 하나다. 오류 위치는 core:196:5처럼 모듈 이름으로 찍힌다. tars-agent는 CLI를 쓰지 않고 libcyber를 정적 링크한다. tars devlayer의 CLI 번들은 기준 빌드보다 옛 판이다.
 
 ## 없는 것
 
 - c 모듈을 끄는 옵션. math가 c를 쓰므로 끌 수 없다. deny_raw_ptrs와 -Dffi=false로 무력하게 둔다 (05).
 
-## M0에서 확인한 것 (2026-11-16, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
+## M0에서 확인한 것 (기준 빌드 0.4.15, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
 
 - build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .dev = false }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 버전 번호에 의존 인자 `dev`(기본 true면 `-DEV`), `build`, `commit`을 붙여 찍는다(커밋은 소스에서 읽지 않는다). `dev = false`로 `build`, `commit`을 넘기지 않으면 `Cyber 0.4.15 build-0-local`이다. ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
 - 능력이 `Future[!str]`을 돌려주고 str 값이나 오류로 완료한다(fs.read, proc.exec).
@@ -68,7 +68,7 @@
 - 최상위 빌림(`b := &counts`)은 persist_main 세션에서 `Cannot persist local` 오류다. 세션의 캡처 오류 문구는 `^T` 선언을 권하고 빌림은 함수 안에서 하라고 한다.
 - x86_64-linux-gnu 교차 빌드가 macOS에서 의존의 아티팩트로 된다. tars 게스트에서의 실행은 이 기준 빌드로 확인하지 않았다.
 - mimalloc은 FFI를 끈 라이브러리 빌드에 들어가지 않는다.
-- M0에서 cyber에 낸 요청은 모두 닫혔다. 크기를 바꾸는 `[]T` 메서드의 결과를 버린 호출(`_ = out.remove(i)`)은 제자리 문장이나 `removed`를 말하는 컴파일 오류다(설치된 CLI로 확인, 2026-11-20). 인덱스, 슬라이스 경계, 대입 값의 인자 불일치 문구에 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)이 나오지 않는다.
+- 열린 cyber 요청은 0.4.15 비교 회차의 문구 셋 하나다(docs/requests/cyber-0.4.15-messages-from-codeact-round.md). 본체의 첫 단계를 막지 않는다(ADR 0019). 크기를 바꾸는 `[]T` 메서드의 결과를 버린 호출(`_ = out.remove(i)`)은 제자리 문장이나 `removed`를 말하는 컴파일 오류다(설치된 CLI로 확인, 2026-11-20). 인덱스, 슬라이스 경계, 대입 값의 인자 불일치 문구에 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)이 나오지 않는다.
 
 ## cyber에서 만들 것 (ADR 0010)
 
@@ -77,7 +77,7 @@
 | 순서 | 항목 | 필요의 증거 | 메모 |
 |---|---|---|---|
 | C1 (기준 빌드에 있음, 허용) | json 모듈: parse, stringify, 값 트리 | 평가 과제의 다수가 JSON을 다룬다. 설정 파일, API 응답, 도구 출력 | 깊이와 크기 상한. 값 타입은 복사 가능한 부분집합 안에서 다룰 수 있어야 한다 |
-| C1 (기준 빌드에 있음, 허용) | toon 모듈: stringify, parse | 토큰 절약. 스크립트가 구조화된 결과(파일 목록, 검색 결과 같은 균일한 객체 배열)를 모델에게 돌려줄 때 JSON보다 적은 토큰으로 싣는다 | 값 트리는 json 모듈의 것을 쓴다. 깊이와 크기 상한. parse를 C1에 넣을지는 요청서를 쓸 때 정한다 |
+| C1 (기준 빌드에 있음, 허용) | toon 모듈: encode, decode, from_json, to_json | 토큰 절약. 스크립트가 구조화된 결과(파일 목록, 검색 결과 같은 균일한 객체 배열)를 모델에게 돌려줄 때 JSON보다 적은 토큰으로 싣는다 | 값 트리는 json 모듈의 것을 쓴다. 깊이와 크기 상한 |
 | C2 (기준 빌드에 있음, 허용) | regex 모듈 | 로그와 명령 출력에서 값 뽑기. str 메서드만으로는 스크립트가 길어진다 | 역추적 없는 엔진(선형 시간), 직접 쓴다. 문법은 ripgrep 기본 문법의 부분집합 |
 | C2 (기준 빌드에 있음, 허용) | time 모듈 | 파일 시각 비교, 기록의 날짜 계산 | time은 시계를 읽고(`time.now()`) IANA 시간대를 시스템 파일에서 읽는다. 허용하고 clock.now는 두지 않는다(ADR 0024). 리플레이가 필요해지면 시계 원천을 호스트가 주는 임베딩 옵션을 요청할 수 있다 |
 | C3 | 임베딩 옵션: 모듈 허용 표, `os`를 호스트 콜백으로 | 05 문서 1층. 허용 목록은 지금 호스트 로더로 된다(의존 모듈 meta, c 포함). 호스트 resolver(`curUri`)로 스크립트의 use만 가릴 수 있다(meta, c를 스크립트에서 빼고 math는 허용, 05 1층). `os` 콜백은 ADR 0026의 방향 D | 모듈 허용 표는 CLEvalConfig 필드를 만들지 않는다(resolver로 된다) |
@@ -93,5 +93,5 @@
 | 모델이 Cyber를 틀린다 | 부분집합 안내, validate 뒤 구조화된 오류(cl_vm_compile_error) 되돌림, 평가와 통과 기준(13), 못 넘으면 direct 모드 |
 | 컴파일러 abort가 남아 있을 수 있다 | 실행 전 기록, crash/ 보관, --continue. 비율을 재서 프로세스 분리 판단 |
 | 능력 안에서 막히면 못 끊는다 | 능력마다 시간 제한과 취소 플래그 확인. 승인 대기는 VM 밖에서 한다 (ADR 0011) |
-| upstream이 멈춰 있다 | fork가 유일한 유지 주체다. 없는 것은 직접 만든다 (ADR 0010). cyber 버전을 커밋과 해시로 고정하고 올릴 때 예제 테스트와 평가를 돌린다 |
+| upstream이 멈춰 있다 | fork가 유일한 유지 주체다. 없는 것은 직접 만든다 (ADR 0010). cyber는 가장 새 빌드를 따르고(ADR 0023) build.zig.zon이 받은 커밋과 해시를 적는다. 새 빌드를 받을 때마다 예제 테스트와 평가를 돌린다 |
 | 표준 모듈을 만드는 일이 에이전트 일정을 민다 | 필요의 증거가 있는 것만, 평가가 필요로 하는 순서로 (C1이 평가 앞) |

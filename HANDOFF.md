@@ -4,7 +4,16 @@
 
 tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code이고, 다른 점은 모델이 JSON 도구 호출 대신 Cyber 스크립트를 써서 실행하는 CodeAct 방식이라는 것이다. 호스트는 Zig 0.17.1, 런타임은 libcyber(soomtong/cyber) 정적 링크. 본체 코드는 아직 없다. 버릴 스파이크 코드가 spike/에 있다.
 
-이번 세션(2026-11-20, 저녁): 열린 것 확정 (ADR 0031).
+이번 세션(2026-11-20, 밤): 요구사항과 참고 자료를 포함한 전체 스펙 재검토. 서브에이전트 셋으로 나눠 보강했다.
+- 새 문서: spec 14(검증: 테스트 종류 18개, 이름 붙인 테스트 약 120개, CI, 비기능 예산 재는 법), docs/references/README.md(차용 후보 84개의 추적 표: 채택 35, 다시 봄 20, 버림 17, 추적 없음 12).
+- 12의 확인 "없음"이 63/122에서 3/125다(남은 셋은 설계와 문서 검토). 새 요구 R-RUN-06(죽는 비율), R-DIST-05(tars.conf), R-DIST-06(사용자 문서).
+- TODO와 ADR에만 있던 12건을 명세로 올렸다(01, 02, 03, 10, 11). 01에 "프로세스가 죽을 때의 대응", "죽는 비율을 재는 법".
+- 새로 찾은 빈 곳: 검증 중에 프로세스가 죽으면 run 줄이 없어 재개가 tool_call의 짝을 놓친다(02 열린 것 3). 07의 assistant 줄을 쓰는 때가 여기에 달렸다.
+- ADR 0020에 맞춰 낡은 사실을 고쳤다: 스파이크 검토, references 두 문서, 04, 07, 08, 09, deps, ADR 0004(7 MB), 0017(0.4.13, 44개, 열일곱, C0), 안내 두 판의 모듈 목록(path, test 더함), 13의 사고 설정 근거(5.3).
+- 정하지 않고 열린 것으로 둔 것(사용자 결정): 01의 4(실행 분리, terminalSafe, agentd 세션 나누기, 비기능 예산 수치), 02의 3(오류 모아 받기와 힌트, 컴팩션 원문, 검증 중 죽은 run), 03의 1(능력 표 술어, 사용자 편집), 10의 1(refusal fallbacks), 11의 2(tars.conf, 사용자 문서 자리), 14의 9(모의 provider 자리와 시계·ID 주입은 저장소 뼈대 전에 정해야 한다). 그 밖에 references README의 추적 없음 12건, 스파이크 5절의 0.4.12 회차 원자료(ADR 0020), 08과 R-NF-PORT-03의 "0.4.14 이상" 하한.
+- 확인하지 않은 수치: 영문판 안내 크기(문서 19,823바이트, 파일 19,925바이트), devlayer의 CLI 판, regex 문법이 ripgrep의 부분집합인지.
+
+앞선 세션(2026-11-20, 저녁): 열린 것 확정 (ADR 0031).
 - 사용자가 spec 03, 05, 10, 11, 13의 추천안을 모두 받았고 나머지는 Claude에게 맡겼다. 열린 것 절은 모두 닫혔다. 결정 27개는 ADR 0031에 있다.
 - Claude가 정한 것: 읽기 범위(작업 디렉터리 밖은 ask, ADR 0017 추천 6), capability_error의 뜻, ! 셸 접두(06), 각 에이전트가 추천안 밖에서 정한 세부(ADR 0031 본문).
 - 확인한 사실: cyber 0.4.15의 기본 로더는 열세 모듈을 안다(의존 소스 compiler.zig). 08을 고쳤다. s1 47개 통과.
@@ -101,7 +110,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 - [ ] 안내를 cyber의 agent-guide.md와 호스트 덧붙임으로 언제, 어떤 모양으로 모을지(ADR 0022 "열린 것"). 가이드와 스파이크 세션이 다른 곳은 대부분 tars-agent의 선택(모듈 막기, fiber 금지)이거나 실행 환경의 차이(`os`, CLI)다. 가이드에 임베딩 호스트 줄이 들어갔다(호스트의 지시가 앞선다, 거부된 모듈의 문구). 요청서는 닫았다
 - [x] 표준 모듈 다섯을 연다: time(ADR 0024, clock.now는 뺐다), json, toon, regex, peg(ADR 0025). 스파이크 로더는 허용 목록이다(ADR 0026)
-- [x] `path` 모듈을 연다(ADR 0027, 사용자 결정). s1 검사 7a3, 44개 통과
+- [x] `path` 모듈을 연다(ADR 0027, 사용자 결정). s1 검사 7a3
 - [ ] os 대신 능력으로 넓힐 후보(fs.mkdir, fs.remove, fs.copy, fs.move, env.get)를 언제 정할지 (04, ADR 0026)
 - [ ] 여섯 모듈의 예제를 안내에 넣을지 (TODO C1, C2의 남은 게이트)
 - [ ] 모듈 API(패키지의 `docs/api.json`, 여섯 모듈 약 7 KB)를 프롬프트에 둘지 help(name)으로 꺼내게 할지 (본체 능력 설계 때)
@@ -136,7 +145,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - `docs/spec/08-cyber-implementation.md` — 기준 빌드의 사실
 - `spike/s1/build.zig.zon`, `spike/s2/build.zig.zon` — cyber 의존(가장 새 빌드의 태그, ADR 0023)
 - `spike/s2/out/0.4.12/` — 비교 회차 원자료
-- `spike/s1/src/main.zig` — 검사 44개, `replay`, `spawn`. `spike/s2/src/vm.zig` — 검증, 실행, 승인, reset 알림
+- `spike/s1/src/main.zig` — 검사 47개, `replay`, `spawn`. `spike/s2/src/vm.zig` — 검증, 실행, 승인, reset 알림
 
 ## 다음 에이전트에게
 

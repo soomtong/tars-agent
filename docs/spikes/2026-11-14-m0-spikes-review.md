@@ -82,13 +82,13 @@ web.log: 23
 
 ### 3.1 링크
 
-- build.zig.zon의 의존은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#latest"`로 넣는다. zig가 `.url = "git+https://github.com/soomtong/cyber?ref=latest#<받은 커밋>"`과 `.hash`를 적는다. 태그가 움직여도 다시 받기 전에는 적힌 커밋을 쓴다.
+- build.zig.zon의 의존은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.15"`로 넣는다. zig가 `.url = "git+https://github.com/soomtong/cyber?ref=0.4.15#<받은 커밋>"`과 `.hash`를 적는다. 태그가 움직여도 다시 받기 전에는 적힌 커밋을 쓴다.
 - `b.dependency("cyber", .{ .target = target, .optimize = .ReleaseFast, .static = true, .dev = false }).artifact("cyber")`를 `linkLibrary`로 링크한다(spike/s1/build.zig). ffi는 기본 false다.
 - cyber.h는 아티팩트의 include 경로로 따라온다. s1의 C 파일(src/inc_check.c)이 `#include "cyber.h"`로 컴파일되고, `CLEvalConfig`와 `CLCompileConfig`의 크기(12)가 translate-c 쪽과 같다(검사 0).
 - 버전 문자열은 `Cyber 0.4.15 build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, `-DEV` 표시는 `dev` 인자로 정한다. 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
 - Zig 0.17.1에는 `@cImport`가 없다. cyber.h를 Zig에서 쓰는 길은 둘이다: translate-c 패키지로 모듈을 만들거나, 쓰는 함수의 extern 선언을 손으로 쓴다. 스파이크는 앞의 것을 썼다. 본체의 추천은 9절.
 - 의존 패키지의 `docs/agent-guide.md`와 `docs/api.json`은 `addAnonymousImport`(`cyber.path(...)`)로 빌드 때 싣는다. 검사 0b가 api.json을 std.json으로 읽어 json, toon, regex, peg, time의 항목(함수 67, 타입 24)만 거른다.
-- libcyber.a(arm64, ReleaseFast)는 3.06 MB(3,058,056바이트), 공개 `cl_` 함수는 142개다(0.4.15에 `cl_vm_symbol_hints`가 더해졌다). 표준 모듈 json, toon, regex, peg, time이 들어 있고 각각의 `cl_mod_bind_*`가 있다. mimalloc 심볼은 없다(FFI를 끈 라이브러리 빌드에는 들어가지 않는다).
+- libcyber.a(arm64, ReleaseFast)는 3.06 MB(3,058,056바이트), 공개 `cl_` 함수는 142개다. 표준 모듈 json, toon, regex, peg, time이 들어 있고 각각의 `cl_mod_bind_*`가 있다. mimalloc 심볼은 없다(FFI를 끈 라이브러리 빌드에는 들어가지 않는다).
 
 ### 3.2 능력 바인딩
 
@@ -155,7 +155,7 @@ ADR 0011과 0016의 설계는 고칠 것 없이 돈다.
 | 시도 | 결과 |
 |---|---|
 | `use c` | 실린다. math가 c를 쓰므로 허용 목록에 넣는다. 포인터 함수는 deny_raw_ptrs로 컴파일 오류, extern 호출은 -Dffi=false로 panic 결과다 |
-| `#[extern]` 함수(`use c` 없이) | CompileError: An `#[extern]` function needs the `c` module. Add `use c`. 세션이 남는다(검사 7h). 0.4.13 릴리스는 검증 중에 프로세스가 죽었다 |
+| `#[extern]` 함수(`use c` 없이) | CompileError: An `#[extern]` function needs the `c` module. Add `use c`. 세션이 남는다(검사 7h) |
 | `use os` | 라이브러리에 없다. 같은 오류 |
 | `Ptr[int](0)` | CompileError: Raw pointer type `Ptr[int]` is not allowed (deny_raw_ptrs) |
 | deny_raw_ptrs와 호스트 모듈 | 함께 동작한다. 호스트 모듈의 선언은 막히지 않는다 |
@@ -166,7 +166,7 @@ ADR 0011과 0016의 설계는 고칠 것 없이 돈다.
 
 spawn에 대해: deny_spawn을 켜지 않으면(`s1 spawn`) 스레드 안에서 능력 함수(`fs.read`)가 그대로 불리고, 연료 상한은 스레드 안의 무한 루프를 502~508ms에 멈춘다(타이머 500ms). deny_spawn을 켜면 표준 모듈이 아닌 chunk의 spawn이 컴파일 오류이고 호스트 함수는 eval 스레드에서만 불린다. s1과 s2는 deny_spawn을 켠 채 돌았고, scope 블록의 동시 승인(3.3)은 그 아래에서 통과했다.
 
-로더는 허용 목록이다: core, meta, c, math, json, toon, regex, peg, time, path, test와 호스트 능력 모듈(ADR 0026, 0028). 로더와 resolver는 스크립트의 use와 모듈 안의 use를 구별하지 못하므로 의존 모듈 meta(core, json, math가 쓴다)와 c(math가 쓴다)를 넣는다. 이전의 차단 목록은 c를 막아 `use math`가 실패하고 있었다(검사 7a2가 이제 본다). 기본 로더는 os, libc, cli를 모른다. 새 모듈 가운데 `time`은 시계(`time.now()`, `time.monotonic()`)와 시스템 파일(`time.zone(name)`의 zoneinfo 폴더, `time.local()`의 `TZ`와 `/etc/localtime`)을 능력을 거치지 않고 읽는다. 이것을 받아들이고 허용했다. 능력 clock.now는 두지 않는다(ADR 0024). json, toon, regex, peg는 순수 계산이고 연다(ADR 0025). 0.4.14의 `path`는 경로 문자열만 다루고 파일 시스템을 보지 않아 연다(ADR 0027). `test`는 네이티브 바인딩이 없는 순수 Cyber 검사 함수이고 정본 안내가 가르치므로 연다(ADR 0028, 검사 7a4). 실패한 검사는 panic이라 앞선 eval의 최상위 지역이 사라진다(6k).
+로더는 허용 목록이다: core, meta, c, math, json, toon, regex, peg, time, path, test와 호스트 능력 모듈(ADR 0026, 0028). 로더와 resolver는 스크립트의 use와 모듈 안의 use를 구별하지 못하므로 의존 모듈 meta(core, json, math가 쓴다)와 c(math가 쓴다)를 넣는다. c를 막으면 `use math`가 실패한다(검사 7a2). 기본 로더는 os, libc, cli를 모른다. 모듈 가운데 `time`은 시계(`time.now()`, `time.monotonic()`)와 시스템 파일(`time.zone(name)`의 zoneinfo 폴더, `time.local()`의 `TZ`와 `/etc/localtime`)을 능력을 거치지 않고 읽는다. 이것을 받아들이고 허용했다. 능력 clock.now는 두지 않는다(ADR 0024). json, toon, regex, peg는 순수 계산이고 연다(ADR 0025). `path`는 경로 문자열만 다루고 파일 시스템을 보지 않아 연다(ADR 0027). `test`는 네이티브 바인딩이 없는 순수 Cyber 검사 함수이고 정본 안내가 가르치므로 연다(ADR 0028, 검사 7a4). 실패한 검사는 panic이라 앞선 eval의 최상위 지역이 사라진다(6k).
 
 ## 4. 스파이크 2: 제공자
 
@@ -299,7 +299,7 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 - 모델은 Cyber를 셸 감싸개로만 쓰지 않는다. 첫 한두 스텝은 `print(proc.exec('ls ...')!)`로 둘러보고, 그다음 한 스크립트에 읽기, 세기, 정렬, 쓰기를 다 담는 흐름이 모든 모델에 공통이다. 셸 위임은 run의 3할에서 5할(32~48%)이다.
 - 집계는 struct 목록과 `sort`로 하는 경우가 많다(예제 4의 모양). `type` 선언은 25개, `sort`는 29개 run에 있었다. Map을 `^Map`으로 선언한 것은 1개다.
 - 타입을 적은 빈 목록(`[]str{}`)은 49개, 목록 리터럴로 도는 `for {...} |f|:`는 23개, `try:` 블록은 41개, 최상위 `fn` 선언은 17개 run에 있었다.
-- `let`으로 선언한 run은 없었다. 안내의 `let` 우회(8절)는 이번 회차에서 쓰이지 않았다.
+- `let`으로 선언한 run은 없었다.
 
 ### 5.3 0.4.15 회차 (2026-11-18)
 
@@ -345,21 +345,21 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 
 ## 7. cyber에 남은 것
 
-스파이크는 cyber 릴리스 `0.4.15`를 받는다(ADR 0023). M0에서 낸 요청은 모두 닫혔다. 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서, ADR 0022)와 모듈 API `docs/api.json`(`cyber doc --api <module>`과 같은 소스)이 들어 있다.
+스파이크는 cyber 릴리스 `0.4.15`를 받는다(ADR 0023). 열린 요청은 5.3의 문구 요청 하나다(docs/requests/cyber-0.4.15-messages-from-codeact-round.md). 결함이 아니라 문구에 관한 것이고 본체의 첫 단계를 막지 않는다(ADR 0019). 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서, ADR 0022)와 모듈 API `docs/api.json`(`cyber doc --api <module>`과 같은 소스)이 들어 있다.
 
 모델이 모르는 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)은 인덱스, 슬라이스 경계, 대입 값 어디서든 인자 불일치 문구에 나오지 않는다. 대입 값이 원소 타입과 다르면 ``An element of `[]int` must be `int`, got `str`.``처럼 원소 타입을 말하고, `?T`와 `!T`이면 푸는 법을 붙인다(`Map`도 같다). 정수 원소 자리의 한 글자 리터럴(`xs[0] = 'a'`)은 오류가 아니라 코드 포인트(97)다. 타입이 정해진 자리의 한 글자 리터럴은 코드 포인트라는 언어 규칙이다.
 
-c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의 컴파일 오류다(``An `#[extern]` function needs the `c` module. Add `use c`.``). 0.4.13 릴리스에서는 검증 중에 프로세스를 죽였다.
+c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의 컴파일 오류다(``An `#[extern]` function needs the `c` module. Add `use c`.``).
 
 다른 언어의 선언 키워드는 키워드만 뺀 꼴을 말한다. `let x := 1`(`mut`, `let mut`도)은 ``Cyber has no `let`. Declare with `x := 1`.``이고, `let x = 1`은 ``... Declare with `x := 1`, or `var x int = 1` for a type.``이다. CLI와 세션이 같다.
 
-`Slice`의 크기를 바꾸는 메서드는 0.4.15부터 제자리다(깨지는 변경). `append`, `insert`, `remove`, `clear`, `size_down`, `size_up`은 받는 변수를 바꾸고 아무것도 돌려주지 않는다. 새 목록은 `appended`, `inserted`, `removed`, `+`이고, `xs += v`는 제자리에서 붙인다. `pop() -> ?T`가 생겼다. 옛 꼴은 고칠 꼴을 말하는 컴파일 오류다. `xs = xs.append(3)`은 ``Write `xs.append(3)` as a statement.``, `ys := xs.append(3)`은 `xs.appended(3)`도 알려 준다. 새 목록 메서드의 결과를 버리면(`xs.appended(3)`만 쓴 문장) CLI에서는 제자리 메서드를 알려 주는 오류이고, 세션의 마지막 줄에서는 오류가 아니라 eval 결과다. 세션의 마지막 줄 `xs.append(4)`는 결과 없는 문장이다(0.4.13, 0.4.14에서는 오류). 함수 안에서 전역 목록에 제자리 메서드를 쓸 수 있고(take-and-restore), 인자가 같은 전역을 읽으면(`g.append(g.len())`) ``The method takes `g` out while it runs, so an argument can not read `g`. Read it into a local first.``다. 모두 CLI와 `replay`에서 확인했다(2026-11-18). Python의 `xs.append(v)` 습관이 그대로 맞는 꼴이 됐다. 모델의 오류율에 주는 영향은 비교를 다시 돌려야 안다(5절은 0.4.12 회차).
+`Slice`의 크기를 바꾸는 메서드는 제자리다. `append`, `insert`, `remove`, `clear`, `size_down`, `size_up`은 받는 변수를 바꾸고 아무것도 돌려주지 않는다. 새 목록은 `appended`, `inserted`, `removed`, `+`이고, `xs += v`는 제자리에서 붙인다. `pop() -> ?T`가 생겼다. 옛 꼴은 고칠 꼴을 말하는 컴파일 오류다. `xs = xs.append(3)`은 ``Write `xs.append(3)` as a statement.``, `ys := xs.append(3)`은 `xs.appended(3)`도 알려 준다. 새 목록 메서드의 결과를 버리면(`xs.appended(3)`만 쓴 문장) CLI에서는 제자리 메서드를 알려 주는 오류이고, 세션의 마지막 줄에서는 오류가 아니라 eval 결과다. 세션의 마지막 줄 `xs.append(4)`는 결과 없는 문장이다. 함수 안에서 전역 목록에 제자리 메서드를 쓸 수 있고(take-and-restore), 인자가 같은 전역을 읽으면(`g.append(g.len())`) ``The method takes `g` out while it runs, so an argument can not read `g`. Read it into a local first.``다. 모두 CLI와 `replay`에서 확인했다(2026-11-18). Python의 `xs.append(v)` 습관이 그대로 맞는 꼴이다. 0.4.15 회차에서 모델이 쓴 꼴은 5.3에 있다.
 
-`os` 파일 함수의 옛 꼴이 새 이름을 말한다(0.4.12 요청의 남은 회신). `os.read_file_str(p)`는 ``Use `os.read_file`. It returns `str`.``, `os.write_file_bytes(p, 'abc')`는 ``Write text with `os.write_file`.``, `os.read_file(p)!`을 담은 지역을 `[]byte` 자리에 쓰면 ``Read bytes with `os.read_file_bytes`.``다. CLI에서 확인했다. 스파이크의 세션은 `os`를 싣지 않으므로(ADR 0026) 모델에게는 ``Failed to load module: os``가 간다. 이 문구들은 tars-agent에서는 CLI로 cyber를 쓰는 사람에게만 닿는다.
+`os` 파일 함수의 옛 꼴이 새 이름을 말한다. `os.read_file_str(p)`는 ``Use `os.read_file`. It returns `str`.``, `os.write_file_bytes(p, 'abc')`는 ``Write text with `os.write_file`.``, `os.read_file(p)!`을 담은 지역을 `[]byte` 자리에 쓰면 ``Read bytes with `os.read_file_bytes`.``다. CLI에서 확인했다. 스파이크의 세션은 `os`를 싣지 않으므로(ADR 0026) 모델에게는 ``Failed to load module: os``가 간다. 이 문구들은 tars-agent에서는 CLI로 cyber를 쓰는 사람에게만 닿는다.
 
 언어 서버: 0.4.15의 `cyber-lsp`(설치 경로 `/usr/local/bin/cyber-lsp`)를 stdio로 붙여 확인했다(2026-11-18). 쓰지 않는 지역과 `use`는 Warning(태그 Unnecessary)이고 quick fix가 `_` 붙이기와 `use` 줄 지우기다. `scope` 블록 안의 `return`은 Information(``waits for the fibers of the `scope` block``)과 inlay hint `waits for fibers`다. 컴파일 오류의 고칠 이름(`os.fileExists` → `file_exists`, `out = out.append(3)` → `out.append(3)`)은 quick fix가 된다. hover가 선언 위의 `--|` 문서 주석을 보여 준다. 구문 오류는 전부 진단하고, 구문 오류가 없으면 본문(main 블록, 함수)마다 첫 오류를 낸다(오류 복구를 켠 검사. CLI는 첫 오류에서 멈춘다). tars-agent에는 두 갈래로 닿는다. 사람이 .cy 파일을 고칠 때의 편집기 도구이고, 같은 정보를 호스트가 C API로 받는다(3.5, 검사 7i). 모델에게 경고를 넘길지는 9절 18.
 
-표준 모듈: 기준 빌드에 json, toon, regex, peg, time이 있다(TODO의 C1, C2). 세션의 기본 로더가 다섯을 싣는다. 다섯 모두 s1과 s2의 호스트 로더가 싣는다(3.6, ADR 0024, 0025). tars-agent 쪽에 남은 것은 안내에 예제를 넣을지다(크기는 8절의 결정과 함께).
+표준 모듈: 기준 빌드에 json, toon, regex, peg, time, path, test가 있다(TODO의 C1, C2). 기본 로더는 이것을 포함한 표준 모듈 열셋을 안다(08). s1과 s2의 호스트 로더는 일곱을 모두 싣는다(3.6, ADR 0024, 0025, 0027, 0028). tars-agent 쪽에 남은 것은 안내에 예제를 넣을지다(크기는 8절의 결정과 함께).
 
 ## 8. 안내 문서 (prompt/cyber-subset*.md)
 
@@ -414,7 +414,7 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 
 - CodeAct 판정. 과제 셋으로는 말할 수 없다. 평가 도구(eval/)가 필요하다.
 - tars 게스트에서의 기준 빌드.
-- json 모듈은 기준 빌드에 있지만 안내가 가르치지 않아 막고 돌렸다. JSON을 다루는 과제는 넣지 않았다. 모델이 json, regex를 안내에서 배워 쓸 때의 오류율은 모른다.
+- 0.4.15 회차는 로더가 json, regex 같은 모듈을 열고 돌렸지만 안내가 한 줄로만 알려 한 번도 쓰이지 않았다(5.3). JSON을 다루는 과제는 넣지 않았다. 모델이 json, regex를 안내에서 배워 쓸 때의 오류율은 모른다.
 - 긴 세션(수십 스텝)에서의 VM 메모리와 히스토리 크기, 컴팩션.
 - 대화형 프런트엔드. 스파이크는 한 번 묻고 끝나는 헤드리스였고 승인은 자동이었다.
 - 인터럽트(Esc)로 스트림과 실행을 끊는 것.

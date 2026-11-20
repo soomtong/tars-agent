@@ -142,7 +142,7 @@ A borrow `c := &counts` before the lambda also works inside a function, but not 
 
 list comprehensions, the `lambda` keyword (a lambda is written `|a, b| a + b` and only where the type is known), generator expressions, decorators, `with`, `try/except`, `raise`, inheritance, `*args`, `**kwargs`, `xs.map`, `xs.filter`, `abs`, `sum`, `sorted`, `enumerate`, `zip`, f-strings, the ternary `?:`, semicolons, `i++`.
 
-This host loads the json, toon, regex, peg and time modules (`use json`).
+This host loads the json, toon, regex, peg, time, path and test modules (`use json`).
 
 ## Errors and Option (instead of exceptions)
 

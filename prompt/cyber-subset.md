@@ -142,7 +142,7 @@ names.sort(|a, b| counts[a] > counts[b] or (counts[a] == counts[b] and a < b))
 
 리스트 컴프리헨션, `lambda` 키워드(람다는 `|a, b| a + b`이고 타입이 정해진 자리에서만 쓴다), 제너레이터 식, 데코레이터, `with`, `try/except`, `raise`, 상속, `*args`, `**kwargs`, `xs.map`, `xs.filter`, `abs`, `sum`, `sorted`, `enumerate`, `zip`, f-string, 삼항 `?:`, 세미콜론, `i++`.
 
-이 호스트는 json, toon, regex, peg, time 모듈을 싣는다(`use json`).
+이 호스트는 json, toon, regex, peg, time, path, test 모듈을 싣는다(`use json`).
 
 ## 오류와 Option (예외 대신)
 
