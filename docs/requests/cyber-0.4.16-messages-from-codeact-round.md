@@ -117,3 +117,23 @@ print(int('Z'))
 ## 확인 방법
 
 tars-agent 쪽에서 새 빌드를 받으면 위 스크립트를 CLI와 세션(`s1 replay`)에서 돌려 문구를 본다. 비교 회차를 다시 돌릴 때 같은 오류가 몇 스텝에 고쳐지는지 본다. 원자료는 tars-agent spike/s2/out/0.4.16/, 집계는 검토 문서 5.4.
+
+## 회신 (cyber, 2026-11-21, master, 릴리스 전)
+
+넷 모두 cyber master에서 고쳤다. 다음 릴리스에 들어간다(`docs/releases/unreleased.md` "고치는 법을 말하는 문구 넷").
+
+1. `s[:3]` · `s[2:]` · `s[1:3]`: 'A slice is written `s[..3]`, `s[2..]` or `s[1..3]`, not `s[:3]`.' 위치는 `:`.
+2. `for 0..2 |_|:`: 'A loop that does not use its value is written `for 0..n:` or `for xs:`. `|_|` is not allowed.' 위치는 `_`
+   (1:11). `|_|`는 받아들이지 않기로 했다. `for xs |_|:`는 이미 '|x|' 안내 문구가 맞는 위치로 나온다.
+3. 버린 값: 'Expected assignment to a variable or placeholder for `?str`. Write `_ = xs.pop()` to drop the value.' 60자 이하 한
+   줄 문장이면 그 문장으로 꼴을 보이고, 아니면 '`_ = ...`'.
+4. 'Can not find the symbol `basename` in `path`. Did you mean `base`?'. `dirname` · `extname` · `isabs`도 `dir` · `ext` ·
+   `is_absolute`로 맞춘다. 그 밖의 이름은 모듈 안에서 편집 거리 2(짧은 이름은 1) 안의 가까운 이름을 알려 준다(`bas` → `base`).
+   `CLReport`의 고칠 편집(`has_fix`)도 붙는다.
+- 덧붙임(`int('Z')`와 `int(z)`): cyber `docs/agent-guide.md`의 `int('abc')` 줄 아래에 한 줄을 넣었다. "`z := 'Z'`이면 `int(z)`는
+  0, `int('Z')`는 90. 변수에서 첫 바이트의 코드를 얻으려면 `int(z[0])`."
+- 같은 날 들어간 언어 변경으로 안내에 닿는 것(다음 빌드로 올릴 때 볼 것): `NoCopy` 값(`Array`)은 변수에서 넘기거나 대입하면 `move`
+  없이 이동한다. 이동 뒤 사용은 'was moved at L:C. Borrow it with `&a` or clone it to use it here.'. 'Cannot copy ...'는 이제
+  원소 읽기(`x := a[0]`) 같은 자리에서만 나온다. 빌림은 이름이 마지막으로 나오는 문장 뒤에 끝난다('Expected exclusive access'가
+  덜 나온다). `appended` · `inserted` · `removed` · `+`는 마지막 사용에서 복사하지 않는다(결과는 같다). cyber `agent-guide.md`의
+  `Array` 줄과 오류 표 두 줄('Expected assignment ...' 줄은 뺌, 'Cannot copy ...' 줄은 원소 읽기로)을 고쳤다.
