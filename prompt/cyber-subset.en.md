@@ -2,7 +2,7 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the lists below first.
 
-The reference version is Cyber 0.4.15 of soomtong/cyber (`cyber version` prints a line starting with `Cyber 0.4.15`). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
+The reference version is Cyber 0.4.16 of soomtong/cyber (`cyber version` prints a line starting with `Cyber 0.4.16`). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
 
 Cyber is still gaining features. This document matches one build and can fall behind a newer one. Before you use or edit this document, check the following.
 
@@ -48,7 +48,7 @@ Syntax. Each line is Python, then the Cyber form.
 - `a // b` becomes `a / b`. Integer division truncates toward zero. `//` is an error. Power `**` is the same.
 - `import math` becomes `use math`. For a file: `use g 'geo.cy'`
 - A function is declared only at the top level, not inside `if`, `for` or another function.
-- `class P:` becomes `type P:` with fields such as `name str` below it. A method is `fn (&P) m():` and uses `self` inside.
+- `class P:` becomes `type P:` with fields such as `name str` below it. A method is `fn (&P) m():` and uses `self` inside. A method that changes the value is `fn (&&P) m():`. A `&P` method can write a number or bool field, but not a `str`, list or Map field: 'Cannot replace a managed value through a shared borrow.' or 'Cannot borrow exclusively through a shared borrow.' means that the method needs `&&P`.
 - `P(name='a', n=1)` becomes `P{name='a', n=1}`. A field is set with `=`, not `:`.
 - `print(a, b)` becomes `print(x)`. It takes exactly one argument. Join values with interpolation.
 - `len(xs)` becomes `xs.len()`. It is a method. `xs.len` is an error.
@@ -102,7 +102,7 @@ str (strings do not change; every method returns a new value):
 - `xs.join(sep)` for `[]str`, gives `str`
 - `xs.append(x)`, `xs.insert(i, x)`, `xs.remove(i)`, `xs.clear()`, `xs.pop()` gives `?T`: each changes `xs` in place. `xs = xs.remove(0)` is a compile error
 - `xs.appended(x)`, `xs.inserted(i, x)`, `xs.removed(i)`, `xs + x`: each gives a new list and leaves `xs` as it was
-- The in-place methods also work on a global list (`global log []str = {}`, then `log.append(s)` in a function). An argument can not read the same global: `g.append(g.len())` is a compile error, so write `n := g.len()` first
+- The in-place methods also work on a global list (`global log []str = {}`, then `log.append(s)` or `log.append(log.len())` in a function)
 - `xs.sort()` sorts in place in ascending order (numbers and strings). `xs.sort(|a, b| ...)` sorts by a function that returns true when `a` goes first. Both return nothing.
 
 Map[K, V]:

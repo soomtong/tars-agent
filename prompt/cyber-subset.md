@@ -2,7 +2,7 @@
 
 Cyber는 Python과 아주 비슷한 문법 구조를 가진다. 들여쓰기로 블록을 만들고, 줄바꿈으로 문장을 끝내고, `for`, `while`, `if`, `fn`, `use`, `print`를 거의 같은 감각으로 쓴다. 하지만 정적 타입이고 값 소유권이 있고 예외가 없다. 이런 부분들이 다르니까 코드를 구성할 때 본 문서를 참고한다. 모르는 문법은 Python 문법으로 추측하지 말고 아래 목록을 먼저 본다.
 
-기준 버전은 soomtong/cyber의 Cyber 0.4.15다 (`cyber version`이 `Cyber 0.4.15`로 시작하는 줄을 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
+기준 버전은 soomtong/cyber의 Cyber 0.4.16다 (`cyber version`이 `Cyber 0.4.16`로 시작하는 줄을 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
 
 Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 한 빌드에 맞춘 것이므로 더 새 빌드와 어긋날 수 있다. 문서를 사용하거나 고치기 전에 아래를 확인한다.
 
@@ -48,7 +48,7 @@ Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 한 빌�
 - `a // b`는 `a / b`. 정수 나눗셈은 0 쪽으로 버린다. `//`는 오류다. 거듭제곱 `**`는 같다.
 - `import math`는 `use math`. 파일은 `use g 'geo.cy'`
 - 함수는 최상위에서만 선언한다. `if`, `for`, 다른 함수 안에서는 선언하지 못한다.
-- `class P:`는 `type P:`이고 아래에 `name str` 같은 필드를 둔다. 메서드는 `fn (&P) m():`이고 안에서 `self`를 쓴다.
+- `class P:`는 `type P:`이고 아래에 `name str` 같은 필드를 둔다. 메서드는 `fn (&P) m():`이고 안에서 `self`를 쓴다. 값을 바꾸는 메서드는 `fn (&&P) m():`이다. `&P` 메서드는 숫자나 bool 필드는 바꿀 수 있지만 `str`, 목록, Map 필드는 바꾸지 못한다: 'Cannot replace a managed value through a shared borrow.'나 'Cannot borrow exclusively through a shared borrow.'는 그 메서드가 `&&P`여야 한다는 뜻이다.
 - `P(name='a', n=1)`은 `P{name='a', n=1}`. 필드는 `:`가 아니라 `=`로 준다.
 - `print(a, b)`는 `print(x)`. 인자는 정확히 하나다. 여러 값은 보간으로 합친다.
 - `len(xs)`는 `xs.len()`. 메서드다. `xs.len`은 오류다.
@@ -102,7 +102,7 @@ str (문자열은 바뀌지 않고 모든 메서드가 새 값을 돌려준다):
 - `xs.join(sep)`은 `[]str`에서 `str`을 돌려준다
 - `xs.append(x)`, `xs.insert(i, x)`, `xs.remove(i)`, `xs.clear()`, `xs.pop()`은 `?T`: 모두 `xs`를 그 자리에서 바꾼다. `xs = xs.remove(0)`은 컴파일 오류다
 - `xs.appended(x)`, `xs.inserted(i, x)`, `xs.removed(i)`, `xs + x`: 새 목록을 돌려주고 `xs`는 그대로다
-- 제자리 메서드는 전역 목록에도 된다(`global log []str = {}` 뒤 함수 안에서 `log.append(s)`). 인자가 같은 전역을 읽으면 컴파일 오류다: `g.append(g.len())` 대신 `n := g.len()`을 먼저 쓴다
+- 제자리 메서드는 전역 목록에도 된다(`global log []str = {}` 뒤 함수 안에서 `log.append(s)`, `log.append(log.len())`)
 - `xs.sort()`는 제자리에서 오름차순으로 정렬한다(숫자와 문자열). `xs.sort(|a, b| ...)`는 `a`가 앞에 오면 true를 돌려주는 함수로 정렬한다. 둘 다 아무것도 돌려주지 않는다.
 
 Map[K, V]:

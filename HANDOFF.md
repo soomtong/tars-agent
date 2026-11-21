@@ -1,10 +1,19 @@
-# HANDOFF: 전체 스펙 검토와 보강 (2026-11-20)
+# HANDOFF: cyber 0.4.16으로 옮김 (2026-11-21)
 
 ## 목표
 
 tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code이고, 다른 점은 모델이 JSON 도구 호출 대신 Cyber 스크립트를 써서 실행하는 CodeAct 방식이라는 것이다. 호스트는 Zig 0.17.1, 런타임은 libcyber(soomtong/cyber) 정적 링크. 본체 코드는 아직 없다. 버릴 스파이크 코드가 spike/에 있다.
 
-이번 세션(2026-11-20, 밤): 요구사항과 참고 자료를 포함한 전체 스펙 재검토. 서브에이전트 셋으로 나눠 보강했다.
+이번 세션(2026-11-21): cyber 0.4.16으로 옮김.
+- 사용자가 0.4.16을 설치했다(`/usr/local/bin/cyber`는 `Cyber 0.4.16 build-1010-ca00022`, 태그 `ca000225`). 두 스파이크의 의존을 올렸다.
+- s1 48개 통과. 7f와 `s1 spawn`을 새 꼴 `spawn f(a)`로 고쳤다(옛 꼴 `spawn(f, {a})`는 이제 ParseError라 deny_spawn을 보지 않는다). 새 검사 6o: `CLReport`의 고칠 편집(`has_fix`, `fix_text`)을 소스에 적용하면 검증이 통과하고, 오류 복구에서 한 본문의 오류 둘이 오고, `CL_HINT_PARAM_NAME`이 나오고, 실패한 검증 뒤에도 타입 힌트가 나온다. s2 빌드, x86_64 교차 빌드(s1, s2).
+- 안내 두 판과 agent-guide.md의 코드 블록 34개가 CLI와 세션에서 통과한다. 기본 로더 모듈은 그대로 열셋.
+- 0.4.15 요청서의 문구 셋이 0.4.16에서 고치는 법을 말한다(CLI와 세션, `os` 대신 `fs.read`로). 요청서를 지웠다. 열린 cyber 요청은 없다.
+- 안내 고침(TODO에 미뤄 둔 것): 기준 버전 줄, 51행에 `fn (&&P) m():`와 공유 빌림 두 문구(정본 52행과 같은 내용), 105행 전역 인자 문장을 줄였다(`log.append(log.len())`가 된다).
+- 남긴 것: 'Expected exclusive access. There is another active borrow to `self`.'는 고치는 법을 말하지 않는다. 다음 CodeAct 회차에서 나오는지 본다. CodeAct 비교는 0.4.16으로 다시 돌리지 않았다(최신 회차는 0.4.15).
+- 실수 하나: cyberscript 저장소를 `git checkout 0.4.16`으로 옮겼다가 바로 `master`로 되돌렸다. 사용자의 수정(`src/sema.zig`)은 그대로다. 소스는 스파이크의 zig-pkg 사본에서 읽는다.
+
+앞선 세션(2026-11-20, 밤): 요구사항과 참고 자료를 포함한 전체 스펙 재검토. 서브에이전트 셋으로 나눠 보강했다.
 - 새 문서: spec 14(검증: 테스트 종류 18개, 이름 붙인 테스트 약 120개, CI, 비기능 예산 재는 법), docs/references/README.md(차용 후보 84개의 추적 표: 채택 35, 다시 봄 20, 버림 17, 추적 없음 12).
 - 12의 확인 "없음"이 63/122에서 3/125다(남은 셋은 설계와 문서 검토). 새 요구 R-RUN-06(죽는 비율), R-DIST-05(tars.conf), R-DIST-06(사용자 문서).
 - TODO와 ADR에만 있던 12건을 명세로 올렸다(01, 02, 03, 10, 11). 01에 "프로세스가 죽을 때의 대응", "죽는 비율을 재는 법".
@@ -68,9 +77,10 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 ## 완료된 작업
 
-- [x] 의존: spike/s1, s2의 build.zig.zon은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.15"`로 넣는다(`?ref=0.4.15#<커밋>`과 해시가 적힌다).
-  - build.zig 의존 인자는 `.dev = false`뿐이다(릴리스). 버전 문자열은 `Cyber 0.4.15 build-0-local`이고 s1 검사 0은 `Cyber `로 시작하는지만 본다.
-- [x] s1 47개 통과(0.4.15, `93a9ca4f`), s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2).
+- [x] 의존: spike/s1, s2의 build.zig.zon은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.16"`로 넣는다(`?ref=0.4.16#<커밋>`과 해시가 적힌다).
+  - build.zig 의존 인자는 `.dev = false`뿐이다(릴리스). 버전 문자열은 `Cyber 0.4.16 build-0-local`이고 s1 검사 0은 `Cyber `로 시작하는지만 본다.
+- [x] s1 48개 통과(0.4.16, `ca000225`), s2 빌드, 교차 빌드 x86_64-linux-gnu(s1, s2).
+- [x] 0.4.16으로 옮김(2026-11-21): 위 "이번 세션"과 TODO의 해당 줄.
 - [x] 0.4.15로 옮김(2026-11-18): 위 "이번 세션"과 TODO의 해당 줄.
 - [x] 0.4.14로 옮김(2026-11-17 저녁): 두 스파이크의 의존을 릴리스 태그로, `dev = false`. s1 43개, 안내 두 판과 agent-guide.md의 코드 블록 34개(CLI 전부, 세션은 `use test` 블록만 로더가 막음), 새 이름(`trim_left`, `trim_right`, `last_index`) 탐침, s2 빌드, x86_64 교차 빌드를 확인했다. 옛 camelCase 이름은 `Did you mean ...?` 컴파일 오류다. 안내와 04, ADR 0026의 이름을 snake_case로 고쳤다
 - [x] 0.4.12 요청서의 네 건이 CLI와 세션에서 회신대로다.
@@ -89,7 +99,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 
 - fx를 이름대로 작은 저장소로 보고 한 번에 읽기: 87만 줄이다. 영역(루프와 복구, 권한과 도구, 프로토콜, 시험과 Zig 관행)으로 나눠 읽었다. fx의 파일을 베끼지 않는다(Apache-2.0, ADR 0003). 재구현한다.
 - 회차 도중에 안내를 고치기: s2가 실행마다 안내를 읽어 회차가 섞인다. 회차 전에 안내를 먼저 확정한다.
-- 릴리스 CLI를 태그에서 스크래치로 빌드하기: 릴리스면 사용자가 설치한 `/usr/local/bin/cyber`를 쓴다. latest dev면 프리릴리스의 CLI를 받는다(`gh release download latest -R soomtong/cyber -p cyber-macos-arm64.tar.gz`, 스크래치에). 설치된 CLI는 지금 0.4.15다.
+- 릴리스 CLI를 태그에서 스크래치로 빌드하기: 릴리스면 사용자가 설치한 `/usr/local/bin/cyber`를 쓴다. latest dev면 프리릴리스의 CLI를 받는다(`gh release download latest -R soomtong/cyber -p cyber-macos-arm64.tar.gz`, 스크래치에). 설치된 CLI는 지금 0.4.16이다.
 - `latest` 태그만 따르기: 릴리스 빌드만 돌고 `latest` 프리릴리스가 갱신되지 않는 때가 있다(0.4.13 때). 가장 새 태그를 본다(ADR 0023).
 - `zig fetch --save=cyber <url>`로 기존 `.path` 의존을 덮기: `.path`에 URL을 넣고 해시를 빼 zon이 깨진다. `zig fetch <url>`로 해시만 받고 zon을 손으로 고친다.
 - s1 사본의 zon을 정규식으로 `.path`로 바꾸기: `translate_c` 의존까지 바뀐다. cyber 항목만 고친다.
@@ -115,7 +125,7 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - [ ] 여섯 모듈의 예제를 안내에 넣을지 (TODO C1, C2의 남은 게이트)
 - [ ] 모듈 API(패키지의 `docs/api.json`, 여섯 모듈 약 7 KB)를 프롬프트에 둘지 help(name)으로 꺼내게 할지 (본체 능력 설계 때)
 - [x] CodeAct 비교를 0.4.15로 다시 돌렸다 (검토 문서 5.3)
-- [ ] cyber 요청서(docs/requests/cyber-0.4.15-messages-from-codeact-round.md)의 회신 확인
+- [x] cyber 요청서(0.4.15 문구 셋)의 회신 확인: 0.4.16에서 닫혔다
 - [ ] 본체가 VM 충돌로 프로세스가 끝나는 경우를 어떻게 다룰지 (검토 문서 9절 17)
 - [ ] 검증 뒤 `cl_vm_symbol_hints`의 쓰지 않는 함수 안 지역을 모델에게 넘길지 (검토 문서 9절 18, 평가 때)
 - [ ] `print(!str)`가 작은 모델의 가장 흔한 오류다. 능력의 모양이나 안내로 줄일지 (본체의 능력 설계 때)

@@ -437,7 +437,7 @@ fn spawnProbe() void {
         \\fn work(p str) -> int:
         \\    t := fs.read(p) !else 'ERR'
         \\    return t.len()
-        \\f := spawn(work, {'/tmp/tars-agent-s1/in.txt'})
+        \\f := spawn work('/tmp/tars-agent-s1/in.txt')
         \\print(f.await())
         \\
     , .{});
@@ -455,7 +455,7 @@ fn spawnProbe() void {
         \\    while true:
         \\        k += 1
         \\    return k
-        \\f := spawn(spin, {0})
+        \\f := spawn spin(0)
         \\print(f.await())
         \\
     , .{});
@@ -874,6 +874,52 @@ pub fn main(init: std.process.Init) !void {
         check("6n. 오류 복구: 검증이 구문 오류를 모두, 본문마다 오류 하나를 돌려주고 세션은 이어진다", ok, "끔={d} 구문={d}({s}) 선언 오류 섞임={d} 본문 셋={d} 세션 keep={s} | {s}", .{ n_off, n_syn, lines[0..ll], n_typ_decl, n_typ, out1, msgs[0..ml] });
     }
 
+    // 6o. 0.4.16 임베딩: CLReport의 고칠 편집, 한 본문의 오류 여럿, 매개변수 이름 힌트, 실패한 컴파일의 힌트.
+    {
+        const vm = newVm();
+        defer c.cl_vm_deinit(vm);
+        c.cl_vm_set_symbol_info(vm, true);
+        // (1) 컴파일러가 아는 편집을 소스에 적용하면 검증이 통과한다.
+        const src = "xs := []int{1}\nxs = xs.append(2)\nprint(xs.len())\n";
+        const v1 = c.cl_vm_validate(vm, B(src));
+        var rep: c.CLReport = undefined;
+        const got = c.cl_vm_compile_report(vm, 0, &rep);
+        var fixed: [256]u8 = undefined;
+        var fl: usize = 0;
+        var v1b: ?c.CLResultCode = null;
+        var ftb: [64]u8 = undefined;
+        var ftl: usize = 0;
+        if (got and rep.has_fix and rep.fix_end_pos <= src.len) {
+            const ft = S(rep.fix_text);
+            ftl = @min(ft.len, ftb.len);
+            @memcpy(ftb[0..ftl], ft[0..ftl]);
+            const parts = [_][]const u8{ src[0..rep.fix_pos], ft, src[rep.fix_end_pos..] };
+            for (parts) |p| {
+                @memcpy(fixed[fl..][0..p.len], p);
+                fl += p.len;
+            }
+            v1b = c.cl_vm_validate(vm, B(fixed[0..fl]));
+        }
+        // (2) 한 함수 본문의 오류 둘.
+        c.cl_vm_set_error_recovery(vm, true);
+        const v2 = c.cl_vm_validate(vm, B("fn f():\n    print(a1)\n    print(a2)\nf()\n"));
+        const n2 = c.cl_vm_compile_report_count(vm);
+        // (3) 호출 자리의 매개변수 이름 힌트.
+        _ = c.cl_vm_validate(vm, B("fn add(a int, b int) -> int:\n    return a + b\nprint(add(1, 2))\n"));
+        var hs: [*c]const c.CLHint = null;
+        const nh3 = c.cl_vm_symbol_hints(vm, &hs);
+        var n_param: usize = 0;
+        var i: usize = 0;
+        while (i < nh3) : (i += 1) {
+            if (hs[i].kind == c.CL_HINT_PARAM_NAME) n_param += 1;
+        }
+        // (4) 실패한 컴파일에서도 힌트가 나온다.
+        _ = c.cl_vm_validate(vm, B("n := 3\nm := n + 1\nprint(missing)\n"));
+        const nh4 = c.cl_vm_symbol_hints(vm, &hs);
+        const ok = v1 == c.CL_ERROR_COMPILE and got and rep.has_fix and v1b != null and v1b.? == c.CL_SUCCESS and v2 == c.CL_ERROR_COMPILE and n2 == 2 and n_param == 2 and nh4 > 0;
+        check("6o. 0.4.16 임베딩: 고칠 편집을 적용하면 통과, 한 본문의 오류 둘, 매개변수 이름 힌트, 실패 뒤 힌트", ok, "fix={} 편집 '{s}' 적용 뒤={s} | 본문 오류={d} | 매개변수 힌트={d} | 실패 뒤 힌트={d}", .{ got and rep.has_fix, ftb[0..ftl], if (v1b) |x| codeName(x) else "-", n2, n_param, nh4 });
+    }
+
     // 7. 샌드박스 경계
     {
         const vm = newVm();
@@ -904,15 +950,15 @@ pub fn main(init: std.process.Init) !void {
         const r6 = run(vm,
             \\fn work(n int) -> int:
             \\    return n * 2
-            \\f := spawn(work, {21})
+            \\f := spawn work(21)
             \\print(f.await())
             \\
         , .{});
         const msg6 = firstLine(errorSummary(vm));
-        const v6 = c.cl_vm_validate(vm, B("fn work(n int) -> int:\n    return n * 2\nf := spawn(work, {21})\n"));
+        const v6 = c.cl_vm_validate(vm, B("fn work(n int) -> int:\n    return n * 2\nf := spawn work(21)\n"));
         const vm_fresh = newVm();
         defer c.cl_vm_deinit(vm_fresh);
-        const v6b = c.cl_vm_validate(vm_fresh, B("fn work(n int) -> int:\n    return n * 2\nf := spawn(work, {21})\n"));
+        const v6b = c.cl_vm_validate(vm_fresh, B("fn work(n int) -> int:\n    return n * 2\nf := spawn work(21)\n"));
         check("7f. deny_spawn: eval과 검증에서 spawn은 컴파일 오류", r6.code == c.CL_ERROR_COMPILE and v6 == c.CL_ERROR_COMPILE, "eval={s} 검증={s} (eval 전의 새 VM에서 검증={s}) | {s}", .{ codeName(r6.code), codeName(v6), codeName(v6b), msg6 });
         const r7 = run(vm, "use io\nprint(1)\n", .{});
         check("7g. use io: 기본 로더가 주는 모듈 (관찰)", true, "code={s} | {s}", .{ codeName(r7.code), if (r7.code != c.CL_SUCCESS) firstLine(errorSummary(vm)) else "로드됨" });
@@ -948,6 +994,7 @@ pub fn main(init: std.process.Init) !void {
                 c.CL_HINT_SCOPE_EXIT => "scope",
                 c.CL_HINT_UNUSED_LOCAL => "unused",
                 c.CL_HINT_UNUSED_USE => "unused_use",
+                c.CL_HINT_PARAM_NAME => "param",
                 else => "?",
             };
             if (h.kind == c.CL_HINT_UNUSED_LOCAL and std.mem.eql(u8, d, "unused")) unused_local = true;

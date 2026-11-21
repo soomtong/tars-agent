@@ -11,7 +11,7 @@
 - [x] 실행 모델 CodeAct + Cyber (ADR 0001), 호스트는 Zig + libcyber (ADR 0002)
 - [x] 초기 요구사항 대조 (09 문서)
 - [x] 명세 재검토와 열린 질문 결정 (ADR 0004~0009, 2026-11-10)
-- [x] cyber 기준 빌드 반영: 0.4.15. 스파이크 의존은 가장 새 빌드를 따르고(ADR 0023), s1, 안내의 코드 블록과 오류 문구를 설치된 CLI와 세션에서 확인했다. CodeAct 비교를 0.4.15로 다시 돌렸다(검토 문서 5.3). 스파이크의 호스트 로더는 허용 목록이다(ADR 0026) (2026-11-18)
+- [x] cyber 기준 빌드 반영: 0.4.16. 스파이크 의존은 가장 새 빌드를 따르고(ADR 0023), s1, 안내의 코드 블록과 오류 문구를 설치된 CLI와 세션에서 확인했다. CodeAct 비교의 최신 회차는 0.4.15다(검토 문서 5.3). 스파이크의 호스트 로더는 허용 목록이다(ADR 0026) (2026-11-21)
 
 ## M0 증명
 
@@ -20,15 +20,17 @@
 스파이크는 Claude가 혼자 검토, 구현하고 결정도 위임받았다 (ADR 0012의 덧붙임, 2026-11-13). 코드는 spike/에, 상세한 검토 결과는 docs/spikes/에 둔다. 사용자는 검토 결과로 아키텍처의 감을 잡고, 본체 구현은 페어로 한다.
 
 - [x] 스파이크 1, 호스트 경계: build.zig.zon으로 cyber를 받아 Zig에서 링크. 능력 2개(fs.read, proc.exec), 호스트 로더(허용 목록), deny_raw_ptrs, 연료(fuel), 벽시계(wall-clock) interrupt, 스택과 메모리 상한, persist_main 반복 eval, validate, 능력 안에서 블록 후 반환
-- [x] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인한 것"). 검사 47개 모두 통과
+- [x] 스파이크 1의 확인 목록 (08 문서 "M0에서 확인한 것"). 검사 48개 모두 통과
 - [x] 스파이크 1에서 동시 승인 확인 (ADR 0016): scope 블록으로 요청 둘을 걸고 번호 순으로 하나씩 완료, 중첩 블록, 하나를 거부하면 나머지가 버려지고 요청 표가 비는지
 - [x] 스파이크 2, 제공자: 전송 형식 둘(Anthropic Messages, OpenAI Chat Completions)을 DeepSeek으로 확인 (ADR 0014). Zig std.http로 스트리밍 요청, SSE 해석, run 도구 한 번 왕복. TLS와 CA 묶음은 macOS에서 된다
 - [x] 스파이크 검토 결과: docs/spikes/2026-11-14-m0-spikes-review.md, 발견과 추천은 ADR 0017. 스파이크 코드(spike/)는 사용자가 검토한 뒤 지운다
 - [~] 스파이크 3, 교차 빌드: x86_64-linux-gnu 교차 빌드는 확인. tars 게스트(QEMU)에서의 실행은 기준 빌드로 확인할 것 (tars-linux 산출물 필요)
 - [x] cyber 0.4.15로 옮기기 (2026-11-18): 두 스파이크의 의존을 태그 `0.4.15`(`93a9ca4f`)로 올렸다. s1 47개 통과(새 검사 7i: `cl_vm_symbol_hints`, 7a4: `use test`, 6n: 오류 복구), s2 빌드, x86_64 교차 빌드. 안내 두 판과 agent-guide.md의 코드 블록 34개가 CLI와 세션에서 모두 통과한다(`test`를 연 뒤, ADR 0028). 제자리 `Slice`의 문구(`xs = xs.append(3)`, `ys := xs.append(3)`, 전역 `g.append(g.len())`)를 CLI와 세션에서, `os` 옛 꼴의 문구를 CLI에서 탐침으로 확인했다(세션은 `os`를 싣지 않는다). 세션의 마지막 줄 `xs.append(4)`는 결과 없는 문장, `xs.appended(3)`은 eval 결과다. `cyber-lsp`를 stdio로 붙여 unused 경고, quick fix, inlay hint, `scope` 출구 알림, 문서 주석 hover를 확인했다. 검토 문서 3.5, 7, 8절, 9절 18
 - [x] CodeAct 비교를 0.4.15로 다시 돌림 (2026-11-18): 0.4.12와 같은 표(회차 14개, 과제 42개). 41개 통과, 실패 하나는 과제 해석, 죽은 실행 없음, 컴파일 오류 51건에서 41건. 원자료 spike/s2/out/0.4.15/, 검토 문서 5.3
-- [ ] cyber 요청: 0.4.15 회차에서 고치는 법을 말하지 않은 문구 셋(`!T`가 아닌 함수의 `!`, `.!`, `^[]T`의 제자리 메서드). docs/requests/cyber-0.4.15-messages-from-codeact-round.md. 회신을 받으면 새 빌드에서 세 스크립트를 CLI와 세션으로 확인한다
-- [ ] cyber 0.4.15 다음 빌드에서 안내 고치기: 전역의 제자리 메서드가 인자를 먼저 평가한다(cyberscript `docs/releases/unreleased.md` "0.4.14..0.4.15 코드 리뷰에서 나온 수정"). `g.append(g.len())`가 컴파일되고, 오류는 같은 전역의 빌림(`g.append(g.span())`)뿐이며 문구가 'so this argument can not read'로 바뀐다. `g += f()!`가 error일 때 전역이 비던 결함과 `g += h`(목록)가 컴파일되지 않던 회귀도 고쳐졌다. 의존을 올릴 때 prompt/cyber-subset.md · cyber-subset.en.md 105행의 '인자가 같은 전역을 읽으면 컴파일 오류' 문장을 고친다. 0.4.15에서는 지금 문장이 맞으므로 그 전에는 두지 않는다
+- [x] cyber 0.4.16으로 옮기기 (2026-11-21): 두 스파이크의 의존을 태그 `0.4.16`(`ca000225`)으로 올렸다. s1 48개 통과. 7f와 `s1 spawn`을 새 꼴 `spawn f(a)`로 고쳤다(옛 꼴은 ParseError라 deny_spawn을 보지 않게 된다). 새 검사 6o: `CLReport`의 고칠 편집을 적용하면 검증 통과, 오류 복구에서 한 본문의 오류 둘, `CL_HINT_PARAM_NAME`, 실패한 검증 뒤의 타입 힌트. s2 빌드, x86_64 교차 빌드(s1, s2). 안내 두 판과 agent-guide.md의 코드 블록 34개가 CLI와 세션에서 통과한다. 기본 로더의 모듈은 그대로 열셋, 공개 `cl_` 함수 142개, libcyber.a arm64 3,130,152바이트, x86_64 3,700,220바이트. CodeAct 비교는 다시 돌리지 않았다
+- [x] cyber 요청: 0.4.15 회차에서 고치는 법을 말하지 않은 문구 셋(`!T`가 아닌 함수의 `!`, `.!`, `^[]T`의 제자리 메서드). 0.4.16에서 셋 모두 고치는 법을 말한다. CLI와 세션에서 확인하고 요청서를 지웠다 (2026-11-21)
+- [x] 0.4.16에서 안내 고치기 (2026-11-21): 두 판의 기준 버전 줄, 51행에 값을 바꾸는 메서드 `fn (&&P) m():`와 공유 빌림 두 문구('Cannot replace a managed value through a shared borrow.', 'Cannot borrow exclusively through a shared borrow.', 둘 다 `&&T`를 말하므로 오류 표가 아니라 정본 agent-guide.md 52행처럼 본문에), 105행은 `log.append(log.len())`가 된다로 줄였다(남은 오류 `g.append(g.span())`는 문구가 지역에 먼저 담으라고 말한다). `json.parse(s, &&diag)`, `spawn f(a)`, `os` 오류 이름은 안내에 없다
+- [ ] 'Expected exclusive access. There is another active borrow to `self`.'(순회 중 `&&self` 메서드 호출, 빌려 둔 관리형 값의 대입)는 고치는 법을 말하지 않는다. 다음 CodeAct 회차에서 나오면 오류 표(prompt/cyber-subset*.md)에 넣거나 cyber에 문구를 요청한다
 - [ ] Cyber 부분집합 안내 (prompt/cyber-subset*.md, 예제 10개). 기준 빌드로 다시 썼고 예제와 조언을 CLI와 세션(persist_main) 양쪽에서 확인했다 (검토 문서 8절). 남은 것: 크기가 4,000토큰 목표를 넘는다(검토 문서 8절의 수치). 목표를 바꿀지 안내를 줄일지 사용자가 정한다
 
 게이트: 스파이크 검토 결과를 사용자에게 보고하고, 교차 빌드가 tars 게스트(QEMU)에서 실행된다.

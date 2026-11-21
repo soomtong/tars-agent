@@ -18,7 +18,7 @@
 - 할당 실패: eval 중 호스트 할당자가 실패해도 프로세스는 죽지 않는다. 컴파일 중이면 CL_ERROR_COMPILE이고 다음 eval 앞에서 VM을 reset한다(persist_main의 지역 변수와 선언은 사라지고 연료(fuel), 상한, 프린터 같은 호스트 설정은 남는다). 실행 중이면 panic: OutOfMemory다. VM을 만드는 함수와 호스트가 값을 만드는 함수(cl_str_init 등)의 할당 실패는 abort다. cl_vm_init_mem(CLMemFuncs)으로 VM의 모든 메모리를 호스트의 alloc/free로 돌릴 수 있다. 컴파일러의 고정 한계(지역 256, 매개변수 255, 필드 255)는 CompileError다.
 - 능력 바인딩: #[bind] 선언과 cl_mod_add_func. 호스트 함수는 `fn (t: *CLThread) callconv(.c) CLRet` 하나의 모양이고, 매개변수는 커서처럼 선언 순서대로 읽는다(cl_thread_str, cl_thread_int). 반환 슬롯(cl_thread_ret)은 매개변수 앞이나 뒤에 받는다. 직접 호출, 함수 포인터 값, 함수 union 값, 표준 메서드가 부르는 경로 모두 같다(검사 6m. trait 호출은 cyber의 lib 테스트가 본다). 값 매개변수(str, []T, 관리 필드를 가진 구조체)는 호스트가 소유하고 cl_str_deinit, cl_slice_deinit으로 해제한다. [&]T로 선언하면 빌리기만 한다. `#[bind]` 함수에 기본값 매개변수는 쓸 수 없다(Cyber에 기본값 매개변수가 없다).
 - 출력은 cl_vm_set_printer로 가로챈다. print, eprint 콜백의 첫 인자는 CLThread*다(VM은 cl_thread_vm(t)). 결과 값은 CLEvalResult.res, res_t와 cl_value_desc. persist_main에서는 마지막 맨 표현식이 결과다. fn main() -> T의 결과는 VM이 소유하고 다음 eval, cl_vm_reset, cl_vm_deinit까지 유효하다. cl_vm_release_result(vm)가 바로 해제한다. cl_thread_rc로 누수를 세는 호스트(평가 도구)는 먼저 이것을 부른다.
-- 로더: 라이브러리의 기본 로더(cl_default_loader)는 표준 모듈 열셋을 안다. core, meta, math, cy, c, io, test, time, json, peg, regex, toon, path다(cyber src/compiler.zig의 `mods` 표, 2026-11-20 0.4.15 의존 소스에서 확인). os, libc, cli는 CLI 전용이다. cl_vm_set_loader로 호스트 로더를 끼워 허용 목록 밖의 이름을 거부하고 나머지를 cl_default_loader에 넘긴다(아래 "M0에서 확인한 것", ADR 0026). 점 표기(`use fs`, `fs.read`)는 호스트 로더가 그 이름에 모듈 소스를 돌려주는 것으로 된다.
+- 로더: 라이브러리의 기본 로더(cl_default_loader)는 표준 모듈 열셋을 안다. core, meta, math, cy, c, io, test, time, json, peg, regex, toon, path다(cyber src/compiler.zig의 `mods` 표, 2026-11-20 0.4.15 의존 소스에서 확인, 0.4.16도 같다). os, libc, cli는 CLI 전용이다. cl_vm_set_loader로 호스트 로더를 끼워 허용 목록 밖의 이름을 거부하고 나머지를 cl_default_loader에 넘긴다(아래 "M0에서 확인한 것", ADR 0026). 점 표기(`use fs`, `fs.read`)는 호스트 로더가 그 이름에 모듈 소스를 돌려주는 것으로 된다.
 - builtin 모듈(기본 로더의 열세 모듈. 각 bind가 markBuiltinModule을 부른다)의 intrinsic(@memcpy, @bitCast, @retain 등)과 #[unsafe], #[consteval], #[reserve] 속성은 스크립트에서 쓸 수 없다. 런타임 내부를 드러내는 길이 컴파일 단계에서 닫혀 있다. 호스트 모듈과 os, libc, cli는 스크립트와 같은 규칙을 받는다. @로 시작하는 함수 이름은 정해진 hook만 선언할 수 있다.
 - fiber: 자기 스택을 가진 stackful 코루틴이고 같은 스레드의 힙을 공유한다. 전환은 VM 명령이라 C 스택이 끼지 않는다. 호스트 함수를 건너 suspend하면 panic(Cannot suspend across a host call.)이고, 루트 맥락의 suspend는 no-op이다. fiber로는 능력 함수 안에서 스크립트를 멈췄다 재개할 수 없다. 아래 CL_AWAIT가 그 수단이다.
 - 언어의 평가 규칙: 피연산자는 왼쪽에서 오른쪽으로 평가한다(인덱스 대입 a[f()] = g()와 레코드의 키, 값 사이는 예외). a.await() + b.await()에서 두 번째 요청은 첫 await 뒤에 나간다. fn main() -> !T가 돌려준 오류는 panic이고 호스트는 CL_ERROR_PANIC을 받는다.
@@ -48,7 +48,7 @@
 
 - c 모듈을 끄는 옵션. math가 c를 쓰므로 끌 수 없다. deny_raw_ptrs와 -Dffi=false로 무력하게 둔다 (05).
 
-## M0에서 확인한 것 (기준 빌드 0.4.15, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
+## M0에서 확인한 것 (기준 빌드 0.4.16, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
 
 - build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .dev = false }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 버전 번호에 의존 인자 `dev`(기본 true면 `-DEV`), `build`, `commit`을 붙여 찍는다(커밋은 소스에서 읽지 않는다). `dev = false`로 `build`, `commit`을 넘기지 않으면 `Cyber 0.4.15 build-0-local`이다. ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
 - 능력이 `Future[!str]`을 돌려주고 str 값이나 오류로 완료한다(fs.read, proc.exec).
@@ -68,7 +68,7 @@
 - 최상위 빌림(`b := &counts`)은 persist_main 세션에서 `Cannot persist local` 오류다. 세션의 캡처 오류 문구는 `^T` 선언을 권하고 빌림은 함수 안에서 하라고 한다.
 - x86_64-linux-gnu 교차 빌드가 macOS에서 의존의 아티팩트로 된다. tars 게스트에서의 실행은 이 기준 빌드로 확인하지 않았다.
 - mimalloc은 FFI를 끈 라이브러리 빌드에 들어가지 않는다.
-- 열린 cyber 요청은 0.4.15 비교 회차의 문구 셋 하나다(docs/requests/cyber-0.4.15-messages-from-codeact-round.md). 본체의 첫 단계를 막지 않는다(ADR 0019). 크기를 바꾸는 `[]T` 메서드의 결과를 버린 호출(`_ = out.remove(i)`)은 제자리 문장이나 `removed`를 말하는 컴파일 오류다(설치된 CLI로 확인, 2026-11-20). 인덱스, 슬라이스 경계, 대입 값의 인자 불일치 문구에 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)이 나오지 않는다.
+- 열린 cyber 요청은 없다. 0.4.15 비교 회차의 문구 셋은 0.4.16에서 고치는 법을 말한다(2026-11-21). 0.4.16의 `CLReport`에는 컴파일러가 아는 고칠 편집(`has_fix`, `fix_pos`, `fix_end_pos`, `fix_text`)이 있고 구조체 크기가 바뀌었다. 호스트는 새 헤더로 다시 빌드한다. 오류 복구를 켜면 한 본문의 오류도 모두 온다(검사 6o). 크기를 바꾸는 `[]T` 메서드의 결과를 버린 호출(`_ = out.remove(i)`)은 제자리 문장이나 `removed`를 말하는 컴파일 오류다(설치된 CLI로 확인, 2026-11-20). 인덱스, 슬라이스 경계, 대입 값의 인자 불일치 문구에 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)이 나오지 않는다.
 
 ## cyber에서 만들 것 (ADR 0010)
 
