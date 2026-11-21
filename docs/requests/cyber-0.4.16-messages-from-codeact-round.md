@@ -137,3 +137,16 @@ tars-agent 쪽에서 새 빌드를 받으면 위 스크립트를 CLI와 세션(`
   원소 읽기(`x := a[0]`) 같은 자리에서만 나온다. 빌림은 이름이 마지막으로 나오는 문장 뒤에 끝난다('Expected exclusive access'가
   덜 나온다). `appended` · `inserted` · `removed` · `+`는 마지막 사용에서 복사하지 않는다(결과는 같다). cyber `agent-guide.md`의
   `Array` 줄과 오류 표 두 줄('Expected assignment ...' 줄은 뺌, 'Cannot copy ...' 줄은 원소 읽기로)을 고쳤다.
+
+## tars-agent 쪽 미리 확인 (2026-11-21, cyber 로컬 master `7497c0e8`)
+
+릴리스 전이라 s1 사본을 `zig build --fork=<cyber 저장소>`로, CLI를 `zig build cli`로 스크래치에 빌드해 봤다(`Cyber 0.4.16-DEV build-0-local`). spike/의 의존은 0.4.16 그대로다.
+
+- 1: `s[:3]`, `s[2:]`, `s[1:3]`이 세션과 CLI 모두 회신의 문구이고 위치는 `:`다.
+- 2: `for 0..2 |_|:`가 회신의 문구이고 위치는 `_`(1:11)다. 회차의 원 스크립트(37행)에서도 파일 끝이 아니라 17행의 `_`를 가리킨다.
+- 3: 블록 안의 `xs.pop()`이 `... Write `_ = xs.pop()` to drop the value.`다.
+- 4: `path.basename`, `path.dirname`, `path.bas`가 각각 ``Did you mean `base`?``, `` `dir` ``, `` `base` ``를 붙인다. `CLReport`의 고칠 편집은 보지 않았다.
+- 덧붙임: `int(z[0])`은 90이다(`z := 'Z'`).
+- 회귀: master 빌드에서 s1 48개, 안내 두 판과 agent-guide.md의 코드 블록 34개(세션)가 모두 통과한다.
+
+남은 것: 이 커밋이 든 릴리스(또는 latest 빌드)를 받아 같은 확인을 하고, TODO의 안내 고치기(168행, 347행, 오류 표의 'Expected assignment ...' 줄)와 함께 요청서를 닫는다.
