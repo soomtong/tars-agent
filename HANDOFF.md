@@ -1,16 +1,22 @@
-# HANDOFF: cyber 0.4.16으로 옮김 (2026-11-21)
+# HANDOFF: cyber 0.4.16 비교 회차 (2026-11-21)
 
 ## 목표
 
 tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code이고, 다른 점은 모델이 JSON 도구 호출 대신 Cyber 스크립트를 써서 실행하는 CodeAct 방식이라는 것이다. 호스트는 Zig 0.17.1, 런타임은 libcyber(soomtong/cyber) 정적 링크. 본체 코드는 아직 없다. 버릴 스파이크 코드가 spike/에 있다.
 
-이번 세션(2026-11-21): cyber 0.4.16으로 옮김.
+이번 세션(2026-11-21, 저녁): CodeAct 비교를 0.4.16으로 다시 돌렸다.
+- 설치된 CLI와 원격 태그, 두 스파이크의 의존이 모두 `ca000225`다. s1 48개 통과를 다시 확인했다.
+- 0.4.15와 같은 표(회차 14개, 과제 42개). 39개 통과, CodeAct는 36개 중 35개. 실패 셋은 Cyber 때문이 아니다: direct의 `web: 23`(과제 해석), `wc -l`의 공백(셸 출력), CodeAct의 스텝 상한(줄 전체가 대문자인지 보는 잘못된 판정 함수). 죽은 실행 없음. 컴파일 오류 41건에서 45건, `!str` 출력이 여전히 1위(17건). 'Expected exclusive access'와 0.4.15 요청서의 세 꼴은 나오지 않았다. 모듈은 처음 쓰였다(`use regex` 하나는 쓰지 않음, `path.basename` 하나는 없는 이름).
+- 요청서를 냈다: docs/requests/cyber-0.4.16-messages-from-codeact-round.md. Python 슬라이스(셋, 되풀이), `for 0..n |_|:`의 `Expected ident.`가 다음 줄이나 파일 끝을 가리킴, 블록 안의 `xs.pop()` 문구에 `_ =` 꼴이 없음, `path.basename`에 `Did you mean`이 없음. 덧붙임: `int('Z')`는 90, `z := 'Z'` 뒤 `int(z)`는 0(안내 문구 제안).
+- 집계 스크립트는 남기지 않았다(스크래치). 0.4.15 원자료로 5.3의 표가 그대로 나오는 것을 먼저 확인하고 썼다. 원자료 spike/s2/out/0.4.16/(.tsv만 커밋, trace는 무시됨). 검토 문서 5.4.
+
+앞선 세션(2026-11-21): cyber 0.4.16으로 옮김.
 - 사용자가 0.4.16을 설치했다(`/usr/local/bin/cyber`는 `Cyber 0.4.16 build-1010-ca00022`, 태그 `ca000225`). 두 스파이크의 의존을 올렸다.
 - s1 48개 통과. 7f와 `s1 spawn`을 새 꼴 `spawn f(a)`로 고쳤다(옛 꼴 `spawn(f, {a})`는 이제 ParseError라 deny_spawn을 보지 않는다). 새 검사 6o: `CLReport`의 고칠 편집(`has_fix`, `fix_text`)을 소스에 적용하면 검증이 통과하고, 오류 복구에서 한 본문의 오류 둘이 오고, `CL_HINT_PARAM_NAME`이 나오고, 실패한 검증 뒤에도 타입 힌트가 나온다. s2 빌드, x86_64 교차 빌드(s1, s2).
 - 안내 두 판과 agent-guide.md의 코드 블록 34개가 CLI와 세션에서 통과한다. 기본 로더 모듈은 그대로 열셋.
-- 0.4.15 요청서의 문구 셋이 0.4.16에서 고치는 법을 말한다(CLI와 세션, `os` 대신 `fs.read`로). 요청서를 지웠다. 열린 cyber 요청은 없다.
+- 0.4.15 요청서의 문구 셋이 0.4.16에서 고치는 법을 말한다(CLI와 세션, `os` 대신 `fs.read`로). 요청서를 지웠다. 그때 열린 cyber 요청은 없었다.
 - 안내 고침(TODO에 미뤄 둔 것): 기준 버전 줄, 51행에 `fn (&&P) m():`와 공유 빌림 두 문구(정본 52행과 같은 내용), 105행 전역 인자 문장을 줄였다(`log.append(log.len())`가 된다).
-- 남긴 것: 'Expected exclusive access. There is another active borrow to `self`.'는 고치는 법을 말하지 않는다. 다음 CodeAct 회차에서 나오는지 본다. CodeAct 비교는 0.4.16으로 다시 돌리지 않았다(최신 회차는 0.4.15).
+- 남긴 것: 'Expected exclusive access. There is another active borrow to `self`.'는 고치는 법을 말하지 않는다. 다음 CodeAct 회차에서 나오는지 본다. CodeAct 비교는 이 뒤 세션에서 0.4.16으로 돌렸다.
 - 실수 하나: cyberscript 저장소를 `git checkout 0.4.16`으로 옮겼다가 바로 `master`로 되돌렸다. 사용자의 수정(`src/sema.zig`)은 그대로다. 소스는 스파이크의 zig-pkg 사본에서 읽는다.
 
 앞선 세션(2026-11-20, 밤): 요구사항과 참고 자료를 포함한 전체 스펙 재검토. 서브에이전트 셋으로 나눠 보강했다.
@@ -124,7 +130,8 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - [ ] os 대신 능력으로 넓힐 후보(fs.mkdir, fs.remove, fs.copy, fs.move, env.get)를 언제 정할지 (04, ADR 0026)
 - [ ] 여섯 모듈의 예제를 안내에 넣을지 (TODO C1, C2의 남은 게이트)
 - [ ] 모듈 API(패키지의 `docs/api.json`, 여섯 모듈 약 7 KB)를 프롬프트에 둘지 help(name)으로 꺼내게 할지 (본체 능력 설계 때)
-- [x] CodeAct 비교를 0.4.15로 다시 돌렸다 (검토 문서 5.3)
+- [x] CodeAct 비교를 0.4.15, 0.4.16으로 다시 돌렸다 (검토 문서 5.3, 5.4)
+- [ ] cyber 요청서(0.4.16 문구 넷)의 회신 확인
 - [x] cyber 요청서(0.4.15 문구 셋)의 회신 확인: 0.4.16에서 닫혔다
 - [ ] 본체가 VM 충돌로 프로세스가 끝나는 경우를 어떻게 다룰지 (검토 문서 9절 17)
 - [ ] 검증 뒤 `cl_vm_symbol_hints`의 쓰지 않는 함수 안 지역을 모델에게 넘길지 (검토 문서 9절 18, 평가 때)
@@ -149,12 +156,13 @@ tars-linux용 내장 AI 코딩 에이전트 tars-agent. 본보기는 Claude Code
 - `docs/spec/07-observability.md` — 세션 파일의 줄 머리, 쓰기와 복구, 잠금
 - `docs/spec/06-mcp-and-context.md` — 헤드리스 json 객체와 종료 코드(0, 1, 2, 3, 130)
 - `docs/deps.md` — Zig 0.17.1에서 피할 것
-- `docs/spikes/2026-11-14-m0-spikes-review.md` — 스파이크 검토. 1절 요약, 3절 호스트 경계, 5절 비교(0.4.12 회차, 5.3에 0.4.15 회차), 7절 cyber에 남은 것, 11절 다시 돌리는 법
+- `docs/spikes/2026-11-14-m0-spikes-review.md` — 스파이크 검토. 1절 요약, 3절 호스트 경계, 5절 비교(0.4.12 회차, 5.3에 0.4.15, 5.4에 0.4.16 회차), 7절 cyber에 남은 것, 11절 다시 돌리는 법
 - `docs/decisions/0022-guide-from-cyber-agent-guide.md` — 안내의 정본과 열린 것
 - `docs/decisions/0017-m0-spike-findings.md`, `0019-fix-spike-defects-first.md`, `0020-docs-current-state-only.md`, `0021-borrow-from-pi-harness.md`
 - `docs/spec/08-cyber-implementation.md` — 기준 빌드의 사실
 - `spike/s1/build.zig.zon`, `spike/s2/build.zig.zon` — cyber 의존(가장 새 빌드의 태그, ADR 0023)
-- `spike/s2/out/0.4.12/` — 비교 회차 원자료
+- `spike/s2/out/0.4.12/`, `0.4.15/`, `0.4.16/` — 비교 회차 원자료
+- `docs/requests/cyber-0.4.16-messages-from-codeact-round.md` — 열린 cyber 요청(문구 넷)
 - `spike/s1/src/main.zig` — 검사 47개, `replay`, `spawn`. `spike/s2/src/vm.zig` — 검증, 실행, 승인, reset 알림
 
 ## 다음 에이전트에게

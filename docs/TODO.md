@@ -11,7 +11,7 @@
 - [x] 실행 모델 CodeAct + Cyber (ADR 0001), 호스트는 Zig + libcyber (ADR 0002)
 - [x] 초기 요구사항 대조 (09 문서)
 - [x] 명세 재검토와 열린 질문 결정 (ADR 0004~0009, 2026-11-10)
-- [x] cyber 기준 빌드 반영: 0.4.16. 스파이크 의존은 가장 새 빌드를 따르고(ADR 0023), s1, 안내의 코드 블록과 오류 문구를 설치된 CLI와 세션에서 확인했다. CodeAct 비교의 최신 회차는 0.4.15다(검토 문서 5.3). 스파이크의 호스트 로더는 허용 목록이다(ADR 0026) (2026-11-21)
+- [x] cyber 기준 빌드 반영: 0.4.16. 스파이크 의존은 가장 새 빌드를 따르고(ADR 0023), s1, 안내의 코드 블록과 오류 문구를 설치된 CLI와 세션에서 확인했다. CodeAct 비교의 최신 회차는 0.4.16이다(검토 문서 5.4). 스파이크의 호스트 로더는 허용 목록이다(ADR 0026) (2026-11-21)
 
 ## M0 증명
 
@@ -28,6 +28,7 @@
 - [x] cyber 0.4.15로 옮기기 (2026-11-18): 두 스파이크의 의존을 태그 `0.4.15`(`93a9ca4f`)로 올렸다. s1 47개 통과(새 검사 7i: `cl_vm_symbol_hints`, 7a4: `use test`, 6n: 오류 복구), s2 빌드, x86_64 교차 빌드. 안내 두 판과 agent-guide.md의 코드 블록 34개가 CLI와 세션에서 모두 통과한다(`test`를 연 뒤, ADR 0028). 제자리 `Slice`의 문구(`xs = xs.append(3)`, `ys := xs.append(3)`, 전역 `g.append(g.len())`)를 CLI와 세션에서, `os` 옛 꼴의 문구를 CLI에서 탐침으로 확인했다(세션은 `os`를 싣지 않는다). 세션의 마지막 줄 `xs.append(4)`는 결과 없는 문장, `xs.appended(3)`은 eval 결과다. `cyber-lsp`를 stdio로 붙여 unused 경고, quick fix, inlay hint, `scope` 출구 알림, 문서 주석 hover를 확인했다. 검토 문서 3.5, 7, 8절, 9절 18
 - [x] CodeAct 비교를 0.4.15로 다시 돌림 (2026-11-18): 0.4.12와 같은 표(회차 14개, 과제 42개). 41개 통과, 실패 하나는 과제 해석, 죽은 실행 없음, 컴파일 오류 51건에서 41건. 원자료 spike/s2/out/0.4.15/, 검토 문서 5.3
 - [x] cyber 0.4.16으로 옮기기 (2026-11-21): 두 스파이크의 의존을 태그 `0.4.16`(`ca000225`)으로 올렸다. s1 48개 통과. 7f와 `s1 spawn`을 새 꼴 `spawn f(a)`로 고쳤다(옛 꼴은 ParseError라 deny_spawn을 보지 않게 된다). 새 검사 6o: `CLReport`의 고칠 편집을 적용하면 검증 통과, 오류 복구에서 한 본문의 오류 둘, `CL_HINT_PARAM_NAME`, 실패한 검증 뒤의 타입 힌트. s2 빌드, x86_64 교차 빌드(s1, s2). 안내 두 판과 agent-guide.md의 코드 블록 34개가 CLI와 세션에서 통과한다. 기본 로더의 모듈은 그대로 열셋, 공개 `cl_` 함수 142개, libcyber.a arm64 3,130,152바이트, x86_64 3,700,220바이트. CodeAct 비교는 다시 돌리지 않았다
+- [x] CodeAct 비교를 0.4.16으로 다시 돌림 (2026-11-21): 같은 표(회차 14개, 과제 42개). 39개 통과(CodeAct 36개 중 35개). 실패 셋은 direct의 과제 해석과 셸 출력 형식, CodeAct의 스텝 상한(모델의 판정 실수)이다. 죽은 실행 없음, 컴파일 오류 41건에서 45건. 'Expected exclusive access'는 나오지 않았다. 문구 넷으로 요청서를 냈다(docs/requests/cyber-0.4.16-messages-from-codeact-round.md). 원자료 spike/s2/out/0.4.16/, 검토 문서 5.4
 - [x] cyber 요청: 0.4.15 회차에서 고치는 법을 말하지 않은 문구 셋(`!T`가 아닌 함수의 `!`, `.!`, `^[]T`의 제자리 메서드). 0.4.16에서 셋 모두 고치는 법을 말한다. CLI와 세션에서 확인하고 요청서를 지웠다 (2026-11-21)
 - [x] 0.4.16에서 안내 고치기 (2026-11-21): 두 판의 기준 버전 줄, 51행에 값을 바꾸는 메서드 `fn (&&P) m():`와 공유 빌림 두 문구('Cannot replace a managed value through a shared borrow.', 'Cannot borrow exclusively through a shared borrow.', 둘 다 `&&T`를 말하므로 오류 표가 아니라 정본 agent-guide.md 52행처럼 본문에), 105행은 `log.append(log.len())`가 된다로 줄였다(남은 오류 `g.append(g.span())`는 문구가 지역에 먼저 담으라고 말한다). `json.parse(s, &&diag)`, `spawn f(a)`, `os` 오류 이름은 안내에 없다
 - [ ] 'Expected exclusive access. There is another active borrow to `self`.'(순회 중 `&&self` 메서드 호출, 빌려 둔 관리형 값의 대입)는 고치는 법을 말하지 않는다. 다음 CodeAct 회차에서 나오면 오류 표(prompt/cyber-subset*.md)에 넣거나 cyber에 문구를 요청한다
