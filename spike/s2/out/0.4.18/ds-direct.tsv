@@ -1,0 +1,3 @@
+T1	FAIL	ds-anth	deepseek-chat	direct	5	4	1	1012	2560	403	4413	compile_errors=0
+T2	PASS	ds-anth	deepseek-chat	direct	7	6	0	1362	4096	555	7545	compile_errors=0
+T3	PASS	ds-anth	deepseek-chat	direct	5	4	1	920	2176	375	4656	compile_errors=0
