@@ -2,7 +2,7 @@
 
 Cyber는 Python과 아주 비슷한 문법 구조를 가진다. 들여쓰기로 블록을 만들고, 줄바꿈으로 문장을 끝내고, `for`, `while`, `if`, `fn`, `use`, `print`를 거의 같은 감각으로 쓴다. 하지만 정적 타입이고 값 소유권이 있고 예외가 없다. 이런 부분들이 다르니까 코드를 구성할 때 본 문서를 참고한다. 모르는 문법은 Python 문법으로 추측하지 말고 아래 목록을 먼저 본다.
 
-기준 버전은 soomtong/cyber의 Cyber 0.4.16다 (`cyber version`이 `Cyber 0.4.16`로 시작하는 줄을 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
+기준 버전은 soomtong/cyber의 Cyber 0.4.17이다 (`cyber version`이 `Cyber 0.4.17`로 시작하는 줄을 찍는다). 학습 데이터에 있는 옛 Cyber 문법(`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, symbol 리터럴 `@name`)은 틀렸다. `generator fn f()`와 `symbol.name`으로 쓴다.
 
 Cyber는 지금도 기능이 계속 추가되고 있다. 이 문서는 한 빌드에 맞춘 것이므로 더 새 빌드와 어긋날 수 있다. 문서를 사용하거나 고치기 전에 아래를 확인한다.
 
@@ -157,6 +157,7 @@ names.sort(|a, b| counts[a] > counts[b] or (counts[a] == counts[b] and a < b))
 - `!T`를 돌려주는 호출은 `!void`라도 처리해야 한다. 맨 `fs.write(p, s)`는 오류다. `try:` 안에서 `fs.write(p, s)!`나 `fs.write(p, s) !else |e|:`로 쓴다.
 - `!T`는 쓰기 전에 푼다: `x := r()!` 뒤 `x.len()`. `print(r())`와 `r().len()`은 오류다.
 - `int('abc')`는 오류 없이 0이다. 검증이 필요하면 `int.parse(s) !else ...`.
+- 코드 포인트 규칙과 `int(s)`는 한 글자에서 만난다: `z := 'Z'`이면 `int(z)`는 문자열을 파싱해 0이고, `int('Z')`는 코드 포인트 90이다. 변수에서 첫 바이트의 코드를 얻으려면 `int(z[0])`.
 
 ## 값, 참조, 빌림
 
@@ -165,7 +166,7 @@ names.sort(|a, b| counts[a] > counts[b] or (counts[a] == counts[b] and a < b))
 - 참조에 연산자를 쓰면 `.*`를 거쳐서만 가리키는 값에 닿는다: `n.* += 2`, `out := ^[]str{}`이면 `out.* += 'x'`.
   목록을 제자리에서 바꾸는 메서드도 같다: `out.*.append('x')`, `out.*.remove(0)`.
 - 함수가 인자를 고치게 하려면 `fn inc(p &int)`로 선언하고 `inc(&a)`로 부른다.
-- `Array[T]`는 복사할 수 없다. `move a`로 넘기거나 옮긴다. move한 원본을 쓰면 오류다. 보통 리스트는 `[]T`를 쓴다.
+- `Array[T]`는 복사할 수 없다. 함수 안에서는 변수를 넘기거나 대입하면 옮겨지고(`total(a)`, `b := a`), 그 뒤에 쓰면 옮긴 자리를 짚는 오류다. 다시 대입하면 또 쓸 수 있다(`a = step(a)`, 반복문 안에서도). 스크립트의 최상위 변수는 다음 실행이 읽으므로 저절로 옮겨지지 않는다: `move a`로 쓰고, 그 뒤 실행에서는 `a`를 쓸 수 없다. 보통 리스트는 `[]T`를 쓴다.
 - 클로저는 `^T`나 `&T` 타입의 변수만 캡처할 수 있다. 단순한 코드에서는 클로저 대신 보통 함수나 반복문을 쓴다.
 - 최상위 변수는 실행 사이에 이어지지만 최상위 빌림(`c := &x`)은 이어지지 않는다. 함수 안에서 빌리거나 `^T`를 쓴다.
 
@@ -342,9 +343,8 @@ print('%{x} %{shared.*}')
 - `Can not find the symbol `map` in `[]int`.`(`filter`도 같다): 반복문으로 쓴다.
 - `Expected `1` arguments, found `2`, when calling the function `fn print(...)``: `print('%{a} %{b}')`로 쓴다.
 - `Can not find the symbol `&&` for `bool`.`: 논리 AND. `and`로 쓴다.
-- `Expected assignment to a variable or placeholder ...`: 값을 버린 호출. `_ = f()`로 쓰거나 변수에 받는다.
 - `Cannot persist local ... of borrow type ... across evals.`: 최상위 `c := &x`. `^T`를 쓰거나 함수 안에서 빌린다.
-- `Cannot copy ..., type implements `NoCopy`.`: Array를 복사했다. `[]T`를 쓰거나 `move`.
+- `Cannot copy ..., type implements `NoCopy`.`: Array의 원소를 복사했다(`x := a[0]`). `&a[0]`로 빌리거나 `[]T`를 쓴다.
 - `Return statement is not allowed in the main block.`: 최상위 return. 코드를 `fn main():`으로 감싼다.
 - `Missing return statement.`: return이 없는 경로가 있다. 끝에 return을 더한다.
 - ``fn` declarations are not allowed here.`: 블록 안의 함수. 최상위에서 선언한다.

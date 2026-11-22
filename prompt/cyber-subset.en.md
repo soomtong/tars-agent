@@ -2,7 +2,7 @@
 
 Cyber has a syntax structure very close to Python. Blocks are made by indentation, statements end at a newline, and you use `for`, `while`, `if`, `fn`, `use` and `print` with almost the same feel. But Cyber is statically typed, has value ownership, and has no exceptions. These parts differ, so consult this document when you compose code. Do not guess an unfamiliar construct from Python; check the lists below first.
 
-The reference version is Cyber 0.4.16 of soomtong/cyber (`cyber version` prints a line starting with `Cyber 0.4.16`). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
+The reference version is Cyber 0.4.17 of soomtong/cyber (`cyber version` prints a line starting with `Cyber 0.4.17`). Older Cyber syntax in your training data (`my`, `dyn`, `func`, `throw`, `catch`, `'$(x)'`, `#[generator] fn f()`, the symbol literal `@name`) is wrong. Write `generator fn f()` and `symbol.name`.
 
 Cyber is still gaining features. This document matches one build and can fall behind a newer one. Before you use or edit this document, check the following.
 
@@ -157,6 +157,7 @@ This host loads the json, toon, regex, peg, time, path and test modules (`use js
 - A call that returns `!T` must be handled, even `!void`. A bare `fs.write(p, s)` is an error. Write `fs.write(p, s)!` inside `try:`, or `fs.write(p, s) !else |e|:`.
 - Unwrap a `!T` before you use the value: `x := r()!`, then `x.len()`. `print(r())` and `r().len()` are errors.
 - `int('abc')` gives 0 without an error. When you need validation, use `int.parse(s) !else ...`.
+- The code point rule and `int(s)` meet on one letter: with `z := 'Z'`, `int(z)` parses the string and gives 0, but `int('Z')` is the code point 90. To get the code of the first byte from a variable, use `int(z[0])`.
 
 ## Values, references, borrows
 
@@ -165,7 +166,7 @@ This host loads the json, toon, regex, peg, time, path and test modules (`use js
 - An operator on a reference works on the value it points to only through `.*`: `n.* += 2`, `out.* += 'x'` for `out := ^[]str{}`.
   The same holds for a method that changes the list in place: `out.*.append('x')`, `out.*.remove(0)`.
 - To let a function modify an argument, declare `fn inc(p &int)` and call `inc(&a)`.
-- `Array[T]` cannot be copied. Use `move a` to pass or relocate it. Using the original after a move is an error. For an ordinary list use `[]T`.
+- `Array[T]` cannot be copied. Inside a function, passing or assigning a variable moves it (`total(a)`, `b := a`), and using it after that is an error that names the move, until you assign it again (`a = step(a)`, in a loop too). A top-level variable of your script does not move by itself, because later runs read it: write `move a`, and later runs can not use `a`. For an ordinary list use `[]T`.
 - A closure can only capture variables of type `^T` or `&T`. In simple code use a plain function or a loop instead of a closure.
 - Top-level variables persist between runs, but a top-level borrow (`c := &x`) cannot. Borrow inside a function, or use `^T`.
 
@@ -342,9 +343,8 @@ Most compile errors say how to fix the code, for example `Did you mean starts_wi
 - `Can not find the symbol `map` in `[]int`.` (also `filter`): write a loop.
 - `Expected `1` arguments, found `2`, when calling the function `fn print(...)``: write `print('%{a} %{b}')`.
 - `Can not find the symbol `&&` for `bool`.`: logical AND. Write `and`.
-- `Expected assignment to a variable or placeholder ...`: a call whose value is discarded. Write `_ = f()` or assign it to a variable.
 - `Cannot persist local ... of borrow type ... across evals.`: a top-level `c := &x`. Use `^T`, or borrow inside a function.
-- `Cannot copy ..., type implements `NoCopy`.`: copying an Array. Use `[]T`, or `move`.
+- `Cannot copy ..., type implements `NoCopy`.`: copying an element of an Array (`x := a[0]`). Borrow it with `&a[0]`, or use `[]T`.
 - `Return statement is not allowed in the main block.`: a top-level return. Wrap the code in `fn main():`.
 - `Missing return statement.`: some path has no return. Add a return at the end.
 - ``fn` declarations are not allowed here.`: a function inside a block. Declare it at the top level.

@@ -10,7 +10,7 @@
 
 - 프로젝트 목표가 Cyber로 만든 tars-linux용 에이전트다.
 - cyber fork 쪽 검토에서 이미 이 용도를 상정해 중단/연료(fuel), validate, 호스트 함수 소유 규약, deny_raw_ptrs를 구현했다.
-- 작은 런타임(libcyber.a 3.13 MB(arm64, ReleaseFast, 0.4.16), VM 하나가 쥔 메모리 약 2.6 MiB)과 빠른 시작(두 번째 eval 0.01 ms)이 내장 에이전트에 맞다.
+- 작은 런타임(libcyber.a 3.19 MB(arm64, ReleaseFast, 0.4.17), VM 하나가 쥔 메모리 약 2.6 MiB)과 빠른 시작(두 번째 eval 0.01 ms)이 내장 에이전트에 맞다.
 
 ## 위험
 
