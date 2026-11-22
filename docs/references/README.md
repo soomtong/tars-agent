@@ -9,7 +9,7 @@
 | 2026-11-15-code-mode-and-cyber-design.md | 다른 하네스의 code mode와 CodeAct 비교, cyber 설계 원칙 검토를 CodeAct 관점에서 읽음 | 2026-11-15 | Claude Code 공식 문서 code-mode(2026-11-15에 읽음), pi-mono `c3cc916`, Codex와 OpenCode는 전언(확인하지 않았다), soomtong/cyber `docs/study/11-design-principles-review.md`(PR #7, 지금은 cyber master에 있다) | 없음 (참고) |
 | (검토 문서 없음) pi 하네스 | agent, codemode, coding-agent, durable 패키지 | 2026-11-15 | badlogic/pi-mono `c3cc916` | ADR 0021 |
 | 2026-11-20-fx-agent-review.md | Zig 0.17.1 코딩 에이전트 fx의 루프, 세션, 프로토콜, 시험 방법 | 2026-11-20 | vercel-labs/fx `5960bc93d` (로컬 `~/Repository/_study/fx-agent`) | ADR 0030 |
-| ../spikes/2026-11-14-m0-spikes-review.md | M0 스파이크 1~3, direct 대 CodeAct 비교 회차, 안내 문서 | 2026-11-14 시작, 기준 빌드 회차 2026-11-18 | soomtong/cyber 0.4.17 (`02c3c425`). 비교 회차는 0.4.12 (`67a2735c`), 0.4.15, 0.4.16 | ADR 0017 (추천), 0019, 0023~0028 |
+| ../spikes/2026-11-14-m0-spikes-review.md | M0 스파이크 1~3, direct 대 CodeAct 비교 회차, 안내 문서 | 2026-11-14 시작, 기준 빌드 회차 2026-11-18 | soomtong/cyber 0.4.18 (`80126d0e`). 비교 회차는 0.4.12 (`67a2735c`), 0.4.15, 0.4.16 | ADR 0017 (추천), 0019, 0023~0028 |
 | ../spec/09-legacy-requirements.md | 초기 요구사항 지시서(tars-linux 내장 에이전트 시스템) 대조 | 재검토 2026-11-10 | 지시서, cyber의 `project_tars_agent_runtime_review.md` (2026-11-01) | ADR 0004~0010. 항목별 반영은 09의 표 |
 
 ## 2. 읽는 법

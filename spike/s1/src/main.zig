@@ -971,6 +971,20 @@ pub fn main(init: std.process.Init) !void {
         const mx = firstLine(errorSummary(vm_x));
         const rx2 = run(vm_x, "print(2)\n", .{});
         check("7h. c 없이 #[extern]: 검증과 eval이 컴파일 오류, 세션은 이어진다", vx == c.CL_ERROR_COMPILE and rx.code == c.CL_ERROR_COMPILE and rx2.code == c.CL_SUCCESS, "검증={s} eval={s} 다음={s} | {s}", .{ codeName(vx), codeName(rx.code), codeName(rx2.code), mx });
+        // 앞에 성공한 eval이 있는 세션에서 특수화가 실패한 뒤(`[]Array[int]`). 0.4.16, 0.4.17은 다음 검증이 세그폴트였다 (0.4.18에서 고침).
+        const vm_n = newVm();
+        defer c.cl_vm_deinit(vm_n);
+        _ = run(vm_n, "use fs\n", .{});
+        const nsrc = "xs := []Array[int]{}\n";
+        const vn1 = c.cl_vm_validate(vm_n, B(nsrc));
+        const mn = firstLine(errorSummary(vm_n));
+        const vn2 = c.cl_vm_validate(vm_n, B("print(1)\n"));
+        const rn2 = run(vm_n, "print(1)\n", .{});
+        const out_n2 = std.mem.eql(u8, std.mem.trim(u8, g_out.items, "\n"), "1");
+        const rn3 = run(vm_n, nsrc, .{});
+        const rn4 = run(vm_n, "ys := Array[Array[int]]{Array[int]{1}}\nprint(ys.len())\n", .{});
+        const out_n4 = std.mem.eql(u8, std.mem.trim(u8, g_out.items, "\n"), "1");
+        check("7j. 특수화가 실패한 검증과 eval 뒤에도 세션이 다음 검증과 eval을 받는다 (0.4.18)", vn1 == c.CL_ERROR_COMPILE and vn2 == c.CL_SUCCESS and rn2.code == c.CL_SUCCESS and out_n2 and rn3.code == c.CL_ERROR_COMPILE and rn4.code == c.CL_SUCCESS and out_n4, "검증={s} 다음 검증={s} eval={s} 실패 eval={s} Array[Array]={s} | {s}", .{ codeName(vn1), codeName(vn2), codeName(rn2.code), codeName(rn3.code), codeName(rn4.code), mn });
         // 0.4.15의 cl_vm_symbol_hints: 검증 뒤 쓰지 않는 지역과 use를 호스트가 받을 수 있는가.
         // 세션의 최상위 지역은 다음 eval이 쓸 수 있으니 함수 안 지역과 따로 본다.
         const vm_h = newVm();
