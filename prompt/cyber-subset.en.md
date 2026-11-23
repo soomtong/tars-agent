@@ -65,7 +65,7 @@ Semantics:
 
 - Typing is static. A type error appears as a CompileError before a single line runs. A variable cannot change its type.
 - There is no truthiness. The `x` in `if x:` must be a bool. Write `if xs.len() > 0:`. Bitwise operators are `&&`, `||` and `~`. Logic is `and`, `or` and `not`.
-- Integers and floats are separate. `int + float` is an error, and the right operand is fitted to the type of the left one. Convert explicitly: `float(i) + f`. A float with an integer value prints as `5`, not `5.0`.
+- Integers and floats are separate. `int + float` is an error, and the right operand is fitted to the type of the left one. Convert explicitly: `float(i) + f`. A float always prints with a decimal point: a float with an integer value prints as `5.0` (cyber 0.4.18 and older print `5`).
 - A function cannot read a local variable of the outer scope. Pass it as a parameter, or declare a global with `global g int = 0`.
 - Using a call that returns a value as a statement is an error. To discard the value, write `_ = f()`.
 - A function that returns a value must return on every path. Otherwise: `Missing return statement.`
