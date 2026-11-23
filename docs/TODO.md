@@ -56,7 +56,7 @@
 - [ ] C3 임베딩 옵션: `os`를 호스트 콜백으로 받기(ADR 0026의 방향 D). 모듈 허용 표는 호스트 로더로 되므로 올리지 않는다
 - [ ] 수시: 프로세스를 죽이는 경로 수정
 - [ ] cyber의 새 빌드를 받을 때마다 s1, 안내의 예제와 항목, 평가를 다시 돌린다. 문서는 새 빌드의 사실로 고쳐 쓴다 (ADR 0020)
-- [ ] cyber 0.4.18 뒤 변경(2026-11-23, master, 릴리스 전, cyber `docs/releases/unreleased.md`)을 다음 빌드에서 안내(prompt/cyber-subset*.md)에 반영한다. 깨지는 변경 둘: float은 항상 소수점과 함께 찍힌다(`5.0`, 안내 68행은 이미 고쳤다. JSON · TOON은 그대로 `5`). `fn (&&T) m()`은 trait 메서드를 구현하지 않고, 값 · `^T` · `sink T` 수신자 메서드를 가진 타입은 `Dyn[Trait]`로 쓰지 못한다(수신자를 설명하는 51행, 235행에 덧붙일지 본다). 더해진 것: 함수 포인터 타입을 타입 자리에 바로 쓴다(`f fn(int) -> int`), trait 메서드에 본문(기본 메서드)을 둔다, `fn map(items []%T, f fn(T) -> %U)`가 함수 인자와 `|x| expr` 람다에서 `U`를 추론한다. `-tcc`, `-cc`는 명시적 오류로 거절된다(tars-agent는 쓰지 않는다)
+- [ ] cyber 0.4.18 뒤 변경(2026-11-23, master, 릴리스 전, cyber `docs/releases/unreleased.md`)을 다음 빌드에서 안내(prompt/cyber-subset*.md)에 반영한다. 깨지는 변경 둘: float은 항상 소수점과 함께 찍힌다(`5.0`, 안내 68행은 이미 고쳤다. JSON · TOON은 그대로 `5`). `fn (&&T) m()`은 trait 메서드를 구현하지 않고, 값 · `^T` · `sink T` 수신자 메서드를 가진 타입은 `Dyn[Trait]`로 쓰지 못한다(수신자를 설명하는 51행, 235행에 덧붙일지 본다). 더해진 것: 함수 포인터 타입을 타입 자리에 바로 쓴다(`f fn(int) -> int`), trait 메서드에 본문(기본 메서드)을 둔다, `fn map(items []%T, f fn(T) -> %U)`가 함수 인자와 `|x| expr` 람다에서 `U`를 추론한다. C 백엔드가 삭제됐다: `-tcc`, `-cc`는 'The C backend (-tcc) was removed.' 오류이고, 임베딩 API에서 `CL_TCC` · `CL_CC`와 `CLEvalConfig.spawn_exe`가 빠져 `CL_LLVM` 값과 구조체 배치가 바뀐다(tars-agent는 이들을 쓰지 않지만 `cyber.h`와 라이브러리를 같은 빌드로 맞춘다)
 
 게이트: 모듈마다 cyber의 테스트(누수 검사 포함)와 릴리스, 그리고 tars-agent 안내 문서의 예제가 그 모듈을 써서 통과한다.
 
