@@ -48,7 +48,7 @@
 
 - c 모듈을 끄는 옵션. math가 c를 쓰므로 끌 수 없다. deny_raw_ptrs와 -Dffi=false로 무력하게 둔다 (05).
 
-## M0에서 확인한 것 (기준 빌드 0.4.18, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
+## M0에서 확인한 것 (기준 빌드 0.4.22, 스파이크 1과 2. 상세는 docs/spikes/2026-11-14-m0-spikes-review.md)
 
 - build.zig.zon 의존에서 `b.dependency("cyber", .{ .target, .optimize, .static = true, .dev = false }).artifact("cyber")`로 정적 라이브러리를 받고, cyber.h는 그 아티팩트의 include 경로로 따라온다(C 파일의 `#include "cyber.h"`로 확인). 버전 문자열은 버전 번호에 의존 인자 `dev`(기본 true면 `-DEV`), `build`, `commit`을 붙여 찍는다(커밋은 소스에서 읽지 않는다). `dev = false`로 `build`, `commit`을 넘기지 않으면 `Cyber 0.4.15 build-0-local`이다. ffi는 기본 false다. Zig 0.17.1에는 @cImport가 없어 Zig 쪽 바인딩은 translate-c 패키지나 손으로 쓴 extern으로 만든다.
 - 능력이 `Future[!str]`을 돌려주고 str 값이나 오류로 완료한다(fs.read, proc.exec).

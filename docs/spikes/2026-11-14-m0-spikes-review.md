@@ -2,7 +2,7 @@
 
 스파이크를 Claude가 혼자 구현하고 검토했다 (ADR 0012의 덧붙임). 이 문서는 무엇을 만들었고, 기준 빌드에서 무엇이 확인됐고, 무엇이 남았고, 본체의 아키텍처에 어떤 뜻이 있는지를 적는다. 코드는 spike/에 있고 버릴 것이다.
 
-기준 빌드: soomtong/cyber 0.4.18(`80126d0e`). 스파이크는 가장 새 빌드를 따르는 의존으로 받는다(ADR 0023). 스파이크 1과 안내의 확인은 이 빌드로 2026-11-22에 돌렸다. 5절의 비교 회차는 0.4.12(커밋 67a2735c)로 처음 돌렸고, 같은 표를 0.4.15(5.3, 2026-11-18)와 0.4.16(5.4, 2026-11-21), 0.4.18(5.5, 2026-11-23)로 다시 돌렸다. 측정 환경은 macOS arm64.
+기준 빌드: soomtong/cyber 0.4.22(`6767c2d8`). 스파이크는 가장 새 빌드를 따르는 의존으로 받는다(ADR 0023). 스파이크 1과 안내의 확인은 이 빌드로 2026-11-26에 돌렸다. 5절의 비교 회차는 0.4.12(커밋 67a2735c)로 처음 돌렸고, 같은 표를 0.4.15(5.3, 2026-11-18)와 0.4.16(5.4, 2026-11-21), 0.4.18(5.5, 2026-11-23)로 다시 돌렸다. 측정 환경은 macOS arm64.
 
 읽는 순서: 1절(한 장 요약), 2절(에이전트는 어떻게 도는가), 그 뒤는 필요한 절만.
 
@@ -82,10 +82,10 @@ web.log: 23
 
 ### 3.1 링크
 
-- build.zig.zon의 의존은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.18"`로 넣는다. zig가 `.url = "git+https://github.com/soomtong/cyber?ref=0.4.18#<받은 커밋>"`과 `.hash`를 적는다. 태그가 움직여도 다시 받기 전에는 적힌 커밋을 쓴다.
+- build.zig.zon의 의존은 `zig fetch --save=cyber "git+https://github.com/soomtong/cyber#0.4.22"`로 넣는다. zig가 `.url = "git+https://github.com/soomtong/cyber?ref=0.4.22#<받은 커밋>"`과 `.hash`를 적는다. 태그가 움직여도 다시 받기 전에는 적힌 커밋을 쓴다.
 - `b.dependency("cyber", .{ .target = target, .optimize = .ReleaseFast, .static = true, .dev = false }).artifact("cyber")`를 `linkLibrary`로 링크한다(spike/s1/build.zig). ffi는 기본 false다.
 - cyber.h는 아티팩트의 include 경로로 따라온다. s1의 C 파일(src/inc_check.c)이 `#include "cyber.h"`로 컴파일되고, `CLEvalConfig`와 `CLCompileConfig`의 크기(12)가 translate-c 쪽과 같다(검사 0).
-- 버전 문자열은 `Cyber 0.4.18 build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, `-DEV` 표시는 `dev` 인자로 정한다. 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
+- 버전 문자열은 `Cyber 0.4.22 build-0-local`이다. 버전 번호는 cyber의 build.zig.zon에서 오고, `-DEV` 표시는 `dev` 인자로 정한다. 빌드 번호(`build`)와 커밋(`commit`)은 의존 인자로 넘길 때만 찍힌다. 넘기지 않는다. 검사 0은 `Cyber `로 시작하는지와 구조체 크기만 본다.
 - Zig 0.17.1에는 `@cImport`가 없다. cyber.h를 Zig에서 쓰는 길은 둘이다: translate-c 패키지로 모듈을 만들거나, 쓰는 함수의 extern 선언을 손으로 쓴다. 스파이크는 앞의 것을 썼다. 본체의 추천은 9절.
 - 의존 패키지의 `docs/agent-guide.md`와 `docs/api.json`은 `addAnonymousImport`(`cyber.path(...)`)로 빌드 때 싣는다. 검사 0b가 api.json을 std.json으로 읽어 json, toon, regex, peg, time의 항목(함수 67, 타입 24)만 거른다.
 - libcyber.a(arm64, ReleaseFast)는 3.06 MB(3,058,056바이트), 공개 `cl_` 함수는 142개다. 표준 모듈 json, toon, regex, peg, time이 들어 있고 각각의 `cl_mod_bind_*`가 있다. mimalloc 심볼은 없다(FFI를 끈 라이브러리 빌드에는 들어가지 않는다).
@@ -422,7 +422,7 @@ CodeAct 회차의 `run` 호출 220개를 셋으로 나눴다. 규칙은 단순�
 
 ## 7. cyber에 남은 것
 
-스파이크는 cyber 릴리스 `0.4.18`을 받는다(ADR 0023). 열린 요청은 없다. 0.4.17에서 찾은 결함(세션에서 `[]Array[T]`를 쓴 스크립트가 검증에 실패하면 다음 `cl_vm_validate`가 세그폴트로 호스트 프로세스를 끝낸다, 0.4.16부터)은 0.4.18에서 고쳐졌다. 원인은 실패한 특수화의 본문이 다음 컴파일로 넘어간 것이었다. 검사 7j가 같은 순서를 보고, 0.4.16 의존으로 돌리면 7j에서 세그폴트로 멈춘다. 같은 요청서의 질문 둘도 답을 받았다: `[]T`는 원소를 복사하므로 `NoCopy` 원소는 규칙상 안 되고 문구가 사용자 줄을 첫 위치로 `Array[Array[int]]`를 말한다(필드나 매개변수 타입으로 적기만 해도 오류다), 빌린 목록(`&[]T`, `&Array[T]`, `&Map[K, V]`)의 `for a |x|:`는 스스로 역참조한다. CLI와 세션에서 확인하고 요청서를 지웠다(2026-11-22). 0.4.17은 이동과 빌림을 덜 적게 했다: `NoCopy` 값(`Array`)은 함수 안에서 `move` 없이 이동하고 이동한 변수에 다시 대입할 수 있고, 빌림은 이름이 마지막으로 나오는 문장에서 끝난다. 세션(`persist_main`)의 최상위 변수는 다음 실행이 읽으므로 `move` 없이 이동하지 않는다(``The top level variable `a` of the REPL does not move without `move` ...``). 안내는 이 차이를 적었다(8절). 0.4.18은 빌림 검사의 구멍 여럿을 컴파일 오류로 막았다(갈래가 주는 빌림, `scope` 반환, 빌림 벡터 등). 안내가 가르치는 꼴에는 닿지 않는다. 0.4.16의 `&P` 메서드 문구 둘과 'Expected exclusive access'는 그대로다(5.4 회차에 나오지 않았다). 컴파일러가 아는 고칠 편집이 `CLReport`의 `has_fix`, `fix_pos`, `fix_end_pos`, `fix_text`로 온다(검사 6o). 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서, ADR 0022)와 모듈 API `docs/api.json`(`cyber doc --api <module>`과 같은 소스)이 들어 있다.
+스파이크는 cyber 릴리스 `0.4.22`를 받는다(ADR 0023, 2026-11-26에 0.4.18에서 올림). 열린 요청은 없다. 0.4.19~0.4.22의 변화 가운데 스파이크에 닿은 것은 float 출력(`4` → `4.0`, 검사 7a2의 기대값을 고침)과 공개 `cl_` 함수 셋(`cl_thread_interrupted`, `cl_vm_add_cleanup`, `cl_vm_remove_cleanup`, 142개에서 145개)이다. 표준 모듈 목록은 그대로다. 0.4.17에서 찾은 결함(세션에서 `[]Array[T]`를 쓴 스크립트가 검증에 실패하면 다음 `cl_vm_validate`가 세그폴트로 호스트 프로세스를 끝낸다, 0.4.16부터)은 0.4.18에서 고쳐졌다. 원인은 실패한 특수화의 본문이 다음 컴파일로 넘어간 것이었다. 검사 7j가 같은 순서를 보고, 0.4.16 의존으로 돌리면 7j에서 세그폴트로 멈춘다. 같은 요청서의 질문 둘도 답을 받았다: `[]T`는 원소를 복사하므로 `NoCopy` 원소는 규칙상 안 되고 문구가 사용자 줄을 첫 위치로 `Array[Array[int]]`를 말한다(필드나 매개변수 타입으로 적기만 해도 오류다), 빌린 목록(`&[]T`, `&Array[T]`, `&Map[K, V]`)의 `for a |x|:`는 스스로 역참조한다. CLI와 세션에서 확인하고 요청서를 지웠다(2026-11-22). 0.4.17은 이동과 빌림을 덜 적게 했다: `NoCopy` 값(`Array`)은 함수 안에서 `move` 없이 이동하고 이동한 변수에 다시 대입할 수 있고, 빌림은 이름이 마지막으로 나오는 문장에서 끝난다. 세션(`persist_main`)의 최상위 변수는 다음 실행이 읽으므로 `move` 없이 이동하지 않는다(``The top level variable `a` of the REPL does not move without `move` ...``). 안내는 이 차이를 적었다(8절). 0.4.18은 빌림 검사의 구멍 여럿을 컴파일 오류로 막았다(갈래가 주는 빌림, `scope` 반환, 빌림 벡터 등). 안내가 가르치는 꼴에는 닿지 않는다. 0.4.16의 `&P` 메서드 문구 둘과 'Expected exclusive access'는 그대로다(5.4 회차에 나오지 않았다). 컴파일러가 아는 고칠 편집이 `CLReport`의 `has_fix`, `fix_pos`, `fix_end_pos`, `fix_text`로 온다(검사 6o). 이 빌드의 패키지에는 cyber의 에이전트 안내 `docs/agent-guide.md`(`cyber doc --for-agents`와 같은 문서, ADR 0022)와 모듈 API `docs/api.json`(`cyber doc --api <module>`과 같은 소스)이 들어 있다.
 
 모델이 모르는 내부 이름(`@index`, `@slice`, `@set_index`, `@index_addr`)은 인덱스, 슬라이스 경계, 대입 값 어디서든 인자 불일치 문구에 나오지 않는다. 대입 값이 원소 타입과 다르면 ``An element of `[]int` must be `int`, got `str`.``처럼 원소 타입을 말하고, `?T`와 `!T`이면 푸는 법을 붙인다(`Map`도 같다). 정수 원소 자리의 한 글자 리터럴(`xs[0] = 'a'`)은 오류가 아니라 코드 포인트(97)다. 타입이 정해진 자리의 한 글자 리터럴은 코드 포인트라는 언어 규칙이다.
 
@@ -440,7 +440,7 @@ c가 실리기 전에 `#[extern]` 함수를 쓴 스크립트는 선언 위치의
 
 ## 8. 안내 문서 (prompt/cyber-subset*.md)
 
-영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.18`이다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(설치된 `/usr/local/bin/cyber`, `Cyber 0.4.18 build-1092-80126d0`)와 세션(`s1 replay`)으로 확인한다.
+영문판과 한국어판을 기준 빌드로 맞췄다. 두 판은 같은 구조이고 코드 블록 11개(정렬 절의 조각 하나, 예제 10개)가 같다. 기준 버전 줄은 `Cyber 0.4.22`이다. 안내의 문구와 코드 블록은 기준 빌드의 CLI(`Cyber 0.4.22 build-1194-6767c2d`, 2026-11-26에는 설치된 `/usr/local/bin/cyber`가 0.4.21이라 `install.sh 0.4.22`를 임시 경로에 설치해 썼다)와 세션(`s1 replay`)으로 확인한다. 0.4.22에서 안내 두 판의 코드 블록 22개와 agent-guide.md의 12개가 CLI와 세션에서 모두 통과했다. 0.4.19~0.4.22의 새 오류 문구(값 없는 `return`, 람다 파라미터 수, 모호한 오버로드 호출)는 모두 고치는 법을 말해 오류 목록에 넣지 않았다.
 
 확인 방법: 안내의 항목마다 탐침 스크립트를 만들어 기준 빌드의 CLI와 `replay`(같은 VM, persist_main, 검증 뒤 실행)로 돌리고 결과(출력이나 오류 첫 줄)를 맞춰 봤다. 오류 목록의 첫 줄, "없는 것" 목록, "있는 메서드" 목록, `int('abc')`, 정수 나눗셈, 음수 인덱스가 기준 빌드에서 그대로다. 세션에서만 다른 것은 최상위 빌림과 모듈이다. CLI는 `os`를 싣고, 스파이크의 세션은 싣지 않는다(ADR 0026). `test`는 양쪽에서 실린다(ADR 0028). 안내는 세션 쪽을 적는다. 코드 블록 11개는 CLI와 `replay` 양쪽에서 통과했다. cyber의 agent-guide.md(`cyber doc --for-agents`)의 코드 블록 12개도 CLI에서 모두 통과하고, 세션에서도 모두 통과한다(2026-11-18, 0.4.15, `test`를 연 뒤. ADR 0028).
 

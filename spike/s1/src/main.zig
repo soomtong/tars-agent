@@ -929,7 +929,7 @@ pub fn main(init: std.process.Init) !void {
         const s1 = firstLine(errorSummary(vm));
         check("7a. use io: 허용 목록 밖이라 호스트 로더가 거부한다", r1.code == c.CL_ERROR_COMPILE and g_denied_modules == 1, "code={s} | {s}", .{ codeName(r1.code), s1 });
         const r1m = run(vm, "use math\nuse toon\nprint(math.sqrt(16.0))\n", .{});
-        check("7a2. use math, use toon: 의존 모듈(c, meta, json)을 거쳐 실린다", r1m.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "4\n"), "code={s} 출력={s} | {s}", .{ codeName(r1m.code), g_out.items, firstLine(errorSummary(vm)) });
+        check("7a2. use math, use toon: 의존 모듈(c, meta, json)을 거쳐 실린다", r1m.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "4.0\n"), "code={s} 출력={s} | {s}", .{ codeName(r1m.code), g_out.items, firstLine(errorSummary(vm)) });
         const r1p = run(vm, "use path\nprint(path.join('a', 'b/c.txt'))\nprint(path.dir('a'))\n", .{});
         check("7a3. use path: 파일 시스템을 보지 않는 경로 함수가 실린다 (ADR 0027)", r1p.code == c.CL_SUCCESS and std.mem.eql(u8, g_out.items, "a/b/c.txt\n.\n"), "code={s} 출력={s} | {s}", .{ codeName(r1p.code), std.mem.trim(u8, g_out.items, "\n"), firstLine(errorSummary(vm)) });
         // test는 성공한 검사 뒤 출력이 이어지고, 실패한 검사는 panic이다 (ADR 0028).
